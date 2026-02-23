@@ -9,4 +9,6 @@ public class AppSettings
     public DateTime UsageDate { get; set; } = DateTime.Now.Date;
     public bool ChildAccountHasPassword { get; set; } = false;
     public bool TimeFormat12Hour { get; set; } = false;
+    public bool EnforceForAdmins { get; set; } = true;
+    public string AppTheme { get; set; } = "Dark";
 }

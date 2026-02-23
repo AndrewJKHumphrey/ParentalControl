@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="ParentGuard - Parental Control" Height="640" Width="960"
         WindowStartupLocation="CenterScreen"
-        Background="#1E1E2E">
+        Background="{DynamicResource AppBg}">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="200"/>
@@ -11,10 +11,10 @@
         </Grid.ColumnDefinitions>
 
         <!-- Sidebar -->
-        <Border Grid.Column="0" Background="#181825" Padding="0,20,0,0">
+        <Border Grid.Column="0" Background="{DynamicResource SidebarBg}" Padding="0,20,0,0">
             <StackPanel>
                 <TextBlock Text="ParentGuard" FontSize="16" FontWeight="Bold"
-                           Foreground="#CDD6F4" Margin="20,0,0,24"/>
+                           Foreground="{DynamicResource TextPrimary}" Margin="20,0,0,24"/>
 
                 <Button Style="{StaticResource NavButton}" Content="  Dashboard"
                         Tag="Dashboard" Click="NavButton_Click"/>
@@ -28,8 +28,14 @@
                         Tag="ActivityLog" Click="NavButton_Click"/>
                 <Button Style="{StaticResource NavButton}" Content="  Settings"
                         Tag="Settings" Click="NavButton_Click"/>
+                
+                <!-- Line Color needs to be in theme-->
+                <Line X1="10" Y1="10" X2="175" Y2="10" Stroke="Gray" StrokeThickness="1" Margin="0,0,0,24"/>
 
-                <Button x:Name="ServiceButton" Content="Shutdown Service" Margin="12,40,12,0"
+                <TextBlock Text="Service Status: " FontSize="16" Foreground="{DynamicResource TextSecondary}" FontWeight="Bold" Margin="40,0,0,10"/>
+                <TextBlock x:Name="ServiceStatusText" Text="Checking..." Foreground="#A6E3A1" FontSize="18" FontWeight="Bold" Margin="60,0,0,0"/>
+                
+                <Button x:Name="ServiceButton" Content="Shutdown Service" Margin="12,10,12,0"
                         Height="36" Background="#FAB387" Foreground="#1E1E2E"
                         FontWeight="Bold" BorderThickness="0" Cursor="Hand"
                         Click="ServiceButton_Click"/>
@@ -38,6 +44,6 @@
 
         <!-- Content area -->
         <Frame x:Name="ContentFrame" Grid.Column="1" NavigationUIVisibility="Hidden"
-               Background="#1E1E2E"/>
+               Background="{DynamicResource AppBg}"/>
     </Grid>
 </Window>

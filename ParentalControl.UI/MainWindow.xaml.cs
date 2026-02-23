@@ -4,11 +4,15 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using ParentalControl.UI.Views;
 
+using ParentalControl.UI.Services;
+using ParentalControl.Core;
+
 namespace ParentalControl.UI;
 
 public partial class MainWindow : Window
 {
     private const string ServiceName = "ParentalControlService";
+    private readonly IpcClient _ipc = new();
 
     public MainWindow()
     {
@@ -37,7 +41,7 @@ public partial class MainWindow : Window
         };
     }
 
-    private void RefreshServiceButton()
+    private async void RefreshServiceButton()
     {
         try
         {
@@ -48,6 +52,12 @@ public partial class MainWindow : Window
             ServiceButton.Background = running
                 ? new SolidColorBrush(Color.FromRgb(0xFA, 0xB3, 0x87))  // orange
                 : new SolidColorBrush(Color.FromRgb(0xA6, 0xE3, 0xA1)); // green
+
+            var status = await _ipc.SendAsync(IpcCommand.GetStatus);
+            ServiceStatusText.Text = status.Success ? "Running" : "Stopped";
+            ServiceStatusText.Foreground = status.Success
+                ? System.Windows.Media.Brushes.LightGreen
+                : System.Windows.Media.Brushes.Salmon;
         }
         catch { }
     }

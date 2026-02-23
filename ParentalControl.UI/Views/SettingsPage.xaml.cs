@@ -1,3 +1,4 @@
+using System.Security.Principal;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -7,6 +8,8 @@ namespace ParentalControl.UI.Views;
 
 public partial class SettingsPage : Page
 {
+    private bool _loaded = false;
+
     public SettingsPage()
     {
         InitializeComponent();
@@ -15,6 +18,18 @@ public partial class SettingsPage : Page
 
     private void LoadSettings()
     {
+        // Show current account type
+        try
+        {
+            var identity = WindowsIdentity.GetCurrent();
+            var principal = new WindowsPrincipal(identity);
+            bool isAdmin = principal.IsInRole(WindowsBuiltInRole.Administrator);
+            AccountTypeLabel.Text = isAdmin
+                ? "Current account type: Administrator"
+                : "Current account type: Standard user";
+        }
+        catch { }
+
         try
         {
             using var db = new AppDbContext();
@@ -22,9 +37,21 @@ public partial class SettingsPage : Page
             if (settings != null)
             {
                 ChildHasPasswordBox.IsChecked = settings.ChildAccountHasPassword;
+                EnforceForAdminsBox.IsChecked = settings.EnforceForAdmins;
+
+                foreach (ComboBoxItem item in ThemeBox.Items)
+                {
+                    if (item.Content?.ToString() == settings.AppTheme)
+                    {
+                        ThemeBox.SelectedItem = item;
+                        break;
+                    }
+                }
             }
         }
         catch { }
+
+        _loaded = true;
     }
 
     private void ChildHasPassword_Changed(object sender, RoutedEventArgs e)
@@ -37,6 +64,40 @@ public partial class SettingsPage : Page
             var settings = db.Settings.FirstOrDefault();
             if (settings == null) return;
             settings.ChildAccountHasPassword = hasPassword;
+            db.SaveChanges();
+        }
+        catch { }
+    }
+
+    private void EnforceForAdmins_Changed(object sender, RoutedEventArgs e)
+    {
+        var enforce = EnforceForAdminsBox.IsChecked == true;
+
+        try
+        {
+            using var db = new AppDbContext();
+            var settings = db.Settings.FirstOrDefault();
+            if (settings == null) return;
+            settings.EnforceForAdmins = enforce;
+            db.SaveChanges();
+        }
+        catch { }
+    }
+
+    private void ThemeBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_loaded) return;
+        if (ThemeBox.SelectedItem is not ComboBoxItem item) return;
+
+        var name = item.Content?.ToString() ?? "Dark";
+        App.ApplyTheme(name);
+
+        try
+        {
+            using var db = new AppDbContext();
+            var settings = db.Settings.FirstOrDefault();
+            if (settings == null) return;
+            settings.AppTheme = name;
             db.SaveChanges();
         }
         catch { }

@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Parental Control - Login" Height="280" Width="420"
         WindowStartupLocation="CenterScreen" ResizeMode="NoResize"
-        Background="#1E1E2E">
+        Background="{DynamicResource AppBg}">
     <Grid Margin="30">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -14,14 +14,14 @@
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0" Text="&#x1F512; Parental Control" FontSize="22" FontWeight="Bold"
-                   Foreground="#CDD6F4" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+                   Foreground="{DynamicResource TextPrimary}" HorizontalAlignment="Center" Margin="0,0,0,20"/>
 
-        <TextBlock Grid.Row="1" Text="Enter parent password:" Foreground="#A6ADC8" Margin="0,0,0,6"/>
+        <TextBlock Grid.Row="1" Text="Enter parent password:" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,6"/>
 
         <PasswordBox x:Name="PasswordBox" Grid.Row="2" Height="36"
                      FontSize="14" Padding="8,4"
-                     Background="#313244" Foreground="#CDD6F4"
-                     BorderBrush="#585B70" BorderThickness="1"
+                     Background="{DynamicResource CardBg}" Foreground="{DynamicResource TextPrimary}"
+                     BorderBrush="{DynamicResource BorderColor}" BorderThickness="1"
                      KeyDown="PasswordBox_KeyDown"/>
 
         <TextBlock x:Name="ErrorText" Grid.Row="3" Foreground="#F38BA8"
