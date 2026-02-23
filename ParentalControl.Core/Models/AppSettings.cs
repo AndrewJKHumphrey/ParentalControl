@@ -8,6 +8,5 @@ public class AppSettings
     public int TodayUsedMinutes { get; set; }
     public DateTime UsageDate { get; set; } = DateTime.Now.Date;
     public bool ChildAccountHasPassword { get; set; } = false;
-    public int LockDelaySeconds { get; set; } = 120;
     public bool TimeFormat12Hour { get; set; } = false;
 }

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using ParentalControl.Core;
@@ -48,8 +49,43 @@ public partial class ScreenTimePage : Page
         LoadData();
     }
 
-    private string FormatTime(TimeOnly t) =>
-        _use12h ? t.ToString("h:mm tt") : t.ToString("HH:mm");
+    private string FormatTime(TimeOnly t)
+    {
+        if (!_use12h) return t.ToString("HH:mm");
+        int h12 = t.Hour % 12;
+        if (h12 == 0) h12 = 12;
+        return $"{h12}:{t.Minute:D2} {(t.Hour < 12 ? "AM" : "PM")}";
+    }
+
+    // Culture-invariant parser for our own display strings ("HH:mm" or "h:mm AM/PM").
+    // TimeOnly.TryParse is culture-sensitive and can misinterpret "00:00" or our
+    // hardcoded AM/PM strings on non-English Windows regional settings.
+    private static bool TryParseDisplayTime(string s, out TimeOnly result)
+    {
+        // 24h invariant: "00:00" – "23:59"
+        if (TimeOnly.TryParseExact(s, "HH:mm", CultureInfo.InvariantCulture,
+                DateTimeStyles.None, out result))
+            return true;
+
+        // Custom 12h: "h:mm AM" / "h:mm PM"  (as produced by FormatTime)
+        var upper = s.Trim().ToUpperInvariant();
+        bool pm = upper.EndsWith(" PM");
+        bool am = upper.EndsWith(" AM");
+        if (pm || am)
+        {
+            var timePart = upper[..^3].Trim();
+            if (TimeOnly.TryParseExact(timePart, new[] { "h:mm", "hh:mm" },
+                    CultureInfo.InvariantCulture, DateTimeStyles.None, out result))
+            {
+                if (pm && result.Hour < 12) result = result.AddHours(12);
+                if (am && result.Hour == 12) result = result.AddHours(-12);
+                return true;
+            }
+        }
+
+        result = default;
+        return false;
+    }
 
     private void LoadData()
     {
@@ -74,9 +110,9 @@ public partial class ScreenTimePage : Page
             {
                 foreach (var row in _rows)
                 {
-                    if (TimeOnly.TryParse(row.AllowedFromStr, out var f))
+                    if (TryParseDisplayTime(row.AllowedFromStr, out var f))
                         row.AllowedFromStr = FormatTime(f);
-                    if (TimeOnly.TryParse(row.AllowedUntilStr, out var u))
+                    if (TryParseDisplayTime(row.AllowedUntilStr, out var u))
                         row.AllowedUntilStr = FormatTime(u);
                 }
             }
@@ -111,9 +147,9 @@ public partial class ScreenTimePage : Page
         // Reconvert all displayed times to new format
         foreach (var row in _rows)
         {
-            if (TimeOnly.TryParse(row.AllowedFromStr, out var f))
+            if (TryParseDisplayTime(row.AllowedFromStr, out var f))
                 row.AllowedFromStr = FormatTime(f);
-            if (TimeOnly.TryParse(row.AllowedUntilStr, out var u))
+            if (TryParseDisplayTime(row.AllowedUntilStr, out var u))
                 row.AllowedUntilStr = FormatTime(u);
         }
 
@@ -157,7 +193,8 @@ public partial class ScreenTimePage : Page
             _      => ""
         };
 
-        if (!TimeOnly.TryParse(candidate, out t)) return null;
+        if (!TimeOnly.TryParseExact(candidate, "HH:mm", CultureInfo.InvariantCulture,
+            DateTimeStyles.None, out t)) return null;
 
         // Apply AM/PM for digit-only shorthand (e.g. "900pm" → 21:00, "1200am" → 00:00)
         if (isPm && t.Hour < 12) t = t.AddHours(12);
@@ -179,9 +216,9 @@ public partial class ScreenTimePage : Page
                 limit.IsEnabled = row.IsEnabled;
                 limit.DailyLimitMinutes = row.DailyLimitMinutes;
 
-                if (TimeOnly.TryParse(row.AllowedFromStr, out var from))
+                if (TryParseDisplayTime(row.AllowedFromStr, out var from))
                     limit.AllowedFrom = from;
-                if (TimeOnly.TryParse(row.AllowedUntilStr, out var until))
+                if (TryParseDisplayTime(row.AllowedUntilStr, out var until))
                     limit.AllowedUntil = until;
             }
             db.SaveChanges();

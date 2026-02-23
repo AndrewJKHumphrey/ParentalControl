@@ -27,6 +27,7 @@
                           HeadersVisibility="Column" RowBackground="Transparent"
                           AlternatingRowBackground="#2A2A3E"
                           CanUserAddRows="False" CanUserDeleteRows="False"
+                          CanUserSortColumns="False"
                           CellEditEnding="LimitsGrid_CellEditEnding">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Day" Binding="{Binding DayOfWeek}" Width="100" IsReadOnly="True"/>

@@ -13,8 +13,6 @@ public partial class SettingsPage : Page
         Loaded += (_, _) => LoadSettings();
     }
 
-    private bool _settingsLoaded = false;
-
     private void LoadSettings()
     {
         try
@@ -24,56 +22,24 @@ public partial class SettingsPage : Page
             if (settings != null)
             {
                 ChildHasPasswordBox.IsChecked = settings.ChildAccountHasPassword;
-                LockDelaySlider.Value = Math.Clamp(settings.LockDelaySeconds, 20, 180);
-                UpdateLockDelayLabel((int)LockDelaySlider.Value);
             }
         }
         catch { }
-        _settingsLoaded = true;
     }
 
     private void ChildHasPassword_Changed(object sender, RoutedEventArgs e)
     {
-        try
-        {
-            using var db = new AppDbContext();
-            var settings = db.Settings.FirstOrDefault();
-            if (settings == null) return;
-            settings.ChildAccountHasPassword = ChildHasPasswordBox.IsChecked == true;
-            db.SaveChanges();
-        }
-        catch { }
-    }
-
-    private void LockDelaySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-    {
-        var seconds = (int)LockDelaySlider.Value;
-        UpdateLockDelayLabel(seconds);
-
-        if (!_settingsLoaded) return;
+        var hasPassword = ChildHasPasswordBox.IsChecked == true;
 
         try
         {
             using var db = new AppDbContext();
             var settings = db.Settings.FirstOrDefault();
             if (settings == null) return;
-            settings.LockDelaySeconds = seconds;
+            settings.ChildAccountHasPassword = hasPassword;
             db.SaveChanges();
         }
         catch { }
-    }
-
-    private void UpdateLockDelayLabel(int seconds)
-    {
-        if (LockDelayLabel == null) return;
-        if (seconds < 60)
-            LockDelayLabel.Text = $"{seconds} sec";
-        else
-        {
-            int mins = seconds / 60;
-            int secs = seconds % 60;
-            LockDelayLabel.Text = secs == 0 ? $"{mins} min" : $"{mins} min {secs} sec";
-        }
     }
 
     private void ChangePassword_Click(object sender, RoutedEventArgs e)

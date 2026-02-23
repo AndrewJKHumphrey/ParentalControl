@@ -17,16 +17,18 @@ public class ScreenTimeEnforcer
     [DllImport("wtsapi32.dll")]
     private static extern void WTSFreeMemory(IntPtr pMemory);
 
+    [DllImport("wtsapi32.dll", CharSet = CharSet.Unicode)]
+    private static extern bool WTSSendMessage(
+        IntPtr hServer, int sessionId,
+        string pTitle, int titleLength,
+        string pMessage, int messageLength,
+        uint style, int timeout, out int pResponse, bool bWait);
+
     private readonly ActivityLogger _logger;
     private DateTime _lastTickTime = DateTime.UtcNow;
     private double _pendingMinutes = 0;
 
-    // Time-window violation state (outside AllowedFrom–AllowedUntil)
-    private DateTime? _timeWindowViolationAt = null;
     private bool _lockedDueToTimeWindow = false;
-
-    // Daily-limit violation state (TodayUsedMinutes >= DailyLimitMinutes)
-    private DateTime? _dailyLimitViolationAt = null;
     private bool _lockedDueToDailyLimit = false;
 
     public ScreenTimeEnforcer(ActivityLogger logger)
@@ -59,9 +61,7 @@ public class ScreenTimeEnforcer
                 settings.UsageDate = DateTime.Now.Date;
                 settings.TodayUsedMinutes = 0;
                 _pendingMinutes = 0;
-                _timeWindowViolationAt = null;
                 _lockedDueToTimeWindow = false;
-                _dailyLimitViolationAt = null;
                 _lockedDueToDailyLimit = false;
             }
 
@@ -86,21 +86,22 @@ public class ScreenTimeEnforcer
             var currentTime = TimeOnly.FromDateTime(now);
 
             bool childHasPassword = settings.ChildAccountHasPassword;
-            var lockDelay = TimeSpan.FromSeconds(
-                Math.Clamp(settings.LockDelaySeconds, 20, 180));
 
             // --- Enforce allowed time window ---
             if (currentTime < limit.AllowedFrom || currentTime > limit.AllowedUntil)
             {
-                _timeWindowViolationAt ??= now;
-
-                if (now - _timeWindowViolationAt >= lockDelay && IsUserLoggedIn())
+                if (IsUserLoggedIn())
                 {
                     if (childHasPassword)
                     {
                         if (!_lockedDueToTimeWindow)
                         {
                             _lockedDueToTimeWindow = true;
+                            SendWarning(
+                                $"You are outside the allowed hours " +
+                                $"({limit.AllowedFrom.ToString("HH:mm")}–{limit.AllowedUntil.ToString("HH:mm")}). " +
+                                $"The screen will lock in 30 seconds.");
+                            Thread.Sleep(30000);
                             SessionLock.LockActive();
                             _logger.Log(ActivityType.ScreenLocked,
                                 $"Outside allowed hours ({limit.AllowedFrom}-{limit.AllowedUntil})");
@@ -108,30 +109,35 @@ public class ScreenTimeEnforcer
                     }
                     else
                     {
+                        SendWarning(
+                            $"You are outside the allowed hours " +
+                            $"({limit.AllowedFrom.ToString("HH:mm")}–{limit.AllowedUntil.ToString("HH:mm")}). " +
+                            $"The screen will lock in 30 seconds.");
+                        Thread.Sleep(30000);
                         SessionLock.LockActive();
                     }
                 }
                 return; // don't evaluate daily limit while outside allowed hours
             }
 
-            // Back within allowed hours — reset time-window state only
-            _timeWindowViolationAt = null;
+            // Back within allowed hours — reset time-window lock flag
             _lockedDueToTimeWindow = false;
 
             // --- Enforce daily limit ---
-            // Uses its own independent timer so the time-window reset above can't clobber it.
             if (limit.DailyLimitMinutes > 0 &&
                 settings.TodayUsedMinutes >= limit.DailyLimitMinutes)
             {
-                _dailyLimitViolationAt ??= now;
-
-                if (now - _dailyLimitViolationAt >= lockDelay && IsUserLoggedIn())
+                if (IsUserLoggedIn())
                 {
                     if (childHasPassword)
                     {
                         if (!_lockedDueToDailyLimit)
                         {
                             _lockedDueToDailyLimit = true;
+                            SendWarning(
+                                $"Daily screen time limit of {limit.DailyLimitMinutes} minutes has been reached. " +
+                                $"The screen will lock in 30 seconds.");
+                            Thread.Sleep(30000);
                             SessionLock.LockActive();
                             _logger.Log(ActivityType.ScreenTimeLimitReached,
                                 $"Daily limit of {limit.DailyLimitMinutes} min reached");
@@ -139,17 +145,32 @@ public class ScreenTimeEnforcer
                     }
                     else
                     {
+                        SendWarning(
+                            $"Daily screen time limit of {limit.DailyLimitMinutes} minutes has been reached. " +
+                            $"The screen will lock in 30 seconds.");
+                        Thread.Sleep(30000);
                         SessionLock.LockActive();
                     }
                 }
             }
             else
             {
-                _dailyLimitViolationAt = null;
                 _lockedDueToDailyLimit = false;
             }
         }
         catch { }
+    }
+
+    private static void SendWarning(string message)
+    {
+        var sessionId = (int)WTSGetActiveConsoleSessionId();
+        if (sessionId == -1) return;
+
+        const string title = "Screen Time Warning";
+        WTSSendMessage(IntPtr.Zero, sessionId,
+            title, title.Length * 2,
+            message, message.Length * 2,
+            0x00000030u /* MB_OK | MB_ICONWARNING */, 0, out _, false);
     }
 
     private static bool IsUserActive()

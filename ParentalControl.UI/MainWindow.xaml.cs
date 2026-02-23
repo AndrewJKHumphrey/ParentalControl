@@ -1,19 +1,20 @@
+using System.ServiceProcess;
 using System.Windows;
 using System.Windows.Controls;
-using ParentalControl.Core;
-using ParentalControl.UI.Services;
+using System.Windows.Media;
 using ParentalControl.UI.Views;
 
 namespace ParentalControl.UI;
 
 public partial class MainWindow : Window
 {
-    private readonly IpcClient _ipc = new();
+    private const string ServiceName = "ParentalControlService";
 
     public MainWindow()
     {
         InitializeComponent();
         Navigate("Dashboard");
+        Loaded += (_, _) => RefreshServiceButton();
     }
 
     private void NavButton_Click(object sender, RoutedEventArgs e)
@@ -36,11 +37,62 @@ public partial class MainWindow : Window
         };
     }
 
-    private async void LockNow_Click(object sender, RoutedEventArgs e)
+    private void RefreshServiceButton()
     {
-        var result = await _ipc.SendAsync(IpcCommand.LockNow);
-        if (!result.Success)
-            MessageBox.Show($"Could not lock: {result.Error}", "Error",
-                MessageBoxButton.OK, MessageBoxImage.Warning);
+        try
+        {
+            using var sc = new ServiceController(ServiceName);
+            var running = sc.Status == ServiceControllerStatus.Running ||
+                          sc.Status == ServiceControllerStatus.StartPending;
+            ServiceButton.Content    = running ? "Shutdown Service" : "Start Service";
+            ServiceButton.Background = running
+                ? new SolidColorBrush(Color.FromRgb(0xFA, 0xB3, 0x87))  // orange
+                : new SolidColorBrush(Color.FromRgb(0xA6, 0xE3, 0xA1)); // green
+        }
+        catch { }
+    }
+
+    private async void ServiceButton_Click(object sender, RoutedEventArgs e)
+    {
+        ServiceButton.IsEnabled = false;
+        string? message = null;
+        try
+        {
+            bool wasRunning;
+            using (var sc = new ServiceController(ServiceName))
+                wasRunning = sc.Status == ServiceControllerStatus.Running ||
+                             sc.Status == ServiceControllerStatus.StartPending;
+
+            await Task.Run(() =>
+            {
+                using var sc = new ServiceController(ServiceName);
+                if (wasRunning)
+                {
+                    sc.Stop();
+                    sc.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(15));
+                }
+                else
+                {
+                    sc.Start();
+                    sc.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(15));
+                }
+            });
+
+            message = wasRunning
+                ? "Service stopped. Parental controls are now disabled."
+                : "Service started. Parental controls are now active.";
+        }
+        catch (Exception ex)
+        {
+            message = $"Could not change service state: {ex.Message}";
+        }
+        finally
+        {
+            RefreshServiceButton();
+            ServiceButton.IsEnabled = true;
+        }
+
+        if (message != null)
+            MessageBox.Show(message, "Service", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 }

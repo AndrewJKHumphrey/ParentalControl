@@ -23,10 +23,12 @@ public partial class App : Application
             // Add columns introduced after initial release (safe on existing DBs)
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ChildAccountHasPassword INTEGER NOT NULL DEFAULT 0"); }
             catch { /* Column already exists */ }
-            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN LockDelaySeconds INTEGER NOT NULL DEFAULT 120"); }
-            catch { /* Column already exists */ }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN TimeFormat12Hour INTEGER NOT NULL DEFAULT 0"); }
             catch { /* Column already exists */ }
+
+            // Fix AllowedFrom rows that were seeded as noon (12:00) instead of midnight (00:00)
+            try { db.Database.ExecuteSqlRaw("UPDATE ScreenTimeLimits SET AllowedFrom = '00:00:00' WHERE AllowedFrom LIKE '12:00:00%'"); }
+            catch { }
         }
         catch (Exception ex)
         {
