@@ -1,0 +1,64 @@
+<Page x:Class="ParentalControl.UI.Views.ActivityLogPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Background="#1E1E2E" Title="Activity Log">
+    <Grid Margin="32">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Activity Log" FontSize="24" FontWeight="Bold"
+                   Foreground="#CDD6F4" Margin="0,0,0,16"/>
+
+        <!-- Filter bar -->
+        <Grid Grid.Row="1" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="160"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0" Text="From:" Foreground="#A6ADC8"
+                       VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <DatePicker x:Name="FromDate" Grid.Column="1" Margin="0,0,16,0"
+                        Background="#313244" Foreground="#CDD6F4"/>
+            <ComboBox x:Name="TypeFilter" Grid.Column="2" Margin="0,0,16,0" Height="32"
+                      Background="#313244" Foreground="#CDD6F4"/>
+            <TextBlock Grid.Column="3" Text="Search:" Foreground="#A6ADC8"
+                       VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <TextBox x:Name="SearchBox" Grid.Column="4" Height="32" Margin="0,0,8,0"
+                     Background="#313244" Foreground="#CDD6F4"
+                     BorderBrush="#585B70" BorderThickness="1" Padding="6,4"/>
+            <Button Grid.Column="5" Content="Filter" Height="32" Padding="16,0"
+                    Background="#89B4FA" Foreground="#1E1E2E" FontWeight="Bold"
+                    BorderThickness="0" Cursor="Hand" Click="FilterButton_Click" Margin="0,0,8,0"/>
+            <Button Grid.Column="6" Content="Clear Log" Height="32" Padding="16,0"
+                    Background="#F38BA8" Foreground="#1E1E2E" FontWeight="Bold"
+                    BorderThickness="0" Cursor="Hand" Click="ClearLog_Click"/>
+        </Grid>
+
+        <!-- Log grid -->
+        <Border Grid.Row="2" Background="#313244" CornerRadius="8" Padding="8">
+            <DataGrid x:Name="LogGrid" AutoGenerateColumns="False"
+                      Background="Transparent" Foreground="#CDD6F4"
+                      BorderThickness="0" GridLinesVisibility="Horizontal"
+                      HeadersVisibility="Column" IsReadOnly="True"
+                      RowBackground="Transparent" AlternatingRowBackground="#2A2A3E">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Date/Time"
+                                        Binding="{Binding Timestamp, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}"
+                                        Width="160"/>
+                    <DataGridTextColumn Header="Event Type" Binding="{Binding Type}" Width="180"/>
+                    <DataGridTextColumn Header="Detail" Binding="{Binding Detail}" Width="*"/>
+                    <DataGridTextColumn Header="Duration (s)" Binding="{Binding DurationSeconds}" Width="100"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+    </Grid>
+</Page>

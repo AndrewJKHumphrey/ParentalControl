@@ -1,0 +1,78 @@
+<Page x:Class="ParentalControl.UI.Views.AppControlPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Background="#1E1E2E" Title="App Control">
+    <Grid Margin="32">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="App Control" FontSize="24" FontWeight="Bold"
+                   Foreground="#CDD6F4" Margin="0,0,0,8"/>
+        <TextBlock Grid.Row="1" Foreground="#A6ADC8" Margin="0,0,0,20" TextWrapping="Wrap"
+                   Text="Block specific applications. Enter the process name (e.g. chrome, notepad) and toggle blocking."/>
+
+        <!-- Add new rule -->
+        <Grid Grid.Row="2" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                <TextBlock Text="Display Name" Foreground="#A6ADC8" FontSize="12" Margin="0,0,0,4"/>
+                <TextBox x:Name="DisplayNameBox" Height="36" Width="200"
+                         Background="#313244" Foreground="#CDD6F4"
+                         BorderBrush="#585B70" BorderThickness="1"
+                         Padding="8,4" FontSize="13"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Margin="0,0,8,0">
+                <TextBlock Text="Process Name (e.g. chrome, notepad)" Foreground="#A6ADC8" FontSize="12" Margin="0,0,0,4"/>
+                <TextBox x:Name="ProcessNameBox" Height="36" Width="200"
+                         Background="#313244" Foreground="#CDD6F4"
+                         BorderBrush="#585B70" BorderThickness="1"
+                         Padding="8,4" FontSize="13"/>
+            </StackPanel>
+            <Button Grid.Column="2" Content="Add Rule" Height="36" Padding="16,0"
+                    VerticalAlignment="Bottom"
+                    Background="#A6E3A1" Foreground="#1E1E2E" FontWeight="Bold"
+                    BorderThickness="0" Cursor="Hand" Click="AddRule_Click"/>
+        </Grid>
+
+        <!-- Rules list -->
+        <Border Grid.Row="3" Background="#313244" CornerRadius="8" Padding="8">
+            <DataGrid x:Name="AppRulesGrid" AutoGenerateColumns="False"
+                      Background="Transparent" Foreground="#CDD6F4"
+                      BorderThickness="0" GridLinesVisibility="None"
+                      HeadersVisibility="Column" IsReadOnly="False"
+                      RowBackground="Transparent" AlternatingRowBackground="#2A2A3E">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Display Name" Binding="{Binding DisplayName}" Width="200"/>
+                    <DataGridTextColumn Header="Process Name" Binding="{Binding ProcessName}" Width="200"/>
+                    <DataGridCheckBoxColumn Header="Blocked" Binding="{Binding IsBlocked}" Width="80"/>
+                    <DataGridTemplateColumn Header="Remove" Width="80">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Content="X" Width="30" Height="24"
+                                        Background="#F38BA8" Foreground="#1E1E2E"
+                                        FontWeight="Bold" BorderThickness="0"
+                                        Tag="{Binding Id}"
+                                        Click="DeleteRule_Click"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <Button Grid.Row="4" Content="Save Changes" Margin="0,12,0,0" Height="38" Width="160"
+                HorizontalAlignment="Left"
+                Background="#89B4FA" Foreground="#1E1E2E" FontWeight="Bold"
+                BorderThickness="0" Cursor="Hand"
+                Click="SaveButton_Click"/>
+    </Grid>
+</Page>

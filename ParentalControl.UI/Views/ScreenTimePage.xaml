@@ -1,0 +1,53 @@
+<Page x:Class="ParentalControl.UI.Views.ScreenTimePage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Background="#1E1E2E" Title="Screen Time">
+    <ScrollViewer>
+        <StackPanel Margin="32">
+            <TextBlock Text="Screen Time Limits" FontSize="24" FontWeight="Bold"
+                       Foreground="#CDD6F4" Margin="0,0,0,8"/>
+            <TextBlock Text="Configure daily screen time limits and allowed hours for each day of the week."
+                       Foreground="#A6ADC8" Margin="0,0,0,24" TextWrapping="Wrap"/>
+
+            <!-- Time format toggle -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                <TextBlock Text="Time format:" Foreground="#A6ADC8" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <RadioButton x:Name="Format24h" Content="24h" GroupName="TimeFormat"
+                             Foreground="#CDD6F4" IsChecked="True"
+                             Checked="TimeFormat_Changed" Margin="0,0,12,0"/>
+                <RadioButton x:Name="Format12h" Content="12h (AM/PM)" GroupName="TimeFormat"
+                             Foreground="#CDD6F4"
+                             Checked="TimeFormat_Changed"/>
+            </StackPanel>
+
+            <Border Background="#313244" CornerRadius="8" Padding="20">
+                <DataGrid x:Name="LimitsGrid" AutoGenerateColumns="False"
+                          Background="Transparent" Foreground="#CDD6F4"
+                          BorderThickness="0" GridLinesVisibility="Horizontal"
+                          HeadersVisibility="Column" RowBackground="Transparent"
+                          AlternatingRowBackground="#2A2A3E"
+                          CanUserAddRows="False" CanUserDeleteRows="False"
+                          CellEditEnding="LimitsGrid_CellEditEnding">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Day" Binding="{Binding DayOfWeek}" Width="100" IsReadOnly="True"/>
+                        <DataGridCheckBoxColumn Header="Enabled" Binding="{Binding IsEnabled}" Width="80"/>
+                        <DataGridTextColumn Header="Daily Limit (min, 0=unlimited)"
+                                            Binding="{Binding DailyLimitMinutes}" Width="200"/>
+                        <DataGridTextColumn Header="Allowed From"
+                                            Binding="{Binding AllowedFromStr}" Width="160"/>
+                        <DataGridTextColumn Header="Allowed Until"
+                                            Binding="{Binding AllowedUntilStr}" Width="160"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Border>
+
+            <Button Content="Save Changes" Margin="0,16,0,0" Height="38" Width="160"
+                    HorizontalAlignment="Left"
+                    Background="#89B4FA" Foreground="#1E1E2E" FontWeight="Bold"
+                    BorderThickness="0" Cursor="Hand"
+                    Click="SaveButton_Click"/>
+
+            <TextBlock x:Name="StatusText" Foreground="#A6E3A1" Margin="0,10,0,0" Visibility="Collapsed"/>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

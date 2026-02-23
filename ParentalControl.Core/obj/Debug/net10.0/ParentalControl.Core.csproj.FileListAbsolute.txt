@@ -1,0 +1,14 @@
+C:\Users\humph\ParentalControl\ParentalControl.Core\bin\Debug\net10.0\ParentalControl.Core.deps.json
+C:\Users\humph\ParentalControl\ParentalControl.Core\bin\Debug\net10.0\ParentalControl.Core.runtimeconfig.json
+C:\Users\humph\ParentalControl\ParentalControl.Core\bin\Debug\net10.0\ParentalControl.Core.dll
+C:\Users\humph\ParentalControl\ParentalControl.Core\bin\Debug\net10.0\ParentalControl.Core.pdb
+C:\Users\humph\ParentalControl\ParentalControl.Core\obj\Debug\net10.0\ParentalControl.Core.csproj.AssemblyReference.cache
+C:\Users\humph\ParentalControl\ParentalControl.Core\obj\Debug\net10.0\ParentalControl.Core.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\humph\ParentalControl\ParentalControl.Core\obj\Debug\net10.0\ParentalControl.Core.AssemblyInfoInputs.cache
+C:\Users\humph\ParentalControl\ParentalControl.Core\obj\Debug\net10.0\ParentalControl.Core.AssemblyInfo.cs
+C:\Users\humph\ParentalControl\ParentalControl.Core\obj\Debug\net10.0\ParentalControl.Core.csproj.CoreCompileInputs.cache
+C:\Users\humph\ParentalControl\ParentalControl.Core\obj\Debug\net10.0\ParentalControl.Core.dll
+C:\Users\humph\ParentalControl\ParentalControl.Core\obj\Debug\net10.0\refint\ParentalControl.Core.dll
+C:\Users\humph\ParentalControl\ParentalControl.Core\obj\Debug\net10.0\ParentalControl.Core.pdb
+C:\Users\humph\ParentalControl\ParentalControl.Core\obj\Debug\net10.0\ParentalControl.Core.genruntimeconfig.cache
+C:\Users\humph\ParentalControl\ParentalControl.Core\obj\Debug\net10.0\ref\ParentalControl.Core.dll

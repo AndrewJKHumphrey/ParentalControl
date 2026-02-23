@@ -1,0 +1,91 @@
+<Page x:Class="ParentalControl.UI.Views.SettingsPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Background="#1E1E2E" Title="Settings">
+    <ScrollViewer>
+        <StackPanel Margin="32" MaxWidth="480">
+            <TextBlock Text="Settings" FontSize="24" FontWeight="Bold"
+                       Foreground="#CDD6F4" Margin="0,0,0,32"/>
+
+            <!-- Change password -->
+            <Border Background="#313244" CornerRadius="8" Padding="20" Margin="0,0,0,24">
+                <StackPanel>
+                    <TextBlock Text="Change Parent Password" Foreground="#CDD6F4"
+                               FontSize="16" FontWeight="SemiBold" Margin="0,0,0,16"/>
+
+                    <TextBlock Text="Current password:" Foreground="#A6ADC8" Margin="0,0,0,4"/>
+                    <PasswordBox x:Name="CurrentPasswordBox" Height="36" Margin="0,0,0,12"
+                                 Background="#1E1E2E" Foreground="#CDD6F4"
+                                 BorderBrush="#585B70" BorderThickness="1" Padding="8,4"/>
+
+                    <TextBlock Text="New password:" Foreground="#A6ADC8" Margin="0,0,0,4"/>
+                    <PasswordBox x:Name="NewPasswordBox" Height="36" Margin="0,0,0,12"
+                                 Background="#1E1E2E" Foreground="#CDD6F4"
+                                 BorderBrush="#585B70" BorderThickness="1" Padding="8,4"/>
+
+                    <TextBlock Text="Confirm new password:" Foreground="#A6ADC8" Margin="0,0,0,4"/>
+                    <PasswordBox x:Name="ConfirmPasswordBox" Height="36" Margin="0,0,0,16"
+                                 Background="#1E1E2E" Foreground="#CDD6F4"
+                                 BorderBrush="#585B70" BorderThickness="1" Padding="8,4"/>
+
+                    <Button Content="Change Password" Height="36" Width="180" HorizontalAlignment="Left"
+                            Background="#89B4FA" Foreground="#1E1E2E" FontWeight="Bold"
+                            BorderThickness="0" Cursor="Hand" Click="ChangePassword_Click"/>
+
+                    <TextBlock x:Name="PwdStatus" Margin="0,10,0,0" TextWrapping="Wrap"
+                               Visibility="Collapsed"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Child account options -->
+            <Border Background="#313244" CornerRadius="8" Padding="20" Margin="0,0,0,24">
+                <StackPanel>
+                    <TextBlock Text="Child Account" Foreground="#CDD6F4"
+                               FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
+
+                    <CheckBox x:Name="ChildHasPasswordBox"
+                              Content="Child account is protected by a password"
+                              Foreground="#CDD6F4" Margin="0,0,0,8"
+                              Checked="ChildHasPassword_Changed"
+                              Unchecked="ChildHasPassword_Changed"/>
+
+                    <TextBlock TextWrapping="Wrap" Foreground="#A6ADC8" FontSize="12"
+                               Text="When checked, screen lock triggers once per violation and stops retrying — the password keeps the child out. When unchecked, the service disconnects the session every few seconds until allowed hours resume."/>
+                </StackPanel>
+            </Border>
+
+            <!-- Lock delay -->
+            <Border Background="#313244" CornerRadius="8" Padding="20" Margin="0,0,0,24">
+                <StackPanel>
+                    <TextBlock Text="Lock Delay" Foreground="#CDD6F4"
+                               FontSize="16" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                    <TextBlock TextWrapping="Wrap" Foreground="#A6ADC8" FontSize="12" Margin="0,0,0,12"
+                               Text="How long a violation must persist before the screen is locked. Gives the admin time to stop the service if needed."/>
+
+                    <Slider x:Name="LockDelaySlider" Minimum="20" Maximum="180" TickFrequency="10"
+                            IsSnapToTickEnabled="True" SmallChange="10" LargeChange="30"
+                            Value="120" Margin="0,0,0,8"
+                            ValueChanged="LockDelaySlider_ValueChanged"/>
+
+                    <TextBlock x:Name="LockDelayLabel" Foreground="#CDD6F4" FontSize="13"
+                               Text="2 min 0 sec"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Service info -->
+            <Border Background="#313244" CornerRadius="8" Padding="20">
+                <StackPanel>
+                    <TextBlock Text="Service Information" Foreground="#CDD6F4"
+                               FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                    <TextBlock Text="The ParentalControlService Windows Service must be running for enforcement to work."
+                               Foreground="#A6ADC8" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                    <TextBlock Text="To install/start manually, run as Administrator:" Foreground="#A6ADC8" Margin="0,0,0,6"/>
+                    <Border Background="#1E1E2E" Padding="10" CornerRadius="4">
+                        <TextBlock Text="install.ps1  (run with PowerShell as Administrator)"
+                                   Foreground="#89B4FA" FontFamily="Consolas" FontSize="12"/>
+                    </Border>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>
