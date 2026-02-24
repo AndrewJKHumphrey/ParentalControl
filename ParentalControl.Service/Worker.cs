@@ -62,6 +62,7 @@ public class Worker : BackgroundService
         _activityLogger?.Log(ActivityType.ServiceStopped, "ParentalControl service stopped");
         _activityLogger?.Flush();
         _ipcServer?.Dispose();
+        _websiteFilter?.Dispose();
         _activityLogger?.Dispose();
         _log.LogInformation("ParentalControl service stopped.");
         await base.StopAsync(ct);
@@ -73,6 +74,23 @@ public class Worker : BackgroundService
         {
             using var db = new AppDbContext();
             db.Database.EnsureCreated();
+
+            // Add columns introduced after initial release (safe on existing DBs)
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ChildAccountHasPassword INTEGER NOT NULL DEFAULT 0"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN TimeFormat12Hour INTEGER NOT NULL DEFAULT 0"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN EnforceForAdmins INTEGER NOT NULL DEFAULT 1"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN AppTheme TEXT NOT NULL DEFAULT 'Default'"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN IsAllowMode INTEGER NOT NULL DEFAULT 0"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE WebsiteRules ADD COLUMN IsAllowed INTEGER NOT NULL DEFAULT 0"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ScreenTimeEnabled INTEGER NOT NULL DEFAULT 1"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN AppControlEnabled INTEGER NOT NULL DEFAULT 1"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN WebFilterEnabled INTEGER NOT NULL DEFAULT 1"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ThemeIsDark INTEGER NOT NULL DEFAULT 1"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN IsAdminSession INTEGER NOT NULL DEFAULT 0"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN AdminSessionId INTEGER NOT NULL DEFAULT -1"); } catch { }
+
+            // Clear any stale admin-session flag left by a previous UI crash
+            try { db.Database.ExecuteSqlRaw("UPDATE Settings SET IsAdminSession = 0, AdminSessionId = -1"); } catch { }
         }
         catch (Exception ex)
         {

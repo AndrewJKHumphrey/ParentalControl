@@ -40,7 +40,7 @@ public partial class ScreenTimePage : Page
             if (settings?.TimeFormat12Hour == true)
             {
                 _use12h = true;
-                Format12h.IsChecked = true; // fires TimeFormat_Changed but guard is false
+                Format12hToggle.IsChecked = true; // fires TimeFormat_Changed but guard is false
             }
         }
         catch { }
@@ -129,7 +129,7 @@ public partial class ScreenTimePage : Page
     {
         if (!_formatsInitialized) return;
 
-        _use12h = Format12h.IsChecked == true;
+        _use12h = Format12hToggle.IsChecked == true;
 
         // Persist preference
         try

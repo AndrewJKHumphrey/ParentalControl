@@ -39,9 +39,12 @@ public partial class SettingsPage : Page
                 ChildHasPasswordBox.IsChecked = settings.ChildAccountHasPassword;
                 EnforceForAdminsBox.IsChecked = settings.EnforceForAdmins;
 
+                DarkModeToggle.IsChecked = settings.ThemeIsDark;
+
+                var themeName = settings.AppTheme;
                 foreach (ComboBoxItem item in ThemeBox.Items)
                 {
-                    if (item.Content?.ToString() == settings.AppTheme)
+                    if (item.Content?.ToString() == themeName)
                     {
                         ThemeBox.SelectedItem = item;
                         break;
@@ -87,10 +90,22 @@ public partial class SettingsPage : Page
     private void ThemeBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (!_loaded) return;
-        if (ThemeBox.SelectedItem is not ComboBoxItem item) return;
+        ApplyAndSaveTheme();
+    }
 
-        var name = item.Content?.ToString() ?? "Dark";
-        App.ApplyTheme(name);
+    private void DarkMode_Changed(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded) return;
+        ApplyAndSaveTheme();
+    }
+
+    private void ApplyAndSaveTheme()
+    {
+        if (ThemeBox.SelectedItem is not ComboBoxItem item) return;
+        var name = item.Content?.ToString() ?? "Default";
+        bool isDark = DarkModeToggle.IsChecked == true;
+
+        App.ApplyTheme(name, isDark);
 
         try
         {
@@ -98,6 +113,7 @@ public partial class SettingsPage : Page
             var settings = db.Settings.FirstOrDefault();
             if (settings == null) return;
             settings.AppTheme = name;
+            settings.ThemeIsDark = isDark;
             db.SaveChanges();
         }
         catch { }

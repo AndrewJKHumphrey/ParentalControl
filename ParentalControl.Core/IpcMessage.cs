@@ -4,6 +4,7 @@ public enum IpcCommand
 {
     GetStatus,
     ReloadRules,
+    ReloadWebFilter,
     LockNow,
     Unlock
 }

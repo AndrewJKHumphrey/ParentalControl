@@ -18,13 +18,6 @@ public class ScreenTimeEnforcer
     [DllImport("wtsapi32.dll")]
     private static extern void WTSFreeMemory(IntPtr pMemory);
 
-    [DllImport("wtsapi32.dll", SetLastError = true)]
-    private static extern bool WTSQueryUserToken(uint sessionId, out IntPtr phToken);
-
-    [DllImport("kernel32.dll", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool CloseHandle(IntPtr hObject);
-
     [DllImport("wtsapi32.dll", CharSet = CharSet.Unicode)]
     private static extern bool WTSSendMessage(
         IntPtr hServer, int sessionId,
@@ -87,12 +80,19 @@ public class ScreenTimeEnforcer
 
             db.SaveChanges();
 
+            // Skip enforcement if Screen Time is disabled from the dashboard
+            if (!settings.ScreenTimeEnabled) return;
+
             // Enforce limits only if enabled for today
             var limit = db.ScreenTimeLimits.FirstOrDefault(l => l.DayOfWeek == now.DayOfWeek);
             if (limit == null || !limit.IsEnabled) return;
 
-            // Skip enforcement if the setting says not to enforce for admin accounts
-            if (!settings.EnforceForAdmins && IsActiveUserAdmin()) return;
+            // Skip enforcement if the setting says not to enforce for admin accounts.
+            // IsAdminSession is set by the UI (which runs in the user's context) on login,
+            // and matched against the active console session ID to handle fast user switching.
+            if (!settings.EnforceForAdmins
+                && settings.IsAdminSession
+                && settings.AdminSessionId == SessionHelper.GetActiveConsoleSessionId()) return;
 
             var currentTime = TimeOnly.FromDateTime(now);
 
@@ -218,28 +218,4 @@ public class ScreenTimeEnforcer
         return true; // assume user is logged in if query fails — better to try locking than miss
     }
 
-    // Returns true if the user logged into the active console session is a local administrator.
-    // The service runs as SYSTEM which has the SE_TCB_NAME privilege required by WTSQueryUserToken.
-    private static bool IsActiveUserAdmin()
-    {
-        var sessionId = WTSGetActiveConsoleSessionId();
-        if (sessionId == 0xFFFFFFFF) return false;
-
-        if (!WTSQueryUserToken(sessionId, out var userToken)) return false;
-
-        try
-        {
-            using var identity = new WindowsIdentity(userToken);
-            var principal = new WindowsPrincipal(identity);
-            return principal.IsInRole(WindowsBuiltInRole.Administrator);
-        }
-        catch
-        {
-            return false;
-        }
-        finally
-        {
-            CloseHandle(userToken);
-        }
-    }
 }

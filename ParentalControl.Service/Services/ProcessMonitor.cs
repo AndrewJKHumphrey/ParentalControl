@@ -34,6 +34,18 @@ public class ProcessMonitor
 
     public void EnforceRules()
     {
+        // Check settings before enforcing
+        try
+        {
+            using var db = new AppDbContext();
+            var settings = db.Settings.FirstOrDefault();
+            if (settings != null && !settings.AppControlEnabled) return;
+            if (settings != null && !settings.EnforceForAdmins
+                && settings.IsAdminSession
+                && settings.AdminSessionId == SessionHelper.GetActiveConsoleSessionId()) return;
+        }
+        catch { }
+
         HashSet<string> blocked;
         lock (_rulesLock)
         {

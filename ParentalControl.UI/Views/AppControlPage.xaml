@@ -19,20 +19,20 @@
         <!-- Add new rule -->
         <Grid Grid.Row="2" Margin="0,0,0,16">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <StackPanel Grid.Column="0" Margin="0,0,8,0">
                 <TextBlock Text="Display Name" Foreground="{DynamicResource TextSecondary}" FontSize="12" Margin="0,0,0,4"/>
-                <TextBox x:Name="DisplayNameBox" Height="36" Width="200"
+                <TextBox x:Name="DisplayNameBox" Height="36"
                          Background="{DynamicResource CardBg}" Foreground="{DynamicResource TextPrimary}"
                          BorderBrush="{DynamicResource BorderColor}" BorderThickness="1"
                          Padding="8,4" FontSize="13"/>
             </StackPanel>
             <StackPanel Grid.Column="1" Margin="0,0,8,0">
                 <TextBlock Text="Process Name (e.g. chrome, notepad)" Foreground="{DynamicResource TextSecondary}" FontSize="12" Margin="0,0,0,4"/>
-                <TextBox x:Name="ProcessNameBox" Height="36" Width="200"
+                <TextBox x:Name="ProcessNameBox" Height="36"
                          Background="{DynamicResource CardBg}" Foreground="{DynamicResource TextPrimary}"
                          BorderBrush="{DynamicResource BorderColor}" BorderThickness="1"
                          Padding="8,4" FontSize="13"/>
@@ -49,10 +49,11 @@
                       Background="Transparent" Foreground="{DynamicResource TextPrimary}"
                       BorderThickness="0" GridLinesVisibility="None"
                       HeadersVisibility="Column" IsReadOnly="False"
+                      CanUserAddRows="False" CanUserDeleteRows="False"
                       RowBackground="Transparent" AlternatingRowBackground="{DynamicResource AltRowBg}">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Display Name" Binding="{Binding DisplayName}" Width="200"/>
-                    <DataGridTextColumn Header="Process Name" Binding="{Binding ProcessName}" Width="200"/>
+                    <DataGridTextColumn Header="Display Name" Binding="{Binding DisplayName}" Width="*"/>
+                    <DataGridTextColumn Header="Process Name" Binding="{Binding ProcessName}" Width="*"/>
                     <DataGridCheckBoxColumn Header="Blocked" Binding="{Binding IsBlocked}" Width="80"/>
                     <DataGridTemplateColumn Header="Remove" Width="80">
                         <DataGridTemplateColumn.CellTemplate>

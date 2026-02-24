@@ -29,13 +29,16 @@
                 <Button Style="{StaticResource NavButton}" Content="  Settings"
                         Tag="Settings" Click="NavButton_Click"/>
                 
-                <!-- Line Color needs to be in theme-->
-                <Line X1="10" Y1="10" X2="175" Y2="10" Stroke="Gray" StrokeThickness="1" Margin="0,0,0,24"/>
+                <Rectangle Height="1" Fill="{DynamicResource BorderColor}" Margin="10,4,10,16"/>
 
-                <TextBlock Text="Service Status: " FontSize="16" Foreground="{DynamicResource TextSecondary}" FontWeight="Bold" Margin="40,0,0,10"/>
-                <TextBlock x:Name="ServiceStatusText" Text="Checking..." Foreground="#A6E3A1" FontSize="18" FontWeight="Bold" Margin="60,0,0,0"/>
-                
-                <Button x:Name="ServiceButton" Content="Shutdown Service" Margin="12,10,12,0"
+                <StackPanel Margin="20,0,12,12">
+                    <TextBlock Text="Service Status" FontSize="11"
+                               Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,4"/>
+                    <TextBlock x:Name="ServiceStatusText" Text="Checking..."
+                               Foreground="#A6E3A1" FontSize="14" FontWeight="Bold"/>
+                </StackPanel>
+
+                <Button x:Name="ServiceButton" Content="Shutdown Service" Margin="12,0,12,0"
                         Height="36" Background="#FAB387" Foreground="#1E1E2E"
                         FontWeight="Bold" BorderThickness="0" Cursor="Hand"
                         Click="ServiceButton_Click"/>

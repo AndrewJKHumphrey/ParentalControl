@@ -70,6 +70,10 @@ public class IpcServer : IDisposable
                     _websiteFilter.LoadRules();
                     return new IpcResponse { Success = true };
 
+                case IpcCommand.ReloadWebFilter:
+                    _websiteFilter.SyncAndRestartBrowsers();
+                    return new IpcResponse { Success = true };
+
                 case IpcCommand.LockNow:
                     SessionLock.LockActive();
                     _logger.Log(Core.Models.ActivityType.ScreenLocked, "Manual lock by parent");

@@ -75,13 +75,23 @@
 
                     <TextBlock Text="Theme:" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,8"/>
                     <ComboBox x:Name="ThemeBox" Width="200" Height="32" HorizontalAlignment="Left"
-                              SelectionChanged="ThemeBox_SelectionChanged">
-                        <ComboBoxItem Content="Dark"/>
-                        <ComboBoxItem Content="Light"/>
+                              SelectionChanged="ThemeBox_SelectionChanged" Margin="0,0,0,16">
+                        <ComboBoxItem Content="Default"/>
                         <ComboBoxItem Content="Red"/>
                         <ComboBoxItem Content="Blue"/>
                         <ComboBoxItem Content="Green"/>
+                        <ComboBoxItem Content="Lime"/>
+                        <ComboBoxItem Content="Teal"/>
+                        <ComboBoxItem Content="Purple"/>
+                        <ComboBoxItem Content="Orange"/>
+                        <ComboBoxItem Content="Yellow"/>
+                        <ComboBoxItem Content="Cyan"/>
+                        <ComboBoxItem Content="Pink"/>
+                        <ComboBoxItem Content="Rocket Pop"/>
                     </ComboBox>
+                    <CheckBox x:Name="DarkModeToggle" Content="Dark Mode"
+                              Style="{StaticResource ToggleSwitch}"
+                              Checked="DarkMode_Changed" Unchecked="DarkMode_Changed"/>
                 </StackPanel>
             </Border>
 
