@@ -117,8 +117,8 @@
 
             <!-- ── Web Filter ─────────────────────────────────────────────── -->
             <TextBlock Text="Web Filter" FontSize="15" FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"/>
-            <WrapPanel Margin="0,0,0,16">
+                       Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8" Visibility="Collapsed"/>
+            <WrapPanel Margin="0,0,0,16" Visibility="Collapsed">
                 <Border Style="{StaticResource StatCard}">
                     <StackPanel>
                         <TextBlock Text="Websites Blocked Today" Foreground="{DynamicResource TextSecondary}" FontSize="12"/>
@@ -164,7 +164,7 @@
                                 <TextBlock Text="On" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="8,0,0,0" FontSize="13"/>
                             </StackPanel>
                         </StackPanel>
-                        <StackPanel>
+                        <StackPanel Visibility="Collapsed">
                             <TextBlock Text="Website Filter"
                                        Foreground="{DynamicResource TextSecondary}" FontSize="12" Margin="0,0,0,4"/>
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">

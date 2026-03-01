@@ -250,3 +250,7 @@ C:\Users\humph\ParentalControl\ParentalControl.Service\obj\Release\net10.0-windo
 C:\Users\humph\ParentalControl\ParentalControl.Service\obj\Release\net10.0-windows\win-x64\ParentalControl.Service.genruntimeconfig.cache
 C:\Users\humph\ParentalControl\ParentalControl.Service\obj\Release\net10.0-windows\win-x64\ref\ParentalControl.Service.dll
 C:\Users\humph\ParentalControl\ParentalControl.Service\obj\Release\net10.0-windows\win-x64\ParentalControl.Service.sourcelink.json
+C:\Users\humph\ParentalControl\ParentalControl.Service\bin\Release\net10.0-windows\win-x64\BouncyCastle.Cryptography.dll
+C:\Users\humph\ParentalControl\ParentalControl.Service\bin\Release\net10.0-windows\win-x64\MailKit.dll
+C:\Users\humph\ParentalControl\ParentalControl.Service\bin\Release\net10.0-windows\win-x64\MimeKit.dll
+C:\Users\humph\ParentalControl\ParentalControl.Service\bin\Release\net10.0-windows\win-x64\System.Security.Cryptography.Pkcs.dll

@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using ParentalControl.Core.Data;
+using ParentalControl.Core.Services;
 
 namespace ParentalControl.UI.Views;
 
@@ -32,6 +33,36 @@ public partial class SettingsPage : Page
                 DarkModeToggle.IsChecked = settings.ThemeIsDark;
                 DebugStopServiceToggle.IsChecked = settings.DebugStopServiceAfterLock;
                 DebugAppTimeOverrideToggle.IsChecked = settings.DebugAppTimeOverride;
+
+                // Notifications
+                NotificationsEnabledToggle.IsChecked = settings.NotificationsEnabled;
+                ModeEmailRadio.IsChecked             = settings.NotificationMode == 0;
+                ModeTextRadio.IsChecked              = settings.NotificationMode == 1;
+                EmailDestPanel.Visibility            = settings.NotificationMode == 0
+                                                       ? Visibility.Visible : Visibility.Collapsed;
+                TextDestPanel.Visibility             = settings.NotificationMode == 1
+                                                       ? Visibility.Visible : Visibility.Collapsed;
+                NotificationAddressBox.Text          = settings.NotificationMode == 0 ? settings.NotificationAddress : string.Empty;
+                PhoneNumberBox.Text                  = settings.PhoneNumber;
+
+                // Select saved carrier
+                CarrierBox.SelectedIndex = 0;
+                foreach (System.Windows.Controls.ComboBoxItem ci in CarrierBox.Items)
+                {
+                    if (ci.Tag?.ToString() == settings.CarrierGateway)
+                    { CarrierBox.SelectedItem = ci; break; }
+                }
+
+                SmtpUsernameBox.Text             = settings.SmtpUsername;
+                SmtpPasswordBox.Password         = settings.SmtpPassword;
+                SmtpHostBox.Text                 = settings.SmtpHost;
+                SmtpPortBox.Text                 = settings.SmtpPort.ToString();
+                SmtpSslToggle.IsChecked          = settings.SmtpUseSsl;
+                NotifyScreenLockToggle.IsChecked = settings.NotifyOnScreenLock;
+                NotifyAppBlockToggle.IsChecked   = settings.NotifyOnAppBlock;
+
+                // Show auto-detect hint if SMTP was already configured
+                ShowSmtpHint(settings.SmtpUsername);
 
                 var themeName = settings.AppTheme;
                 foreach (ComboBoxItem item in ThemeBox.Items)
@@ -319,5 +350,156 @@ public partial class SettingsPage : Page
             db.SaveChanges();
         }
         catch { }
+    }
+
+    // -------------------------------------------------------------------------
+    // Notification handlers
+    // -------------------------------------------------------------------------
+
+    private void Notifications_Changed(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded) return;
+        SaveNotificationSettings();
+    }
+
+    private void NotifyMode_Changed(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded) return;
+        bool isEmail = ModeEmailRadio.IsChecked == true;
+        EmailDestPanel.Visibility = isEmail ? Visibility.Visible : Visibility.Collapsed;
+        TextDestPanel.Visibility  = isEmail ? Visibility.Collapsed : Visibility.Visible;
+        SaveNotificationSettings();
+    }
+
+    private void NotificationAddress_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded) return;
+        SaveNotificationSettings();
+    }
+
+    private void PhoneNumber_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded) return;
+        SaveNotificationSettings();
+    }
+
+    private void Carrier_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_loaded) return;
+        SaveNotificationSettings();
+    }
+
+    private void SmtpEmail_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded) return;
+        ShowSmtpHint(SmtpUsernameBox.Text);
+        SaveNotificationSettings();
+    }
+
+    private void SmtpPassword_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded) return;
+        SaveNotificationSettings();
+    }
+
+    private void AdvancedSmtp_Changed(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded) return;
+        SaveNotificationSettings();
+    }
+
+    private void ShowSmtpHint(string email)
+    {
+        var detected = TryDetectSmtp(email);
+        if (detected.HasValue)
+        {
+            var (host, port, ssl, name) = detected.Value;
+            // Auto-fill the advanced SMTP fields
+            SmtpHostBox.Text        = host;
+            SmtpPortBox.Text        = port.ToString();
+            SmtpSslToggle.IsChecked = ssl;
+            SmtpAutoDetectHint.Text = $"Auto-detected: {name} ({host}:{port}, SSL {(ssl ? "On" : "Off")})";
+            SmtpAutoDetectHint.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            SmtpAutoDetectHint.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private static (string host, int port, bool ssl, string name)? TryDetectSmtp(string email)
+    {
+        if (!email.Contains('@')) return null;
+        var domain = email.Split('@')[1].Trim().ToLowerInvariant();
+        return domain switch
+        {
+            "gmail.com" or "googlemail.com"
+                => ("smtp.gmail.com", 587, true, "Gmail"),
+            "outlook.com" or "hotmail.com" or "live.com" or "msn.com" or "windowslive.com"
+                => ("smtp-mail.outlook.com", 587, true, "Outlook / Hotmail"),
+            "yahoo.com" or "yahoo.co.uk" or "ymail.com"
+                => ("smtp.mail.yahoo.com", 587, true, "Yahoo"),
+            "icloud.com" or "me.com" or "mac.com"
+                => ("smtp.mail.me.com", 587, true, "iCloud"),
+            _ => null
+        };
+    }
+
+    private void SaveNotificationSettings()
+    {
+        try
+        {
+            using var db = new AppDbContext();
+            var settings = db.Settings.FirstOrDefault();
+            if (settings == null) return;
+
+            settings.NotificationsEnabled = NotificationsEnabledToggle.IsChecked == true;
+            settings.NotificationMode     = ModeEmailRadio.IsChecked == true ? 0 : 1;
+            settings.PhoneNumber          = PhoneNumberBox.Text.Trim();
+
+            // Compute carrier gateway from selected item's Tag
+            var carrierGateway = string.Empty;
+            if (CarrierBox.SelectedItem is System.Windows.Controls.ComboBoxItem ci)
+                carrierGateway = ci.Tag?.ToString() ?? string.Empty;
+            settings.CarrierGateway = carrierGateway;
+
+            // Final delivery address
+            settings.NotificationAddress = settings.NotificationMode == 0
+                ? NotificationAddressBox.Text.Trim()
+                : (string.IsNullOrWhiteSpace(settings.PhoneNumber) || string.IsNullOrWhiteSpace(carrierGateway)
+                    ? string.Empty
+                    : $"{settings.PhoneNumber}@{carrierGateway}");
+
+            settings.SmtpUsername       = SmtpUsernameBox.Text.Trim();
+            settings.SmtpPassword       = SmtpPasswordBox.Password;
+            settings.SmtpHost           = SmtpHostBox.Text.Trim();
+            settings.SmtpPort           = int.TryParse(SmtpPortBox.Text, out var port) ? port : 587;
+            settings.SmtpUseSsl         = SmtpSslToggle.IsChecked == true;
+            settings.NotifyOnScreenLock = NotifyScreenLockToggle.IsChecked == true;
+            settings.NotifyOnAppBlock   = NotifyAppBlockToggle.IsChecked == true;
+
+            db.SaveChanges();
+        }
+        catch { }
+    }
+
+    private async void TestNotification_Click(object sender, RoutedEventArgs e)
+    {
+        SaveNotificationSettings();
+
+        TestNotificationButton.IsEnabled = false;
+        TestNotificationButton.Content   = "Sending...";
+        NotificationStatus.Visibility    = Visibility.Collapsed;
+
+        var notifier = new NotificationService();
+        var (success, message) = await Task.Run(() => notifier.SendTest());
+
+        NotificationStatus.Text       = message;
+        NotificationStatus.Foreground = success
+            ? new SolidColorBrush(Color.FromRgb(166, 227, 161))
+            : new SolidColorBrush(Color.FromRgb(243, 139, 168));
+        NotificationStatus.Visibility    = Visibility.Visible;
+        TestNotificationButton.IsEnabled = true;
+        TestNotificationButton.Content   = "Send Test Notification";
     }
 }

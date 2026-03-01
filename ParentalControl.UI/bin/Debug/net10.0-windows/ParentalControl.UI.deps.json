@@ -23,6 +23,25 @@
           }
         }
       },
+      "BouncyCastle.Cryptography/2.6.2": {
+        "runtime": {
+          "lib/net6.0/BouncyCastle.Cryptography.dll": {
+            "assemblyVersion": "2.0.0.0",
+            "fileVersion": "2.6.2.46322"
+          }
+        }
+      },
+      "MailKit/4.15.0": {
+        "dependencies": {
+          "MimeKit": "4.15.0"
+        },
+        "runtime": {
+          "lib/net10.0/MailKit.dll": {
+            "assemblyVersion": "4.15.0.0",
+            "fileVersion": "4.15.0.0"
+          }
+        }
+      },
       "Microsoft.Data.Sqlite.Core/10.0.3": {
         "dependencies": {
           "SQLitePCLRaw.core": "2.1.11"
@@ -205,6 +224,17 @@
           }
         }
       },
+      "MimeKit/4.15.0": {
+        "dependencies": {
+          "BouncyCastle.Cryptography": "2.6.2"
+        },
+        "runtime": {
+          "lib/net10.0/MimeKit.dll": {
+            "assemblyVersion": "4.15.0.0",
+            "fileVersion": "4.15.0.0"
+          }
+        }
+      },
       "SQLitePCLRaw.bundle_e_sqlite3/2.1.11": {
         "dependencies": {
           "SQLitePCLRaw.lib.e_sqlite3": "2.1.11",
@@ -374,6 +404,7 @@
       "ParentalControl.Core/1.0.0": {
         "dependencies": {
           "BCrypt.Net-Next": "4.1.0",
+          "MailKit": "4.15.0",
           "Microsoft.EntityFrameworkCore.Sqlite": "10.0.3"
         },
         "runtime": {
@@ -397,6 +428,20 @@
       "sha512": "sha512-5YT3DKllmtkyW68PjURu/V1TOe4MKiByKwsRNVcfYE1S5KuFTeozdmKzyNzolKiQF391OXCaQtINvYT3j1ERzQ==",
       "path": "bcrypt.net-next/4.1.0",
       "hashPath": "bcrypt.net-next.4.1.0.nupkg.sha512"
+    },
+    "BouncyCastle.Cryptography/2.6.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-7oWOcvnntmMKNzDLsdxAYqApt+AjpRpP2CShjMfIa3umZ42UQMvH0tl1qAliYPNYO6vTdcGMqnRrCPmsfzTI1w==",
+      "path": "bouncycastle.cryptography/2.6.2",
+      "hashPath": "bouncycastle.cryptography.2.6.2.nupkg.sha512"
+    },
+    "MailKit/4.15.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-PM3bNDLwmK2hdiTx8xkTLRMRf9Y0VuirdyHWsrlSlz9hrME0lFkt/rF/9xlK/AtVML86BlS07pEPqo43Cmptbg==",
+      "path": "mailkit/4.15.0",
+      "hashPath": "mailkit.4.15.0.nupkg.sha512"
     },
     "Microsoft.Data.Sqlite.Core/10.0.3": {
       "type": "package",
@@ -509,6 +554,13 @@
       "sha512": "sha512-GEcpTwo7sUoLGGNTqV1FZEuL+tTD9m81NX/mh099dqGNna07/UGZShKQNZRw4hv6nlliSUwYQgSYc7OR99Jufg==",
       "path": "microsoft.extensions.primitives/10.0.3",
       "hashPath": "microsoft.extensions.primitives.10.0.3.nupkg.sha512"
+    },
+    "MimeKit/4.15.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-+KVUJwHIp1aVPyVjcadAH1M9QkAwLflLujzySAS4N//AqSYjD+wMo2a3PkYu5XDibSuhlAg5sIh/DVNwVNGiVw==",
+      "path": "mimekit/4.15.0",
+      "hashPath": "mimekit.4.15.0.nupkg.sha512"
     },
     "SQLitePCLRaw.bundle_e_sqlite3/2.1.11": {
       "type": "package",

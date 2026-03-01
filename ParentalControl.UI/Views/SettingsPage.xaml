@@ -69,6 +69,140 @@
                 </StackPanel>
             </Border>
 
+            <!-- Notifications -->
+            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="20" Margin="0,0,0,24">
+                <StackPanel>
+                    <TextBlock Text="Notifications" Foreground="{DynamicResource TextPrimary}"
+                               FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
+
+                    <!-- Master toggle -->
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,16">
+                        <TextBlock Text="Off" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13"/>
+                        <CheckBox x:Name="NotificationsEnabledToggle" Style="{StaticResource ToggleSwitch}"
+                                  Checked="Notifications_Changed" Unchecked="Notifications_Changed"/>
+                        <TextBlock Text="On" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="8,0,0,0" FontSize="13"/>
+                    </StackPanel>
+
+                    <!-- Delivery mode -->
+                    <TextBlock Text="Notify via:" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,8"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                        <RadioButton x:Name="ModeEmailRadio" Content="Email" GroupName="NotifyMode"
+                                     Foreground="{DynamicResource TextPrimary}" Margin="0,0,20,0"
+                                     Checked="NotifyMode_Changed"/>
+                        <RadioButton x:Name="ModeTextRadio" Content="Text message" GroupName="NotifyMode"
+                                     Foreground="{DynamicResource TextPrimary}"
+                                     Checked="NotifyMode_Changed"/>
+                    </StackPanel>
+
+                    <!-- Email destination -->
+                    <StackPanel x:Name="EmailDestPanel" Margin="0,0,0,16">
+                        <TextBlock Text="Recipient email address:" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,4"/>
+                        <TextBox x:Name="NotificationAddressBox" Height="36"
+                                 Background="{DynamicResource AppBg}" Foreground="{DynamicResource TextPrimary}"
+                                 BorderBrush="{DynamicResource BorderColor}" BorderThickness="1" Padding="8,4"
+                                 LostFocus="NotificationAddress_LostFocus"/>
+                    </StackPanel>
+
+                    <!-- Text message destination -->
+                    <StackPanel x:Name="TextDestPanel" Visibility="Collapsed" Margin="0,0,0,16">
+                        <TextBlock Text="Phone number (10 digits, no spaces or dashes):" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,4"/>
+                        <TextBox x:Name="PhoneNumberBox" Height="36"
+                                 Background="{DynamicResource AppBg}" Foreground="{DynamicResource TextPrimary}"
+                                 BorderBrush="{DynamicResource BorderColor}" BorderThickness="1" Padding="8,4"
+                                 LostFocus="PhoneNumber_LostFocus"/>
+                        <TextBlock Text="Carrier:" Foreground="{DynamicResource TextSecondary}" Margin="0,8,0,4"/>
+                        <ComboBox x:Name="CarrierBox" Height="36" HorizontalAlignment="Left" MinWidth="220"
+                                  SelectionChanged="Carrier_SelectionChanged">
+                            <ComboBoxItem Content="Verizon"           Tag="vtext.com"/>
+                            <ComboBoxItem Content="T-Mobile"          Tag="tmomail.net"/>
+                            <ComboBoxItem Content="US Cellular"       Tag="email.uscc.net"/>
+                            <ComboBoxItem Content="Cricket Wireless"  Tag="sms.cricketwireless.net"/>
+                            <ComboBoxItem Content="Boost Mobile"      Tag="sms.myboostmobile.com"/>
+                            <ComboBoxItem Content="Metro by T-Mobile" Tag="mymetropcs.com"/>
+                            <ComboBoxItem Content="Google Fi"         Tag="msg.fi.google.com"/>
+                            <ComboBoxItem Content="Republic Wireless" Tag="text.republicwireless.com"/>
+                        </ComboBox>
+                    </StackPanel>
+
+                    <!-- Separator -->
+                    <Rectangle Height="1" Fill="{DynamicResource BorderColor}" Margin="0,0,0,16"/>
+
+                    <!-- Sending account -->
+                    <TextBlock Text="Sending Account" Foreground="{DynamicResource TextPrimary}"
+                               FontWeight="SemiBold" Margin="0,0,0,12"/>
+
+                    <TextBlock Text="Your email address (used to send the notification):" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,4"/>
+                    <TextBox x:Name="SmtpUsernameBox" Height="36" Margin="0,0,0,4"
+                             Background="{DynamicResource AppBg}" Foreground="{DynamicResource TextPrimary}"
+                             BorderBrush="{DynamicResource BorderColor}" BorderThickness="1" Padding="8,4"
+                             LostFocus="SmtpEmail_LostFocus"/>
+                    <TextBlock x:Name="SmtpAutoDetectHint" Foreground="#A6E3A1" FontSize="11"
+                               Margin="0,0,0,8" Visibility="Collapsed" TextWrapping="Wrap"/>
+
+                    <TextBlock Text="Password / App Password:" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,4"/>
+                    <PasswordBox x:Name="SmtpPasswordBox" Height="36" Margin="0,0,0,4"
+                                 Background="{DynamicResource AppBg}" Foreground="{DynamicResource TextPrimary}"
+                                 BorderBrush="{DynamicResource BorderColor}" BorderThickness="1" Padding="8,4"
+                                 LostFocus="SmtpPassword_LostFocus"/>
+                    <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextSecondary}" FontSize="11" Margin="0,0,0,12"
+                               Text="Gmail and Yahoo require an App Password — search 'Gmail App Password' or 'Yahoo App Password' to create one. Outlook works with your regular password."/>
+
+                    <!-- Advanced SMTP (hidden by default) -->
+                    <Expander Header="Advanced SMTP Settings" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,16">
+                        <StackPanel Margin="0,12,0,0">
+                            <TextBlock Text="SMTP Server:" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,4"/>
+                            <TextBox x:Name="SmtpHostBox" Height="36" Margin="0,0,0,8"
+                                     Background="{DynamicResource AppBg}" Foreground="{DynamicResource TextPrimary}"
+                                     BorderBrush="{DynamicResource BorderColor}" BorderThickness="1" Padding="8,4"
+                                     LostFocus="AdvancedSmtp_Changed"/>
+                            <StackPanel Orientation="Horizontal">
+                                <StackPanel Margin="0,0,16,0">
+                                    <TextBlock Text="Port:" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,4"/>
+                                    <TextBox x:Name="SmtpPortBox" Width="80" Height="36"
+                                             Background="{DynamicResource AppBg}" Foreground="{DynamicResource TextPrimary}"
+                                             BorderBrush="{DynamicResource BorderColor}" BorderThickness="1" Padding="8,4"
+                                             LostFocus="AdvancedSmtp_Changed"/>
+                                </StackPanel>
+                                <StackPanel VerticalAlignment="Bottom">
+                                    <TextBlock Text="SSL/TLS" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,4"/>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="Off" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13"/>
+                                        <CheckBox x:Name="SmtpSslToggle" Style="{StaticResource ToggleSwitch}"
+                                                  Checked="AdvancedSmtp_Changed" Unchecked="AdvancedSmtp_Changed"/>
+                                        <TextBlock Text="On" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="8,0,0,0" FontSize="13"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </Expander>
+
+                    <!-- Separator -->
+                    <Rectangle Height="1" Fill="{DynamicResource BorderColor}" Margin="0,0,0,16"/>
+
+                    <!-- Per-event toggles -->
+                    <TextBlock Text="Notify when:" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <CheckBox x:Name="NotifyScreenLockToggle" Style="{StaticResource ToggleSwitch}"
+                                  Checked="Notifications_Changed" Unchecked="Notifications_Changed" Margin="0,0,10,0"/>
+                        <TextBlock Text="Screen is locked (time limit or outside allowed hours)"
+                                   Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                        <CheckBox x:Name="NotifyAppBlockToggle" Style="{StaticResource ToggleSwitch}"
+                                  Checked="Notifications_Changed" Unchecked="Notifications_Changed" Margin="0,0,10,0"/>
+                        <TextBlock Text="App is blocked or app time limit reached"
+                                   Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                    </StackPanel>
+
+                    <!-- Test button -->
+                    <Button x:Name="TestNotificationButton" Content="Send Test Notification" Width="200" Height="36" HorizontalAlignment="Left"
+                            Background="#89B4FA" Foreground="#1E1E2E" FontWeight="Bold"
+                            BorderThickness="0" Cursor="Hand" Click="TestNotification_Click"/>
+                    <TextBlock x:Name="NotificationStatus" Margin="0,10,0,0" Visibility="Collapsed"
+                               TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+
             <!-- Appearance -->
             <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="20" Margin="0,0,0,24">
                 <StackPanel>

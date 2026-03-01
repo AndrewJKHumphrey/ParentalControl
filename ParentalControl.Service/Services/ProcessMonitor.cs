@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using ParentalControl.Core.Data;
 using ParentalControl.Core.Models;
+using ParentalControl.Core.Services;
 
 namespace ParentalControl.Service.Services;
 
@@ -18,6 +19,7 @@ public class ProcessMonitor
         uint style, int timeout, out int pResponse, bool bWait);
 
     private readonly ActivityLogger _logger;
+    private readonly NotificationService _notifier;
     private readonly Lock _rulesLock = new();
 
     // Enforcement sets (process names without .exe)
@@ -37,9 +39,10 @@ public class ProcessMonitor
     // Used to distinguish "was playing when time ran out" from "opened after time already ran out"
     private readonly HashSet<string> _ranBeforeStop = new(StringComparer.OrdinalIgnoreCase);
 
-    public ProcessMonitor(ActivityLogger logger)
+    public ProcessMonitor(ActivityLogger logger, NotificationService notifier)
     {
-        _logger = logger;
+        _logger   = logger;
+        _notifier = notifier;
         LoadRules();
     }
 
@@ -157,6 +160,7 @@ public class ProcessMonitor
                         // Always-blocked: kill immediately
                         process.Kill(entireProcessTree: true);
                         _logger.Log(ActivityType.AppBlocked, pName);
+                        _notifier.SendAppBlockNotification(pName, "App is on the blocked list.");
                     }
                     else if (screenTimeOnly.Contains(pName))
                     {
@@ -174,6 +178,7 @@ public class ProcessMonitor
                                 {
                                     process.Kill(entireProcessTree: true);
                                     _logger.Log(ActivityType.AppBlocked, pName);
+                                    _notifier.SendAppBlockNotification(pName, "App time limit reached — grace period expired.");
                                     _warningIssuedAt.Remove(pName);
                                     _ranBeforeStop.Remove(pName);
                                 }
@@ -190,6 +195,7 @@ public class ProcessMonitor
                                 // Opened after limit was already exceeded — kill immediately, no warning
                                 process.Kill(entireProcessTree: true);
                                 _logger.Log(ActivityType.AppBlocked, pName);
+                                _notifier.SendAppBlockNotification(pName, "App time limit already reached.");
                             }
                         }
                         else

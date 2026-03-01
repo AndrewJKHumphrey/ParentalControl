@@ -193,6 +193,8 @@ C:\Users\humph\ParentalControl\publish\service\mscordbi.dll
 C:\Users\humph\ParentalControl\publish\service\mscorrc.dll
 C:\Users\humph\ParentalControl\publish\service\msquic.dll
 C:\Users\humph\ParentalControl\publish\service\BCrypt.Net-Next.dll
+C:\Users\humph\ParentalControl\publish\service\BouncyCastle.Cryptography.dll
+C:\Users\humph\ParentalControl\publish\service\MailKit.dll
 C:\Users\humph\ParentalControl\publish\service\Microsoft.Data.Sqlite.dll
 C:\Users\humph\ParentalControl\publish\service\Microsoft.EntityFrameworkCore.dll
 C:\Users\humph\ParentalControl\publish\service\Microsoft.EntityFrameworkCore.Abstractions.dll
@@ -229,11 +231,13 @@ C:\Users\humph\ParentalControl\publish\service\Microsoft.Extensions.Logging.Even
 C:\Users\humph\ParentalControl\publish\service\Microsoft.Extensions.Options.dll
 C:\Users\humph\ParentalControl\publish\service\Microsoft.Extensions.Options.ConfigurationExtensions.dll
 C:\Users\humph\ParentalControl\publish\service\Microsoft.Extensions.Primitives.dll
+C:\Users\humph\ParentalControl\publish\service\MimeKit.dll
 C:\Users\humph\ParentalControl\publish\service\SQLitePCLRaw.batteries_v2.dll
 C:\Users\humph\ParentalControl\publish\service\SQLitePCLRaw.core.dll
 C:\Users\humph\ParentalControl\publish\service\SQLitePCLRaw.provider.e_sqlite3.dll
 C:\Users\humph\ParentalControl\publish\service\System.Diagnostics.EventLog.Messages.dll
 C:\Users\humph\ParentalControl\publish\service\System.Diagnostics.EventLog.dll
+C:\Users\humph\ParentalControl\publish\service\System.Security.Cryptography.Pkcs.dll
 C:\Users\humph\ParentalControl\publish\service\System.ServiceProcess.ServiceController.dll
 C:\Users\humph\ParentalControl\publish\service\e_sqlite3.dll
 C:\Users\humph\ParentalControl\publish\service\ParentalControl.Core.dll

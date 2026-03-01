@@ -82,3 +82,6 @@ C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Debug\net10.0-windows\ref\
 C:\Users\humph\ParentalControl\ParentalControl.UI\bin\Debug\net10.0-windows\System.ServiceProcess.ServiceController.dll
 C:\Users\humph\ParentalControl\ParentalControl.UI\bin\Debug\net10.0-windows\runtimes\win\lib\net10.0\System.ServiceProcess.ServiceController.dll
 C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Debug\net10.0-windows\ParentalControl.UI.sourcelink.json
+C:\Users\humph\ParentalControl\ParentalControl.UI\bin\Debug\net10.0-windows\BouncyCastle.Cryptography.dll
+C:\Users\humph\ParentalControl\ParentalControl.UI\bin\Debug\net10.0-windows\MailKit.dll
+C:\Users\humph\ParentalControl\ParentalControl.UI\bin\Debug\net10.0-windows\MimeKit.dll

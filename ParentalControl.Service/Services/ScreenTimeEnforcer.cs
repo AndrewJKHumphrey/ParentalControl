@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using ParentalControl.Core.Data;
 using ParentalControl.Core.Models;
+using ParentalControl.Core.Services;
 
 namespace ParentalControl.Service.Services;
 
@@ -25,6 +26,7 @@ public class ScreenTimeEnforcer
         uint style, int timeout, out int pResponse, bool bWait);
 
     private readonly ActivityLogger _logger;
+    private readonly NotificationService _notifier;
     private DateTime _lastTickTime = DateTime.UtcNow;
     private double _pendingMinutes = 0;
 
@@ -33,9 +35,10 @@ public class ScreenTimeEnforcer
 
     public bool IsScreenTimeLocked => _lockedDueToTimeWindow || _lockedDueToDailyLimit;
 
-    public ScreenTimeEnforcer(ActivityLogger logger)
+    public ScreenTimeEnforcer(ActivityLogger logger, NotificationService notifier)
     {
-        _logger = logger;
+        _logger   = logger;
+        _notifier = notifier;
     }
 
     public void LoadRules()
@@ -106,6 +109,8 @@ public class ScreenTimeEnforcer
                     SessionLock.LockActive();
                     _logger.Log(ActivityType.ScreenLocked,
                         $"Outside allowed hours ({limit.AllowedFrom}-{limit.AllowedUntil})");
+                    _notifier.SendScreenLockNotification(
+                        $"Outside allowed hours ({limit.AllowedFrom:HH\\:mm}–{limit.AllowedUntil:HH\\:mm}).");
                     DebugStopIfFlagSet();
                 }
                 return; // don't evaluate daily limit while outside allowed hours
@@ -129,6 +134,8 @@ public class ScreenTimeEnforcer
                     SessionLock.LockActive();
                     _logger.Log(ActivityType.ScreenTimeLimitReached,
                         $"Daily limit of {limit.DailyLimitMinutes} min reached");
+                    _notifier.SendScreenLockNotification(
+                        $"Daily screen time limit of {limit.DailyLimitMinutes} minutes reached.");
                     DebugStopIfFlagSet();
                 }
             }

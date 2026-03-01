@@ -21,4 +21,18 @@ public class AppSettings
     public int AppTimeLimitMinutes { get; set; } = 60;
     public int TodayAppTimeUsedMinutes { get; set; } = 0;
     public int TodayAppTimeBonusMinutes { get; set; } = 0;
+
+    // Notifications
+    public bool   NotificationsEnabled { get; set; } = false;
+    public int    NotificationMode     { get; set; } = 0;  // 0 = email, 1 = text
+    public string NotificationAddress  { get; set; } = string.Empty;
+    public string PhoneNumber          { get; set; } = string.Empty;
+    public string CarrierGateway       { get; set; } = string.Empty;
+    public string SmtpHost             { get; set; } = string.Empty;
+    public int    SmtpPort             { get; set; } = 587;
+    public string SmtpUsername         { get; set; } = string.Empty;
+    public string SmtpPassword         { get; set; } = string.Empty;
+    public bool   SmtpUseSsl           { get; set; } = true;
+    public bool   NotifyOnScreenLock   { get; set; } = true;
+    public bool   NotifyOnAppBlock     { get; set; } = true;
 }

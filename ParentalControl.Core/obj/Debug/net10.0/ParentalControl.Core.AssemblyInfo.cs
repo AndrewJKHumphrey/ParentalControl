@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ParentalControl.Core")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ad6bc0b4cc8a2d939d9b457eb448a86374cd0d89")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2888faf56fd18dcfb695a0301e2bd200a53fa17f")]
 [assembly: System.Reflection.AssemblyProductAttribute("ParentalControl.Core")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ParentalControl.Core")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

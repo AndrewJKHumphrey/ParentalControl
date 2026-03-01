@@ -454,3 +454,6 @@ C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Release\net10.0-windows\wi
 C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Release\net10.0-windows\win-x64\ref\ParentalControl.UI.dll
 C:\Users\humph\ParentalControl\ParentalControl.UI\bin\Release\net10.0-windows\win-x64\System.ServiceProcess.ServiceController.dll
 C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Release\net10.0-windows\win-x64\ParentalControl.UI.sourcelink.json
+C:\Users\humph\ParentalControl\ParentalControl.UI\bin\Release\net10.0-windows\win-x64\BouncyCastle.Cryptography.dll
+C:\Users\humph\ParentalControl\ParentalControl.UI\bin\Release\net10.0-windows\win-x64\MailKit.dll
+C:\Users\humph\ParentalControl\ParentalControl.UI\bin\Release\net10.0-windows\win-x64\MimeKit.dll

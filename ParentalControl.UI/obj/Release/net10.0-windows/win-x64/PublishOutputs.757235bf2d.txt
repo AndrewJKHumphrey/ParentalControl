@@ -399,6 +399,8 @@ C:\Users\humph\ParentalControl\publish\ui\zh-Hant\UIAutomationProvider.resources
 C:\Users\humph\ParentalControl\publish\ui\zh-Hant\UIAutomationTypes.resources.dll
 C:\Users\humph\ParentalControl\publish\ui\zh-Hant\WindowsBase.resources.dll
 C:\Users\humph\ParentalControl\publish\ui\BCrypt.Net-Next.dll
+C:\Users\humph\ParentalControl\publish\ui\BouncyCastle.Cryptography.dll
+C:\Users\humph\ParentalControl\publish\ui\MailKit.dll
 C:\Users\humph\ParentalControl\publish\ui\Microsoft.Data.Sqlite.dll
 C:\Users\humph\ParentalControl\publish\ui\Microsoft.EntityFrameworkCore.dll
 C:\Users\humph\ParentalControl\publish\ui\Microsoft.EntityFrameworkCore.Abstractions.dll
@@ -414,6 +416,7 @@ C:\Users\humph\ParentalControl\publish\ui\Microsoft.Extensions.Logging.dll
 C:\Users\humph\ParentalControl\publish\ui\Microsoft.Extensions.Logging.Abstractions.dll
 C:\Users\humph\ParentalControl\publish\ui\Microsoft.Extensions.Options.dll
 C:\Users\humph\ParentalControl\publish\ui\Microsoft.Extensions.Primitives.dll
+C:\Users\humph\ParentalControl\publish\ui\MimeKit.dll
 C:\Users\humph\ParentalControl\publish\ui\SQLitePCLRaw.batteries_v2.dll
 C:\Users\humph\ParentalControl\publish\ui\SQLitePCLRaw.core.dll
 C:\Users\humph\ParentalControl\publish\ui\SQLitePCLRaw.provider.e_sqlite3.dll
