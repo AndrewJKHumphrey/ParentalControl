@@ -1,4 +1,3 @@
-using System.Security.Principal;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -13,23 +12,14 @@ public partial class SettingsPage : Page
     public SettingsPage()
     {
         InitializeComponent();
+#if DEBUG
+        DebugSection.Visibility = System.Windows.Visibility.Visible;
+#endif
         Loaded += (_, _) => LoadSettings();
     }
 
     private void LoadSettings()
     {
-        // Show current account type
-        try
-        {
-            var identity = WindowsIdentity.GetCurrent();
-            var principal = new WindowsPrincipal(identity);
-            bool isAdmin = principal.IsInRole(WindowsBuiltInRole.Administrator);
-            AccountTypeLabel.Text = isAdmin
-                ? "Current account type: Administrator"
-                : "Current account type: Standard user";
-        }
-        catch { }
-
         try
         {
             using var db = new AppDbContext();
@@ -37,9 +27,9 @@ public partial class SettingsPage : Page
             if (settings != null)
             {
                 ChildHasPasswordBox.IsChecked = settings.ChildAccountHasPassword;
-                EnforceForAdminsBox.IsChecked = settings.EnforceForAdmins;
-
+                Format12hToggle.IsChecked = settings.TimeFormat12Hour;
                 DarkModeToggle.IsChecked = settings.ThemeIsDark;
+                DebugStopServiceToggle.IsChecked = settings.DebugStopServiceAfterLock;
 
                 var themeName = settings.AppTheme;
                 foreach (ComboBoxItem item in ThemeBox.Items)
@@ -72,16 +62,15 @@ public partial class SettingsPage : Page
         catch { }
     }
 
-    private void EnforceForAdmins_Changed(object sender, RoutedEventArgs e)
+    private void TimeFormat_Changed(object sender, RoutedEventArgs e)
     {
-        var enforce = EnforceForAdminsBox.IsChecked == true;
-
+        if (!_loaded) return;
         try
         {
             using var db = new AppDbContext();
             var settings = db.Settings.FirstOrDefault();
             if (settings == null) return;
-            settings.EnforceForAdmins = enforce;
+            settings.TimeFormat12Hour = Format12hToggle.IsChecked == true;
             db.SaveChanges();
         }
         catch { }
@@ -177,5 +166,21 @@ public partial class SettingsPage : Page
             ? new SolidColorBrush(System.Windows.Media.Color.FromRgb(243, 139, 168))
             : new SolidColorBrush(System.Windows.Media.Color.FromRgb(166, 227, 161));
         PwdStatus.Visibility = Visibility.Visible;
+    }
+
+    // Event handler always compiled (method must exist for XAML);
+    // section is hidden in Release builds so it cannot be triggered there.
+    private void DebugStopService_Changed(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded) return;
+        try
+        {
+            using var db = new AppDbContext();
+            var settings = db.Settings.FirstOrDefault();
+            if (settings == null) return;
+            settings.DebugStopServiceAfterLock = DebugStopServiceToggle.IsChecked == true;
+            db.SaveChanges();
+        }
+        catch { }
     }
 }

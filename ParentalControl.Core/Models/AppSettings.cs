@@ -9,13 +9,12 @@ public class AppSettings
     public DateTime UsageDate { get; set; } = DateTime.Now.Date;
     public bool ChildAccountHasPassword { get; set; } = false;
     public bool TimeFormat12Hour { get; set; } = false;
-    public bool EnforceForAdmins { get; set; } = true;
     public string AppTheme { get; set; } = "Default";
     public bool ThemeIsDark { get; set; } = true;
     public bool IsAllowMode { get; set; } = false;
     public bool ScreenTimeEnabled { get; set; } = true;
     public bool AppControlEnabled { get; set; } = true;
     public bool WebFilterEnabled { get; set; } = true;
-    public bool IsAdminSession { get; set; } = false;
-    public int AdminSessionId { get; set; } = -1;
+    public int TodayBonusMinutes { get; set; } = 0;
+    public bool DebugStopServiceAfterLock { get; set; } = false;
 }

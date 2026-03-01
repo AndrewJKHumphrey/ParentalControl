@@ -7,8 +7,9 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0" Text="App Control" FontSize="24" FontWeight="Bold"
@@ -43,8 +44,24 @@
                     BorderThickness="0" Cursor="Hand" Click="AddRule_Click"/>
         </Grid>
 
+        <!-- Steam scan -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,12" VerticalAlignment="Center">
+            <Button x:Name="QuickScanButton" Content="Quick Scan (Steam)" Height="36" Padding="16,0"
+                    Background="#CBA6F7" Foreground="#1E1E2E" FontWeight="Bold"
+                    BorderThickness="0" Cursor="Hand" Click="QuickScanSteam_Click"
+                    ToolTip="Scans the default Steam library and any libraries registered in Steam"/>
+            <Button x:Name="DeepScanButton" Content="Deep Scan (All Drives)" Height="36" Padding="16,0"
+                    Margin="8,0,0,0"
+                    Background="#89DCEB" Foreground="#1E1E2E" FontWeight="Bold"
+                    BorderThickness="0" Cursor="Hand" Click="DeepScanSteam_Click"
+                    ToolTip="Searches every drive for Steam game folders — may take a moment"/>
+            <TextBlock x:Name="ScanStatusText" VerticalAlignment="Center" Margin="12,0,0,0"
+                       Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap"
+                       Visibility="Collapsed"/>
+        </StackPanel>
+
         <!-- Rules list -->
-        <Border Grid.Row="3" Background="{DynamicResource CardBg}" CornerRadius="8" Padding="8">
+        <Border Grid.Row="4" Background="{DynamicResource CardBg}" CornerRadius="8" Padding="8">
             <DataGrid x:Name="AppRulesGrid" AutoGenerateColumns="False"
                       Background="Transparent" Foreground="{DynamicResource TextPrimary}"
                       BorderThickness="0" GridLinesVisibility="None"
@@ -68,9 +85,10 @@
                     </DataGridTemplateColumn>
                 </DataGrid.Columns>
             </DataGrid>
+            
         </Border>
-
-        <Button Grid.Row="4" Content="Save Changes" Margin="0,12,0,0" Height="38" Width="160"
+        
+        <Button Grid.Row="5" Content="Save Changes" Margin="0,12,0,0" Height="38" Width="160"
                 HorizontalAlignment="Left"
                 Background="#89B4FA" Foreground="#1E1E2E" FontWeight="Bold"
                 BorderThickness="0" Cursor="Hand"

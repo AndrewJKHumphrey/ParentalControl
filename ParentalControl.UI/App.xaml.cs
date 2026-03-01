@@ -1,6 +1,4 @@
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Security.Principal;
 using System.ServiceProcess;
 using System.Windows;
 using System.Windows.Media;
@@ -29,8 +27,6 @@ public partial class App : Application
             catch { /* Column already exists */ }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN TimeFormat12Hour INTEGER NOT NULL DEFAULT 0"); }
             catch { /* Column already exists */ }
-            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN EnforceForAdmins INTEGER NOT NULL DEFAULT 1"); }
-            catch { /* Column already exists */ }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN AppTheme TEXT NOT NULL DEFAULT 'Dark'"); }
             catch { /* Column already exists */ }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN IsAllowMode INTEGER NOT NULL DEFAULT 0"); }
@@ -45,10 +41,31 @@ public partial class App : Application
             catch { /* Column already exists */ }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ThemeIsDark INTEGER NOT NULL DEFAULT 1"); }
             catch { /* Column already exists */ }
-            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN IsAdminSession INTEGER NOT NULL DEFAULT 0"); }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN TodayBonusMinutes INTEGER NOT NULL DEFAULT 0"); }
             catch { /* Column already exists */ }
-            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN AdminSessionId INTEGER NOT NULL DEFAULT -1"); }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN DebugStopServiceAfterLock INTEGER NOT NULL DEFAULT 0"); }
             catch { /* Column already exists */ }
+
+            // Seed common browsers into AppRules (unblocked by default)
+            foreach (var (proc, name) in new[]
+            {
+                ("msedge", "Microsoft Edge"),
+                ("chrome", "Google Chrome"),
+                ("firefox", "Mozilla Firefox"),
+                ("opera", "Opera"),
+                ("brave", "Brave Browser"),
+            })
+            {
+                try
+                {
+                    db.Database.ExecuteSqlRaw(
+                        "INSERT INTO AppRules (ProcessName, DisplayName, IsBlocked, CreatedAt) " +
+                        "SELECT ?, ?, 0, datetime('now') " +
+                        "WHERE NOT EXISTS (SELECT 1 FROM AppRules WHERE ProcessName = ?)",
+                        proc, name, proc);
+                }
+                catch { }
+            }
 
             // Migrate legacy "Dark"/"Light" AppTheme values to "Default" + ThemeIsDark flag
             try { db.Database.ExecuteSqlRaw("UPDATE Settings SET AppTheme = 'Default' WHERE AppTheme = 'Dark'"); }
@@ -72,20 +89,18 @@ public partial class App : Application
             return;
         }
 
-        // Show login
+        // Show login (skipped in Debug builds for faster development)
+#if !DEBUG
         var login = new LoginWindow();
         if (login.ShowDialog() != true)
         {
             Shutdown(0);
             return;
         }
+#endif
 
         // Ensure service is running
         EnsureServiceRunning();
-
-        // Record whether this UI session is running as an admin so the service
-        // can skip enforcement without needing privileged P/Invoke.
-        SetAdminSessionFlag();
 
         ShutdownMode = ShutdownMode.OnMainWindowClose;
         var main = new MainWindow();
@@ -93,105 +108,72 @@ public partial class App : Application
         main.Show();
     }
 
-    [DllImport("advapi32.dll", SetLastError = true)]
-    private static extern bool GetTokenInformation(
-        IntPtr tokenHandle, int tokenInformationClass,
-        out int tokenInformation, int tokenInformationLength,
-        out int returnLength);
-
-    private static bool IsCurrentUserAdmin()
-    {
-        try
-        {
-            using var identity = WindowsIdentity.GetCurrent();
-
-            // GetTokenInformation with TokenElevationType (18) correctly identifies
-            // admins even when UAC is active and the token is filtered:
-            //   TokenElevationTypeFull    (1) = running elevated
-            //   TokenElevationTypeLimited (3) = admin account, filtered by UAC
-            //   TokenElevationTypeDefault (2) = standard user, or admin with UAC disabled
-            if (GetTokenInformation(identity.Token, 18,
-                    out int elevType, sizeof(int), out _))
-            {
-                if (elevType == 1 || elevType == 3) return true;
-            }
-
-            // Fallback: direct role check handles UAC-disabled systems where
-            // the full admin token is used without splitting
-            return new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
-        }
-        catch { return false; }
-    }
-
-    private static void SetAdminSessionFlag()
-    {
-        try
-        {
-            bool isAdmin = IsCurrentUserAdmin();
-
-            using var db = new AppDbContext();
-            var settings = db.Settings.FirstOrDefault();
-            if (settings == null) return;
-
-            settings.IsAdminSession = isAdmin;
-            settings.AdminSessionId = isAdmin ? Process.GetCurrentProcess().SessionId : -1;
-            db.SaveChanges();
-        }
-        catch { }
-    }
-
-    private static void ClearAdminSessionFlag()
-    {
-        try
-        {
-            using var db = new AppDbContext();
-            var settings = db.Settings.FirstOrDefault();
-            if (settings == null) return;
-
-            settings.IsAdminSession = false;
-            settings.AdminSessionId = -1;
-            db.SaveChanges();
-        }
-        catch { }
-    }
-
     private void App_Exit(object sender, ExitEventArgs e)
     {
-        ClearAdminSessionFlag();
+
     }
 
     public static void ApplyTheme(string name, bool isDark = true)
     {
         // Each entry: (dark palette, light palette)
         // Palette order: AppBg, SidebarBg, CardBg, CardHover, AltRowBg, BorderColor, TextPrimary, TextSecondary
+        // Themes follow the RYB color wheel: primary (Red, Yellow, Blue),
+        // secondary (Orange, Green, Purple), and tertiary colors — sorted Red → Magenta.
         var themes = new Dictionary<string, (
             (string, string, string, string, string, string, string, string) dark,
             (string, string, string, string, string, string, string, string) light)>
         {
-            ["Default"]    = (("#1E1E2E", "#181825", "#313244", "#45475A", "#2A2A3E", "#585B70", "#CDD6F4", "#A6ADC8"),
-                               ("#EFF1F5", "#E6E9EF", "#DCE0E8", "#BCC0CC", "#CCD0DA", "#9CA0B0", "#4C4F69", "#6C6F85")),
-            ["Red"]        = (("#1C1014", "#150B0F", "#2D1820", "#3E2430", "#241018", "#7D4455", "#F2CDCD", "#C99AA8"),
-                               ("#FFF0F0", "#FFE4E4", "#FFFFFF", "#FFD0D0", "#FFF5F5", "#CC3344", "#4A1020", "#992233")),
-            ["Green"]      = (("#141E18", "#0E1812", "#1E2E24", "#2E4038", "#182820", "#4A7060", "#C3E8D0", "#8DB8A0"),
-                               ("#F0FAF4", "#E4F4EA", "#FFFFFF", "#C8ECD4", "#F5FCF7", "#2A7050", "#0A2E18", "#226644")),
-            ["Lime"]       = (("#111A08", "#0C1306", "#1C2D10", "#283F18", "#16240C", "#4A7820", "#BBFF44", "#88C030"),
-                               ("#F4FFE8", "#EAFFD0", "#FFFFFF", "#D0FF99", "#F8FFEE", "#4A8810", "#1A3A00", "#3A7010")),
-            ["Teal"]       = (("#0D1A1A", "#081212", "#122424", "#1C3434", "#0F1E1E", "#2E6666", "#80FFEE", "#50C0B0"),
-                               ("#EDFFFE", "#DAFFF8", "#FFFFFF", "#B8FFF0", "#F0FFFD", "#1A7070", "#003030", "#1A5A5A")),
-            ["Purple"]     = (("#160E2A", "#100820", "#221640", "#302058", "#1A1230", "#5A3A90", "#D4AAFF", "#A078D0"),
-                               ("#F8F0FF", "#F0E4FF", "#FFFFFF", "#E0CCFF", "#FBF5FF", "#6633BB", "#2A0860", "#5528AA")),
-            ["Orange"]     = (("#1C1208", "#140D05", "#2C1E0C", "#3E2C14", "#201608", "#7A4A18", "#FFB860", "#CC8830"),
-                               ("#FFF6EE", "#FFE8D4", "#FFFFFF", "#FFD0AA", "#FFFBF5", "#AA5510", "#3C1400", "#884410")),
-            ["Yellow"]     = (("#1A1800", "#131100", "#2A2600", "#3C3600", "#201E00", "#706800", "#FFEE44", "#CCB820"),
-                               ("#FFFEE8", "#FFFBD0", "#FFFFFF", "#FFF899", "#FFFFF0", "#887800", "#2A2400", "#666200")),
-            ["Cyan"]       = (("#081018", "#040C14", "#102030", "#183040", "#0C1820", "#1888B0", "#00DDFF", "#1899CC"),
-                               ("#EDFAFF", "#D8F4FF", "#FFFFFF", "#AAEEFF", "#F0FAFE", "#0077AA", "#001830", "#005A88")),
-            ["Blue"]      = (("#0A1220", "#060D18", "#102030", "#182E44", "#0C1828", "#2860A0", "#60B8FF", "#3888D0"),
-                               ("#EEF4FF", "#DCE9FF", "#FFFFFF", "#BBDDFF", "#F2F7FF", "#1155BB", "#001440", "#0044AA")),
-            ["Pink"]       = (("#200A18", "#180612", "#301228", "#44203C", "#280E20", "#883060", "#FFB0D8", "#D070A8"),
-                               ("#FFF0F8", "#FFE0F2", "#FFFFFF", "#FFC8E8", "#FFF8FC", "#BB3377", "#440020", "#992266")),
-            ["Rocket Pop"] = (("#0C0E20", "#080A18", "#1E0A14", "#2E1020", "#101424", "#CC2233", "#F4F4FF", "#8899CC"),
-                               ("#FAFCFF", "#EEF3FF", "#FFFFFF", "#FFE8EE", "#EDF2FF", "#CC2233", "#0B1F7A", "#AA1122")),
+            // Default — Catppuccin-inspired blue-purple base
+            ["Default"]   = (("#1E1E2E", "#181825", "#313244", "#45475A", "#2A2A3E", "#585B70", "#CDD6F4", "#A6ADC8"),
+                              ("#EFF1F5", "#E6E9EF", "#DCE0E8", "#BCC0CC", "#CCD0DA", "#9CA0B0", "#4C4F69", "#6C6F85")),
+
+            // ── Primary: Red ───────────────────────────────────────────────────
+            ["Red"]       = (("#1E1010", "#150B0B", "#2E1818", "#3E2222", "#241212", "#882233", "#F5CCCC", "#CC8888"),
+                              ("#FFF0F0", "#FFDDE0", "#FFFBFB", "#FFD0D0", "#FFF5F5", "#BB2233", "#3A0A0A", "#882222")),
+
+            // ── Tertiary: Vermilion (Red-Orange) ───────────────────────────────
+            ["Vermilion"] = (("#1E1208", "#150D05", "#2E1E0E", "#3E2A18", "#241808", "#993322", "#F5CCB8", "#CC8860"),
+                              ("#FFF3EE", "#FFE5D8", "#FFFAF8", "#FFD8C0", "#FFF6F2", "#CC4422", "#3A1005", "#883322")),
+
+            // ── Secondary: Orange ──────────────────────────────────────────────
+            ["Orange"]    = (("#1E1508", "#150F05", "#2E2010", "#3E2C18", "#241A08", "#AA5522", "#F5D4AA", "#CC9055"),
+                              ("#FFF6EE", "#FFEAD8", "#FFFBF7", "#FFDCB8", "#FFF8F2", "#CC5511", "#3A1800", "#884411")),
+
+            // ── Tertiary: Amber (Yellow-Orange) ───────────────────────────────
+            ["Amber"]     = (("#1A1800", "#131200", "#282400", "#363200", "#1E1C00", "#887700", "#F0DD77", "#C8AA30"),
+                              ("#FFFBEE", "#FFF5D8", "#FFFEF8", "#FFEEB8", "#FFFDF0", "#CC8800", "#3A2A00", "#886600")),
+
+            // ── Primary: Yellow ────────────────────────────────────────────────
+            ["Yellow"]    = (("#1A1A00", "#131300", "#282800", "#363600", "#1E1E00", "#888800", "#F0EE77", "#C8C030"),
+                              ("#FEFEE8", "#FAFAD0", "#FEFEFC", "#F8F880", "#FCFCE8", "#888800", "#2A2800", "#666600")),
+
+            // ── Tertiary: Lime (Yellow-Green) ─────────────────────────────────
+            ["Lime"]      = (("#0E1800", "#0A1200", "#182800", "#223800", "#121E00", "#447800", "#BBFF44", "#88CC20"),
+                              ("#F4FFEE", "#E8FFD8", "#FBFFFA", "#D0FF99", "#F8FFE8", "#448800", "#1A3A00", "#336600")),
+
+            // ── Secondary: Green ───────────────────────────────────────────────
+            ["Green"]     = (("#0A1E0C", "#081410", "#102C14", "#1C3C20", "#0E2010", "#2A7A30", "#AAEEBB", "#70BB80"),
+                              ("#EEFAF0", "#DCF4E0", "#F8FFFB", "#C8ECC8", "#F2FCF4", "#228844", "#0A2A10", "#1A6030")),
+
+            // ── Tertiary: Teal (Blue-Green) ────────────────────────────────────
+            ["Teal"]      = (("#081E1C", "#061412", "#102E2A", "#1A3E38", "#0C2422", "#1A7070", "#80FFEE", "#40C0B0"),
+                              ("#EDFFFE", "#D8FFFA", "#F5FFFF", "#B0FFF5", "#F0FFFD", "#1A7070", "#003830", "#1A6060")),
+
+            // ── Primary: Blue ──────────────────────────────────────────────────
+            ["Blue"]      = (("#0C1224", "#080D1A", "#101E38", "#18304C", "#0E162C", "#2255AA", "#88BBFF", "#5588CC"),
+                              ("#EEF2FF", "#DCE6FF", "#F8FAFF", "#BCCEFF", "#F2F6FF", "#2244BB", "#080E30", "#1A2E88")),
+
+            // ── Tertiary: Indigo (Blue-Purple) ────────────────────────────────
+            ["Indigo"]    = (("#100C22", "#0C0818", "#1A1234", "#261A46", "#140E28", "#4433AA", "#AAAAFF", "#7766CC"),
+                              ("#F0EEFF", "#E4E0FF", "#FAFAFF", "#CCC8FF", "#F5F4FF", "#4433AA", "#100830", "#2A1888")),
+
+            // ── Secondary: Purple ──────────────────────────────────────────────
+            ["Purple"]    = (("#160A22", "#100618", "#221034", "#2E1846", "#1A0C28", "#5A2A99", "#D4AAFF", "#A070D0"),
+                              ("#F8F0FF", "#EEE0FF", "#FDFAFF", "#E0C8FF", "#FAF4FF", "#5522AA", "#200840", "#3A1088")),
+
+            // ── Tertiary: Magenta (Red-Purple) ────────────────────────────────
+            ["Magenta"]   = (("#1E0818", "#170512", "#2E1028", "#3E183A", "#240C1E", "#882288", "#FFB0EE", "#CC70CC"),
+                              ("#FFF0FA", "#FFE0F5", "#FFFCFE", "#FFC8F0", "#FFF5FB", "#AA2299", "#3A0030", "#880888")),
         };
 
         // Fallback for legacy names

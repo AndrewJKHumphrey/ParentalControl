@@ -5,7 +5,17 @@
     <ScrollViewer>
         <StackPanel Margin="32" MaxWidth="480">
             <TextBlock Text="Settings" FontSize="24" FontWeight="Bold"
+
                        Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,32"/>
+            <!-- Time format toggle -->
+            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="20" Margin="0,0,0,24">
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <TextBlock Text="Time format:" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <CheckBox x:Name="Format12hToggle" Content="12h (AM/PM)"
+                            Style="{StaticResource ToggleSwitch}"
+                            Checked="TimeFormat_Changed" Unchecked="TimeFormat_Changed"/>
+                </StackPanel>
+            </Border>
 
             <!-- Change password -->
             <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="20" Margin="0,0,0,24">
@@ -43,9 +53,6 @@
                     <TextBlock Text="Behavior Options" Foreground="{DynamicResource TextPrimary}"
                                FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
 
-                    <TextBlock x:Name="AccountTypeLabel" Foreground="{DynamicResource TextSecondary}" FontSize="12"
-                               Margin="0,0,0,16" Text="Current account type: checking..."/>
-
                     <CheckBox x:Name="ChildHasPasswordBox"
                               Content="Child account is protected by a password"
                               Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"
@@ -54,16 +61,7 @@
 
                     <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextSecondary}" FontSize="12"
                                Margin="0,0,0,16"
-                               Text="When this is enabled, it will only lock once per violation since the password will prevent further access. Allows for easily overriding parental control.&#x0a;When it is not checked to prevent access the violations are checked after log on to relock the machine until allowed time resumes"/>
-
-                    <CheckBox x:Name="EnforceForAdminsBox"
-                              Content="Enforce controls when logged in as administrator"
-                              Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"
-                              Checked="EnforceForAdmins_Changed"
-                              Unchecked="EnforceForAdmins_Changed"/>
-
-                    <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextSecondary}" FontSize="12"
-                               Text="When unchecked, screen time controls are skipped for administrator accounts. Enable this if the child account is an administrator."/>
+                               Text="When this is enabled, it will only lock once per violation since the password will prevent further access.&#x0a;Unchecked violations will be checked repeatedly after login."/>
                 </StackPanel>
             </Border>
 
@@ -77,21 +75,40 @@
                     <ComboBox x:Name="ThemeBox" Width="200" Height="32" HorizontalAlignment="Left"
                               SelectionChanged="ThemeBox_SelectionChanged" Margin="0,0,0,16">
                         <ComboBoxItem Content="Default"/>
+                        <!-- Spectrum order: Red → Magenta (primary, secondary, tertiary) -->
                         <ComboBoxItem Content="Red"/>
-                        <ComboBoxItem Content="Blue"/>
-                        <ComboBoxItem Content="Green"/>
-                        <ComboBoxItem Content="Lime"/>
-                        <ComboBoxItem Content="Teal"/>
-                        <ComboBoxItem Content="Purple"/>
+                        <ComboBoxItem Content="Vermilion"/>
                         <ComboBoxItem Content="Orange"/>
+                        <ComboBoxItem Content="Amber"/>
                         <ComboBoxItem Content="Yellow"/>
-                        <ComboBoxItem Content="Cyan"/>
-                        <ComboBoxItem Content="Pink"/>
-                        <ComboBoxItem Content="Rocket Pop"/>
+                        <ComboBoxItem Content="Lime"/>
+                        <ComboBoxItem Content="Green"/>
+                        <ComboBoxItem Content="Teal"/>
+                        <ComboBoxItem Content="Blue"/>
+                        <ComboBoxItem Content="Indigo"/>
+                        <ComboBoxItem Content="Purple"/>
+                        <ComboBoxItem Content="Magenta"/>
                     </ComboBox>
                     <CheckBox x:Name="DarkModeToggle" Content="Dark Mode"
                               Style="{StaticResource ToggleSwitch}"
                               Checked="DarkMode_Changed" Unchecked="DarkMode_Changed"/>
+                </StackPanel>
+            </Border>
+
+            <!-- DEBUG ONLY — hidden in Release builds via code-behind -->
+            <Border x:Name="DebugSection" Visibility="Collapsed"
+                    Background="#2A1500" BorderBrush="#FF8800" BorderThickness="2"
+                    CornerRadius="8" Padding="20" Margin="0,0,0,24">
+                <StackPanel>
+                    <TextBlock Text="⚠ DEBUG BUILD ONLY" FontWeight="Bold" FontSize="13"
+                               Foreground="#FF8800" Margin="0,0,0,8"/>
+                    <CheckBox x:Name="DebugStopServiceToggle"
+                              Foreground="#FFCC88" FontSize="12"
+                              Checked="DebugStopService_Changed"
+                              Unchecked="DebugStopService_Changed">
+                        <TextBlock TextWrapping="Wrap" Foreground="#FFCC88" FontSize="12"
+                                   Text="DEBUG TESTING ONLY: Turn off service after locking the computer to ensure testing mishaps don't lock developer out of machine"/>
+                    </CheckBox>
                 </StackPanel>
             </Border>
 

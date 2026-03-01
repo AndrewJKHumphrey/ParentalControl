@@ -53,7 +53,8 @@ public partial class DashboardPage : Page
             {
                 bool use12h = settings?.TimeFormat12Hour == true;
                 AllowedRangeText.Text = $"{FormatTime(limit.AllowedFrom, use12h)} – {FormatTime(limit.AllowedUntil, use12h)}";
-                DailyLimitText.Text = limit.DailyLimitMinutes == 0 ? "Unlimited" : $"{limit.DailyLimitMinutes} min";
+                int effective = limit.DailyLimitMinutes + (settings?.TodayBonusMinutes ?? 0);
+                DailyLimitText.Text = limit.DailyLimitMinutes == 0 ? "Unlimited" : $"{effective} min";
             }
             else
             {
@@ -96,9 +97,18 @@ public partial class DashboardPage : Page
             var settings = db.Settings.FirstOrDefault();
             if (settings != null)
             {
-                settings.ScreenTimeEnabled = ScreenTimeToggle.IsChecked == true;
-                settings.AppControlEnabled = AppControlToggle.IsChecked == true;
-                settings.WebFilterEnabled  = WebFilterToggle.IsChecked  == true;
+                if(AdminToggle.IsChecked == true)
+                {
+                    settings.ScreenTimeEnabled = false;
+                    settings.AppControlEnabled = false;
+                    settings.WebFilterEnabled  = false;
+                }
+                else
+                {
+                    settings.ScreenTimeEnabled = ScreenTimeToggle.IsChecked == true;
+                    settings.AppControlEnabled = AppControlToggle.IsChecked == true;
+                    settings.WebFilterEnabled  = WebFilterToggle.IsChecked  == true;
+                }
                 db.SaveChanges();
             }
         }
@@ -109,6 +119,11 @@ public partial class DashboardPage : Page
 
     private async void ResetScreenTime_Click(object sender, System.Windows.RoutedEventArgs e)
     {
+        int minutes = 15;
+        if (ExtendMinutesBox.SelectedItem is ComboBoxItem item &&
+            int.TryParse(item.Content?.ToString(), out int parsed))
+            minutes = parsed;
+
         ResetScreenTimeButton.IsEnabled = false;
         try
         {
@@ -117,8 +132,7 @@ public partial class DashboardPage : Page
                 using var db = new AppDbContext();
                 var settings = db.Settings.FirstOrDefault();
                 if (settings == null) return;
-                settings.TodayUsedMinutes = 0;
-                settings.UsageDate = DateTime.Now.Date;
+                settings.TodayBonusMinutes += minutes;
                 db.SaveChanges();
             });
             await LoadDataAsync();

@@ -40,9 +40,6 @@ public class ProcessMonitor
             using var db = new AppDbContext();
             var settings = db.Settings.FirstOrDefault();
             if (settings != null && !settings.AppControlEnabled) return;
-            if (settings != null && !settings.EnforceForAdmins
-                && settings.IsAdminSession
-                && settings.AdminSessionId == SessionHelper.GetActiveConsoleSessionId()) return;
         }
         catch { }
 

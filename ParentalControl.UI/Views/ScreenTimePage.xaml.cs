@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using ParentalControl.Core;
 using ParentalControl.Core.Data;
 using ParentalControl.UI.Services;
@@ -22,7 +23,6 @@ public partial class ScreenTimePage : Page
     private readonly IpcClient _ipc = new();
     private List<ScreenTimeLimitRow> _rows = new();
     private bool _use12h = false;
-    private bool _formatsInitialized = false;
 
     public ScreenTimePage()
     {
@@ -38,14 +38,10 @@ public partial class ScreenTimePage : Page
             using var db = new AppDbContext();
             var settings = db.Settings.FirstOrDefault();
             if (settings?.TimeFormat12Hour == true)
-            {
                 _use12h = true;
-                Format12hToggle.IsChecked = true; // fires TimeFormat_Changed but guard is false
-            }
         }
         catch { }
 
-        _formatsInitialized = true;
         LoadData();
     }
 
@@ -125,39 +121,6 @@ public partial class ScreenTimePage : Page
         }
     }
 
-    private void TimeFormat_Changed(object sender, RoutedEventArgs e)
-    {
-        if (!_formatsInitialized) return;
-
-        _use12h = Format12hToggle.IsChecked == true;
-
-        // Persist preference
-        try
-        {
-            using var db = new AppDbContext();
-            var settings = db.Settings.FirstOrDefault();
-            if (settings != null)
-            {
-                settings.TimeFormat12Hour = _use12h;
-                db.SaveChanges();
-            }
-        }
-        catch { }
-
-        // Reconvert all displayed times to new format
-        foreach (var row in _rows)
-        {
-            if (TryParseDisplayTime(row.AllowedFromStr, out var f))
-                row.AllowedFromStr = FormatTime(f);
-            if (TryParseDisplayTime(row.AllowedUntilStr, out var u))
-                row.AllowedUntilStr = FormatTime(u);
-        }
-
-        // Refresh grid
-        LimitsGrid.ItemsSource = null;
-        LimitsGrid.ItemsSource = _rows;
-    }
-
     private void LimitsGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
     {
         if (e.EditAction != DataGridEditAction.Commit) return;
@@ -168,7 +131,16 @@ public partial class ScreenTimePage : Page
 
         var normalized = NormalizeTimeInput(tb.Text);
         if (normalized != null)
+        {
             tb.Text = normalized;
+            StatusText.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            StatusText.Text = $"Invalid time \"{tb.Text}\" — use formats like: 0800, 800PM, 8:30 AM, 20:00";
+            StatusText.Foreground = new SolidColorBrush(Color.FromRgb(243, 139, 168));
+            StatusText.Visibility = Visibility.Visible;
+        }
     }
 
     private string? NormalizeTimeInput(string? input)
@@ -205,6 +177,28 @@ public partial class ScreenTimePage : Page
 
     private async void SaveButton_Click(object sender, RoutedEventArgs e)
     {
+        // Pre-validate all time fields before touching the DB
+        var errors = new List<string>();
+        foreach (var row in _rows)
+        {
+            var fromNorm = NormalizeTimeInput(row.AllowedFromStr);
+            var untilNorm = NormalizeTimeInput(row.AllowedUntilStr);
+            if (fromNorm == null)
+                errors.Add($"{row.DayOfWeek}: invalid 'Allowed From' value \"{row.AllowedFromStr}\"");
+            else
+                row.AllowedFromStr = fromNorm;
+            if (untilNorm == null)
+                errors.Add($"{row.DayOfWeek}: invalid 'Allowed Until' value \"{row.AllowedUntilStr}\"");
+            else
+                row.AllowedUntilStr = untilNorm;
+        }
+        if (errors.Count > 0)
+        {
+            MessageBox.Show(string.Join("\n", errors), "Invalid Time Values",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
         try
         {
             using var db = new AppDbContext();
@@ -226,6 +220,7 @@ public partial class ScreenTimePage : Page
             await _ipc.SendAsync(IpcCommand.ReloadRules);
 
             StatusText.Text = "Saved successfully.";
+            StatusText.Foreground = new SolidColorBrush(Color.FromRgb(166, 227, 161));
             StatusText.Visibility = Visibility.Visible;
         }
         catch (Exception ex)

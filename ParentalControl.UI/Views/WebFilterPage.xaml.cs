@@ -165,8 +165,16 @@ public partial class WebFilterPage : Page
                     }
                 }
                 db.SaveChanges();
+
+                var confirm = MessageBox.Show(
+                    "Applying web filter changes requires closing Edge and Chrome.\n\nUnsaved browser tabs will be lost. Continue?",
+                    "Browsers Will Be Closed",
+                    MessageBoxButton.OKCancel,
+                    MessageBoxImage.Warning);
+                if (confirm != MessageBoxResult.OK) return;
+
                 await _ipc.SendAsync(IpcCommand.ReloadWebFilter);
-                StatusText.Text = "Applied. Browser rules and hosts file updated; Edge and Chrome were restarted.";
+                StatusText.Text = "Applied. Hosts file and browser rules updated. Edge and Chrome were closed to apply changes.";
                 StatusText.Visibility = Visibility.Visible;
             }
             catch (Exception ex)

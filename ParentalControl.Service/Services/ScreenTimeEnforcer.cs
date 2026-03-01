@@ -1,5 +1,4 @@
 using System.Runtime.InteropServices;
-using System.Security.Principal;
 using ParentalControl.Core.Data;
 using ParentalControl.Core.Models;
 
@@ -61,6 +60,7 @@ public class ScreenTimeEnforcer
             {
                 settings.UsageDate = DateTime.Now.Date;
                 settings.TodayUsedMinutes = 0;
+                settings.TodayBonusMinutes = 0;
                 _pendingMinutes = 0;
                 _lockedDueToTimeWindow = false;
                 _lockedDueToDailyLimit = false;
@@ -87,46 +87,26 @@ public class ScreenTimeEnforcer
             var limit = db.ScreenTimeLimits.FirstOrDefault(l => l.DayOfWeek == now.DayOfWeek);
             if (limit == null || !limit.IsEnabled) return;
 
-            // Skip enforcement if the setting says not to enforce for admin accounts.
-            // IsAdminSession is set by the UI (which runs in the user's context) on login,
-            // and matched against the active console session ID to handle fast user switching.
-            if (!settings.EnforceForAdmins
-                && settings.IsAdminSession
-                && settings.AdminSessionId == SessionHelper.GetActiveConsoleSessionId()) return;
-
             var currentTime = TimeOnly.FromDateTime(now);
-
-            bool childHasPassword = settings.ChildAccountHasPassword;
 
             // --- Enforce allowed time window ---
             if (currentTime < limit.AllowedFrom || currentTime > limit.AllowedUntil)
             {
-                if (IsUserLoggedIn())
+                // Guard flag prevents re-locking every tick — lock fires once per time-window event
+                if (IsUserLoggedIn() && !_lockedDueToTimeWindow)
                 {
-                    if (childHasPassword)
-                    {
-                        if (!_lockedDueToTimeWindow)
-                        {
-                            _lockedDueToTimeWindow = true;
-                            SendWarning(
-                                $"You are outside the allowed hours " +
-                                $"({limit.AllowedFrom.ToString("HH:mm")}–{limit.AllowedUntil.ToString("HH:mm")}). " +
-                                $"The screen will lock in 30 seconds.");
-                            Thread.Sleep(30000);
-                            SessionLock.LockActive();
-                            _logger.Log(ActivityType.ScreenLocked,
-                                $"Outside allowed hours ({limit.AllowedFrom}-{limit.AllowedUntil})");
-                        }
-                    }
-                    else
-                    {
-                        SendWarning(
-                            $"You are outside the allowed hours " +
-                            $"({limit.AllowedFrom.ToString("HH:mm")}–{limit.AllowedUntil.ToString("HH:mm")}). " +
-                            $"The screen will lock in 30 seconds.");
-                        Thread.Sleep(30000);
-                        SessionLock.LockActive();
-                    }
+                    _lockedDueToTimeWindow = true;
+                    SendWarning(
+                        $"You are outside the allowed hours " +
+                        $"({limit.AllowedFrom.ToString("HH:mm")}–{limit.AllowedUntil.ToString("HH:mm")}). " +
+                        $"The screen will lock in 30 seconds.");
+                    Thread.Sleep(30000);
+                    SessionLock.LockActive();
+                    _logger.Log(ActivityType.ScreenLocked,
+                        $"Outside allowed hours ({limit.AllowedFrom}-{limit.AllowedUntil})");
+#if DEBUG
+                    DebugStopIfFlagSet();
+#endif
                 }
                 return; // don't evaluate daily limit while outside allowed hours
             }
@@ -136,32 +116,22 @@ public class ScreenTimeEnforcer
 
             // --- Enforce daily limit ---
             if (limit.DailyLimitMinutes > 0 &&
-                settings.TodayUsedMinutes >= limit.DailyLimitMinutes)
+                settings.TodayUsedMinutes >= limit.DailyLimitMinutes + settings.TodayBonusMinutes)
             {
-                if (IsUserLoggedIn())
+                // Guard flag prevents re-locking every tick — lock fires once per day's limit event
+                if (IsUserLoggedIn() && !_lockedDueToDailyLimit)
                 {
-                    if (childHasPassword)
-                    {
-                        if (!_lockedDueToDailyLimit)
-                        {
-                            _lockedDueToDailyLimit = true;
-                            SendWarning(
-                                $"Daily screen time limit of {limit.DailyLimitMinutes} minutes has been reached. " +
-                                $"The screen will lock in 30 seconds.");
-                            Thread.Sleep(30000);
-                            SessionLock.LockActive();
-                            _logger.Log(ActivityType.ScreenTimeLimitReached,
-                                $"Daily limit of {limit.DailyLimitMinutes} min reached");
-                        }
-                    }
-                    else
-                    {
-                        SendWarning(
-                            $"Daily screen time limit of {limit.DailyLimitMinutes} minutes has been reached. " +
-                            $"The screen will lock in 30 seconds.");
-                        Thread.Sleep(30000);
-                        SessionLock.LockActive();
-                    }
+                    _lockedDueToDailyLimit = true;
+                    SendWarning(
+                        $"Daily screen time limit of {limit.DailyLimitMinutes} minutes has been reached. " +
+                        $"The screen will lock in 30 seconds.");
+                    Thread.Sleep(30000);
+                    SessionLock.LockActive();
+                    _logger.Log(ActivityType.ScreenTimeLimitReached,
+                        $"Daily limit of {limit.DailyLimitMinutes} min reached");
+#if DEBUG
+                    DebugStopIfFlagSet();
+#endif
                 }
             }
             else
@@ -199,6 +169,22 @@ public class ScreenTimeEnforcer
         }
         return true; // assume active if query fails — better to over-count than miss time
     }
+
+#if DEBUG
+    // Exits the service process immediately after a lock event when the developer has
+    // enabled the "stop service after lock" safety flag in Settings. This prevents a
+    // testing mishap from locking the developer out of their own machine.
+    private static void DebugStopIfFlagSet()
+    {
+        try
+        {
+            using var db = new AppDbContext();
+            if (db.Settings.FirstOrDefault()?.DebugStopServiceAfterLock == true)
+                Environment.Exit(0);
+        }
+        catch { }
+    }
+#endif
 
     // Distinct from IsUserActive: at the Windows login screen the session state is still
     // WTSActive (Winlogon owns it), so we check for a non-empty username to confirm a real

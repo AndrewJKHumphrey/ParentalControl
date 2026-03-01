@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ParentalControl.Core.Data;
@@ -78,7 +79,6 @@ public class Worker : BackgroundService
             // Add columns introduced after initial release (safe on existing DBs)
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ChildAccountHasPassword INTEGER NOT NULL DEFAULT 0"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN TimeFormat12Hour INTEGER NOT NULL DEFAULT 0"); } catch { }
-            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN EnforceForAdmins INTEGER NOT NULL DEFAULT 1"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN AppTheme TEXT NOT NULL DEFAULT 'Default'"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN IsAllowMode INTEGER NOT NULL DEFAULT 0"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE WebsiteRules ADD COLUMN IsAllowed INTEGER NOT NULL DEFAULT 0"); } catch { }
@@ -86,11 +86,29 @@ public class Worker : BackgroundService
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN AppControlEnabled INTEGER NOT NULL DEFAULT 1"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN WebFilterEnabled INTEGER NOT NULL DEFAULT 1"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ThemeIsDark INTEGER NOT NULL DEFAULT 1"); } catch { }
-            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN IsAdminSession INTEGER NOT NULL DEFAULT 0"); } catch { }
-            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN AdminSessionId INTEGER NOT NULL DEFAULT -1"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN TodayBonusMinutes INTEGER NOT NULL DEFAULT 0"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN DebugStopServiceAfterLock INTEGER NOT NULL DEFAULT 0"); } catch { }
 
-            // Clear any stale admin-session flag left by a previous UI crash
-            try { db.Database.ExecuteSqlRaw("UPDATE Settings SET IsAdminSession = 0, AdminSessionId = -1"); } catch { }
+            // Seed common browsers into AppRules (unblocked by default)
+            foreach (var (proc, name) in new[]
+            {
+                ("msedge", "Microsoft Edge"),
+                ("chrome", "Google Chrome"),
+                ("firefox", "Mozilla Firefox"),
+                ("opera", "Opera"),
+                ("brave", "Brave Browser"),
+            })
+            {
+                try
+                {
+                    db.Database.ExecuteSqlRaw(
+                        "INSERT INTO AppRules (ProcessName, DisplayName, IsBlocked, CreatedAt) " +
+                        "SELECT ?, ?, 0, datetime('now') " +
+                        "WHERE NOT EXISTS (SELECT 1 FROM AppRules WHERE ProcessName = ?)",
+                        proc, name, proc);
+                }
+                catch { }
+            }
         }
         catch (Exception ex)
         {

@@ -10,7 +10,7 @@
 $ErrorActionPreference = "Stop"
 $SolutionDir = $PSScriptRoot
 $ServiceName = "ParentalControlService"
-$ServiceExe  = Join-Path $SolutionDir "publish\service\ParentalControl.Service.exe"
+#$ServiceExe  = Join-Path $SolutionDir "publish\service\ParentalControl.Service.exe"
 $InstallDir  = "C:\Program Files\ParentalControl"
 $DataDir     = "C:\ProgramData\ParentalControl"
 

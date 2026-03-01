@@ -60,26 +60,16 @@ public class WebsiteFilter : IDisposable
     {
         bool isAllowMode;
         bool webFilterEnabled;
-        bool enforceForAdmins;
-        bool isAdminSession;
-        int adminSessionId;
         try
         {
             using var db = new AppDbContext();
             var settings = db.Settings.FirstOrDefault();
             isAllowMode      = settings?.IsAllowMode      ?? false;
             webFilterEnabled = settings?.WebFilterEnabled ?? true;
-            enforceForAdmins = settings?.EnforceForAdmins ?? true;
-            isAdminSession   = settings?.IsAdminSession   ?? false;
-            adminSessionId   = settings?.AdminSessionId   ?? -1;
         }
         catch { return; }
 
-        bool adminBypass = !enforceForAdmins
-            && isAdminSession
-            && adminSessionId == SessionHelper.GetActiveConsoleSessionId();
-
-        if (!webFilterEnabled || adminBypass)
+        if (!webFilterEnabled)
         {
             RemoveAllRules();
             return;

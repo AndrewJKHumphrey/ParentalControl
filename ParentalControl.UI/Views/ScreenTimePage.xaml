@@ -9,14 +9,6 @@
             <TextBlock Text="Configure daily screen time limits and allowed hours for each day of the week."
                        Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,24" TextWrapping="Wrap"/>
 
-            <!-- Time format toggle -->
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                <TextBlock Text="Time format:" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                <CheckBox x:Name="Format12hToggle" Content="12h (AM/PM)"
-                          Style="{StaticResource ToggleSwitch}"
-                          Checked="TimeFormat_Changed" Unchecked="TimeFormat_Changed"/>
-            </StackPanel>
-
             <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="20">
                 <DataGrid x:Name="LimitsGrid" AutoGenerateColumns="False"
                           Background="Transparent" Foreground="{DynamicResource TextPrimary}"
@@ -31,10 +23,10 @@
                         <DataGridCheckBoxColumn Header="Enabled" Binding="{Binding IsEnabled}" Width="80"/>
                         <DataGridTextColumn Header="Daily Limit (min, 0=unlimited)"
                                             Binding="{Binding DailyLimitMinutes}" Width="200"/>
-                        <DataGridTextColumn Header="Allowed From"
-                                            Binding="{Binding AllowedFromStr}" Width="160"/>
-                        <DataGridTextColumn Header="Allowed Until"
-                                            Binding="{Binding AllowedUntilStr}" Width="160"/>
+                        <DataGridTextColumn Header="Allowed From (e.g. 0800, 8pm, 20:00)"
+                                            Binding="{Binding AllowedFromStr}" Width="220"/>
+                        <DataGridTextColumn Header="Allowed Until (e.g. 2200, 10pm, 22:00)"
+                                            Binding="{Binding AllowedUntilStr}" Width="220"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </Border>
