@@ -27,14 +27,6 @@
 
                 <Border Style="{StaticResource StatCard}">
                     <StackPanel>
-                        <TextBlock Text="Allowed Time Range" Foreground="{DynamicResource TextSecondary}" FontSize="12"/>
-                        <TextBlock x:Name="AllowedRangeText" Text="--:-- – --:--" Foreground="#A6E3A1"
-                                   FontSize="28" FontWeight="Bold" Margin="0,4,0,0"/>
-                    </StackPanel>
-                </Border>
-
-                 <Border Style="{StaticResource StatCard}">
-                    <StackPanel>
                         <TextBlock Text="Extend Screen Time for today" Foreground="{DynamicResource TextSecondary}" FontSize="12"/>
                         <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                             <ComboBox x:Name="ExtendMinutesBox" Width="72" Height="32"
@@ -58,6 +50,14 @@
                                 Background="#F38BA8" Foreground="#1E1E2E" FontWeight="Bold"
                                 BorderThickness="0" Cursor="Hand" Click="ResetScreenTime_Click"/>
                         </StackPanel>
+                    </StackPanel>
+            </Border>
+
+                <Border Style="{StaticResource StatCard}">
+                    <StackPanel>
+                        <TextBlock Text="Allowed Time Range" Foreground="{DynamicResource TextSecondary}" FontSize="12"/>
+                        <TextBlock x:Name="AllowedRangeText" Text="--:-- – --:--" Foreground="#A6E3A1"
+                                   FontSize="28" FontWeight="Bold" Margin="0,4,0,0"/>
                     </StackPanel>
                 </Border>
 
@@ -88,7 +88,7 @@
                     <WrapPanel>
                          <CheckBox x:Name="AdminToggle" Content="Admin Mode (Toggle All Enforcement)"
                                   Style="{StaticResource ToggleSwitch}"
-                                  Checked="Enforcement_Changed" Unchecked="Enforcement_Changed"
+                                  Checked="AdminToggle_Changed" Unchecked="AdminToggle_Changed"
                                   Margin="0,0,24,0"/>
                         <CheckBox x:Name="ScreenTimeToggle" Content="Screen Time"
                                   Style="{StaticResource ToggleSwitch}"

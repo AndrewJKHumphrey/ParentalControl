@@ -453,3 +453,4 @@ C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Release\net10.0-windows\wi
 C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Release\net10.0-windows\win-x64\ParentalControl.UI.genruntimeconfig.cache
 C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Release\net10.0-windows\win-x64\ref\ParentalControl.UI.dll
 C:\Users\humph\ParentalControl\ParentalControl.UI\bin\Release\net10.0-windows\win-x64\System.ServiceProcess.ServiceController.dll
+C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Release\net10.0-windows\win-x64\ParentalControl.UI.sourcelink.json

@@ -54,7 +54,7 @@
                                FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
 
                     <CheckBox x:Name="ChildHasPasswordBox"
-                              Content="Child account is protected by a password"
+                              Content="Account is protected by a password"
                               Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"
                               Checked="ChildHasPassword_Changed"
                               Unchecked="ChildHasPassword_Changed"/>

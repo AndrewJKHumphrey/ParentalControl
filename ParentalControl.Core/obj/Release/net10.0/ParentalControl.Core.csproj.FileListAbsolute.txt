@@ -12,3 +12,4 @@ C:\Users\humph\ParentalControl\ParentalControl.Core\obj\Release\net10.0\refint\P
 C:\Users\humph\ParentalControl\ParentalControl.Core\obj\Release\net10.0\ParentalControl.Core.pdb
 C:\Users\humph\ParentalControl\ParentalControl.Core\obj\Release\net10.0\ParentalControl.Core.genruntimeconfig.cache
 C:\Users\humph\ParentalControl\ParentalControl.Core\obj\Release\net10.0\ref\ParentalControl.Core.dll
+C:\Users\humph\ParentalControl\ParentalControl.Core\obj\Release\net10.0\ParentalControl.Core.sourcelink.json

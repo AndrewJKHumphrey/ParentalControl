@@ -97,18 +97,35 @@ public partial class DashboardPage : Page
             var settings = db.Settings.FirstOrDefault();
             if (settings != null)
             {
-                if(AdminToggle.IsChecked == true)
-                {
-                    settings.ScreenTimeEnabled = false;
-                    settings.AppControlEnabled = false;
-                    settings.WebFilterEnabled  = false;
-                }
-                else
-                {
-                    settings.ScreenTimeEnabled = ScreenTimeToggle.IsChecked == true;
-                    settings.AppControlEnabled = AppControlToggle.IsChecked == true;
-                    settings.WebFilterEnabled  = WebFilterToggle.IsChecked  == true;
-                }
+                settings.ScreenTimeEnabled = ScreenTimeToggle.IsChecked == true;
+                settings.AppControlEnabled = AppControlToggle.IsChecked == true;
+                settings.WebFilterEnabled  = WebFilterToggle.IsChecked  == true;
+            }
+            db.SaveChanges();
+        }
+        catch { }
+
+        await _ipc.SendAsync(ParentalControl.Core.IpcCommand.ReloadRules);
+    }
+
+        private async void AdminToggle_Changed(object sender, System.Windows.RoutedEventArgs e)
+    {
+        if (!_enforcementLoaded) return;
+
+        try
+        {
+            using var db = new AppDbContext();
+            var settings = db.Settings.FirstOrDefault();
+            if (settings != null)
+            {
+                bool flag = !(AdminToggle.IsChecked == true);
+                settings.ScreenTimeEnabled = flag;
+                settings.AppControlEnabled = flag;
+                settings.WebFilterEnabled  = flag;
+
+                ScreenTimeToggle.IsEnabled = flag;
+                AppControlToggle.IsEnabled = flag;
+                WebFilterToggle.IsEnabled = flag; 
                 db.SaveChanges();
             }
         }

@@ -249,3 +249,4 @@ C:\Users\humph\ParentalControl\ParentalControl.Service\obj\Release\net10.0-windo
 C:\Users\humph\ParentalControl\ParentalControl.Service\obj\Release\net10.0-windows\win-x64\ParentalControl.Service.pdb
 C:\Users\humph\ParentalControl\ParentalControl.Service\obj\Release\net10.0-windows\win-x64\ParentalControl.Service.genruntimeconfig.cache
 C:\Users\humph\ParentalControl\ParentalControl.Service\obj\Release\net10.0-windows\win-x64\ref\ParentalControl.Service.dll
+C:\Users\humph\ParentalControl\ParentalControl.Service\obj\Release\net10.0-windows\win-x64\ParentalControl.Service.sourcelink.json
