@@ -9,11 +9,12 @@
                        Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,32"/>
             <!-- Time format toggle -->
             <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="20" Margin="0,0,0,24">
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="Time format:" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                    <CheckBox x:Name="Format12hToggle" Content="12h (AM/PM)"
-                            Style="{StaticResource ToggleSwitch}"
+                    <TextBlock Text="24H (0000-2359)" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13"/>
+                    <CheckBox x:Name="Format12hToggle" Style="{StaticResource ToggleSwitch}"
                             Checked="TimeFormat_Changed" Unchecked="TimeFormat_Changed"/>
+                    <TextBlock Text="12H (AM/PM)" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="8,0,0,0" FontSize="13"/>
                 </StackPanel>
             </Border>
 
@@ -53,12 +54,15 @@
                     <TextBlock Text="Behavior Options" Foreground="{DynamicResource TextPrimary}"
                                FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
 
-                    <CheckBox x:Name="ChildHasPasswordBox"
-                              Content="Account is protected by a password"
-                              Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"
-                              Checked="ChildHasPassword_Changed"
-                              Unchecked="ChildHasPassword_Changed"/>
-
+                    <TextBlock Text="Account is protected by a password"
+                               Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"/>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,8">
+                        <TextBlock Text="Off" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13"/>
+                        <CheckBox x:Name="ChildHasPasswordBox" Style="{StaticResource ToggleSwitch}"
+                                  Checked="ChildHasPassword_Changed"
+                                  Unchecked="ChildHasPassword_Changed"/>
+                        <TextBlock Text="On" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="8,0,0,0" FontSize="13"/>
+                    </StackPanel>
                     <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextSecondary}" FontSize="12"
                                Margin="0,0,0,16"
                                Text="When this is enabled, it will only lock once per violation since the password will prevent further access.&#x0a;Unchecked violations will be checked repeatedly after login."/>
@@ -88,10 +92,83 @@
                         <ComboBoxItem Content="Indigo"/>
                         <ComboBoxItem Content="Purple"/>
                         <ComboBoxItem Content="Magenta"/>
+                        <ComboBoxItem Content="Ice Blue"/>
+                        <!-- Complementary pairs -->
+                        <ComboBoxItem Content="Sunset"/>
+                        <ComboBoxItem Content="Aurora"/>
+                        <ComboBoxItem Content="Eclipse"/>
+                        <ComboBoxItem Content="Coral Reef"/>
+                        <ComboBoxItem Content="Forest Fire"/>
+                        <ComboBoxItem Content="Midnight Gold"/>
+                        <ComboBoxItem Content="Volcanic"/>
+                        <ComboBoxItem Content="Sakura"/>
+                        <ComboBoxItem Content="Wildfire"/>
+                        <ComboBoxItem Content="Copper Patina"/>
+                        <ComboBoxItem Content="Solstice"/>
+                        <!-- Nature -->
+                        <ComboBoxItem Content="Deep Ocean"/>
+                        <ComboBoxItem Content="Volcanic Ash"/>
+                        <ComboBoxItem Content="Arctic Night"/>
+                        <ComboBoxItem Content="Rainforest"/>
+                        <ComboBoxItem Content="Storm"/>
+                        <ComboBoxItem Content="Desert"/>
+                        <!-- Aesthetic / Style -->
+                        <ComboBoxItem Content="Synthwave"/>
+                        <ComboBoxItem Content="Cyberpunk"/>
+                        <ComboBoxItem Content="Gothic"/>
+                        <ComboBoxItem Content="Noir"/>
+                        <ComboBoxItem Content="Steampunk"/>
                     </ComboBox>
-                    <CheckBox x:Name="DarkModeToggle" Content="Dark Mode"
-                              Style="{StaticResource ToggleSwitch}"
-                              Checked="DarkMode_Changed" Unchecked="DarkMode_Changed"/>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="Light Mode" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13"/>
+                        <CheckBox x:Name="DarkModeToggle" Style="{StaticResource ToggleSwitch}"
+                                  Checked="DarkMode_Changed" Unchecked="DarkMode_Changed"/>
+                        <TextBlock Text="Dark Mode" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="8,0,0,0" FontSize="13"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Reset options -->
+            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="20" Margin="0,0,0,24">
+                <StackPanel>
+                    <TextBlock Text="Reset" Foreground="{DynamicResource TextPrimary}"
+                               FontSize="16" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                    <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextSecondary}" FontSize="12"
+                               Margin="0,0,0,16"
+                               Text="Use these options to restore parts of the app to their default state. Each action asks for confirmation before proceeding."/>
+
+                    <!-- Reset Settings -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                        <Button Content="Reset Settings" Width="160" Height="36"
+                                Background="#FAB387" Foreground="#1E1E2E" FontWeight="Bold"
+                                BorderThickness="0" Cursor="Hand"
+                                Click="ResetSettings_Click"/>
+                        <TextBlock TextWrapping="Wrap" VerticalAlignment="Center" Margin="12,0,0,0"
+                                   Foreground="{DynamicResource TextSecondary}" FontSize="12"
+                                   Text="Restores time limits, toggles, theme and App Time to defaults. Keeps your password and all rules."/>
+                    </StackPanel>
+
+                    <!-- Reset Data -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                        <Button Content="Reset Data" Width="160" Height="36"
+                                Background="#F38BA8" Foreground="#1E1E2E" FontWeight="Bold"
+                                BorderThickness="0" Cursor="Hand"
+                                Click="ResetData_Click"/>
+                        <TextBlock TextWrapping="Wrap" VerticalAlignment="Center" Margin="12,0,0,0"
+                                   Foreground="{DynamicResource TextSecondary}" FontSize="12"
+                                   Text="Clears all app rules, website rules, screen time schedules and activity logs. Keeps your settings and password."/>
+                    </StackPanel>
+
+                    <!-- Full Reset -->
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="Full Reset" Width="160" Height="36"
+                                Background="#F38BA8" Foreground="#1E1E2E" FontWeight="Bold"
+                                BorderThickness="0" Cursor="Hand"
+                                Click="FullReset_Click"/>
+                        <TextBlock TextWrapping="Wrap" VerticalAlignment="Center" Margin="12,0,0,0"
+                                   Foreground="{DynamicResource TextSecondary}" FontSize="12"
+                                   Text="Resets everything — all settings and all data. Your password is kept. Cannot be undone."/>
+                    </StackPanel>
                 </StackPanel>
             </Border>
 
@@ -102,13 +179,28 @@
                 <StackPanel>
                     <TextBlock Text="⚠ DEBUG BUILD ONLY" FontWeight="Bold" FontSize="13"
                                Foreground="#FF8800" Margin="0,0,0,8"/>
-                    <CheckBox x:Name="DebugStopServiceToggle"
-                              Foreground="#FFCC88" FontSize="12"
-                              Checked="DebugStopService_Changed"
-                              Unchecked="DebugStopService_Changed">
+                    <StackPanel Margin="0,0,0,12">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,4">
+                            <TextBlock Text="Off" Foreground="#FFCC88" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12"/>
+                            <CheckBox x:Name="DebugStopServiceToggle" Style="{StaticResource ToggleSwitch}"
+                                      Checked="DebugStopService_Changed"
+                                      Unchecked="DebugStopService_Changed"/>
+                            <TextBlock Text="On" Foreground="#FFCC88" VerticalAlignment="Center" Margin="8,0,0,0" FontSize="12"/>
+                        </StackPanel>
                         <TextBlock TextWrapping="Wrap" Foreground="#FFCC88" FontSize="12"
                                    Text="DEBUG TESTING ONLY: Turn off service after locking the computer to ensure testing mishaps don't lock developer out of machine"/>
-                    </CheckBox>
+                    </StackPanel>
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,4">
+                            <TextBlock Text="Off" Foreground="#FFCC88" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12"/>
+                            <CheckBox x:Name="DebugAppTimeOverrideToggle" Style="{StaticResource ToggleSwitch}"
+                                      Checked="DebugAppTimeOverride_Changed"
+                                      Unchecked="DebugAppTimeOverride_Changed"/>
+                            <TextBlock Text="On" Foreground="#FFCC88" VerticalAlignment="Center" Margin="8,0,0,0" FontSize="12"/>
+                        </StackPanel>
+                        <TextBlock TextWrapping="Wrap" Foreground="#FFCC88" FontSize="12"
+                                   Text="DEBUG TESTING ONLY: Override App Time limit to 6 minutes to test warning and enforcement quickly"/>
+                    </StackPanel>
                 </StackPanel>
             </Border>
 

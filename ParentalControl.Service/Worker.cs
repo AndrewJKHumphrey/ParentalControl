@@ -46,8 +46,8 @@ public class Worker : BackgroundService
         {
             try
             {
-                _processMonitor!.EnforceRules();
                 _screenTimeEnforcer!.Tick();
+                _processMonitor!.EnforceRules(_screenTimeEnforcer.IsScreenTimeLocked);
             }
             catch (Exception ex)
             {
@@ -88,24 +88,33 @@ public class Worker : BackgroundService
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ThemeIsDark INTEGER NOT NULL DEFAULT 1"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN TodayBonusMinutes INTEGER NOT NULL DEFAULT 0"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN DebugStopServiceAfterLock INTEGER NOT NULL DEFAULT 0"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN DebugAppTimeOverride INTEGER NOT NULL DEFAULT 0"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN AppTimeLimitMinutes INTEGER NOT NULL DEFAULT 60"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN TodayAppTimeUsedMinutes INTEGER NOT NULL DEFAULT 0"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN TodayAppTimeBonusMinutes INTEGER NOT NULL DEFAULT 0"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE AppRules ADD COLUMN AccessMode INTEGER NOT NULL DEFAULT 0"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE AppRules ADD COLUMN TodayPlaytimeSeconds INTEGER NOT NULL DEFAULT 0"); } catch { }
+            try { db.Database.ExecuteSqlRaw("UPDATE AppRules SET AccessMode = 2 WHERE IsBlocked = 1 AND AccessMode = 0"); } catch { }
 
-            // Seed common browsers into AppRules (unblocked by default)
+            // Seed common browsers (unblocked, AccessMode=0)
             foreach (var (proc, name) in new[]
             {
-                ("msedge", "Microsoft Edge"),
-                ("chrome", "Google Chrome"),
-                ("firefox", "Mozilla Firefox"),
-                ("opera", "Opera"),
-                ("brave", "Brave Browser"),
+                ("msedge.exe",  "Microsoft Edge"),
+                ("chrome.exe",  "Google Chrome"),
+                ("firefox.exe", "Mozilla Firefox"),
+                ("opera.exe",   "Opera"),
+                ("brave.exe",   "Brave Browser"),
+                ("vivaldi.exe", "Vivaldi"),
             })
             {
+                var procNoExt = proc[..^4];
                 try
                 {
                     db.Database.ExecuteSqlRaw(
-                        "INSERT INTO AppRules (ProcessName, DisplayName, IsBlocked, CreatedAt) " +
-                        "SELECT ?, ?, 0, datetime('now') " +
-                        "WHERE NOT EXISTS (SELECT 1 FROM AppRules WHERE ProcessName = ?)",
-                        proc, name, proc);
+                        "INSERT INTO AppRules (ProcessName, DisplayName, IsBlocked, AccessMode, CreatedAt) " +
+                        "SELECT ?, ?, 0, 0, datetime('now') " +
+                        "WHERE NOT EXISTS (SELECT 1 FROM AppRules WHERE ProcessName = ? OR ProcessName = ?)",
+                        proc, name, proc, procNoExt);
                 }
                 catch { }
             }

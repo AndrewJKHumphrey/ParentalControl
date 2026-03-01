@@ -17,4 +17,8 @@ public class AppSettings
     public bool WebFilterEnabled { get; set; } = true;
     public int TodayBonusMinutes { get; set; } = 0;
     public bool DebugStopServiceAfterLock { get; set; } = false;
+    public bool DebugAppTimeOverride { get; set; } = false;
+    public int AppTimeLimitMinutes { get; set; } = 60;
+    public int TodayAppTimeUsedMinutes { get; set; } = 0;
+    public int TodayAppTimeBonusMinutes { get; set; } = 0;
 }

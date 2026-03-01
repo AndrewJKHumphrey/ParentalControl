@@ -25,6 +25,10 @@ public partial class AppControlPage : Page
         {
             using var db = new AppDbContext();
             AppRulesGrid.ItemsSource = db.AppRules.OrderBy(r => r.ProcessName).ToList();
+
+            var settings = db.Settings.FirstOrDefault();
+            if (settings != null)
+                AppTimeLimitBox.Text = settings.AppTimeLimitMinutes.ToString();
         }
         catch (Exception ex)
         {
@@ -44,9 +48,9 @@ public partial class AppControlPage : Page
             {
                 db.AppRules.Add(new AppRule
                 {
-                    ProcessName = processName.ToLower().Replace(".exe", ""),
+                    ProcessName = processName.ToLower(),
                     DisplayName = string.IsNullOrEmpty(DisplayNameBox.Text) ? processName : DisplayNameBox.Text.Trim(),
-                    IsBlocked = true
+                    AccessMode  = (int)AppAccessMode.Blocked,
                 });
                 db.SaveChanges();
             }
@@ -90,10 +94,29 @@ public partial class AppControlPage : Page
                     var existing = db.AppRules.Find(r.Id);
                     if (existing != null)
                     {
-                        existing.IsBlocked = r.IsBlocked;
+                        existing.AccessMode  = r.AccessMode;
                         existing.DisplayName = r.DisplayName;
+                        existing.ProcessName = r.ProcessName;
                     }
                 }
+
+                // Save App Time limit (0 = unlimited, otherwise minimum 30)
+                if (!int.TryParse(AppTimeLimitBox.Text.Trim(), out int limitMins) || limitMins < 0)
+                {
+                    MessageBox.Show("App Time Limit must be 0 (unlimited) or a number of minutes.", "Invalid Value", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+                if (limitMins > 0 && limitMins < 30)
+                {
+                    MessageBox.Show("App Time Limit must be at least 30 minutes, or 0 for no limit.", "Invalid Value", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+                {
+                    var settings = db.Settings.FirstOrDefault();
+                    if (settings != null)
+                        settings.AppTimeLimitMinutes = limitMins;
+                }
+
                 db.SaveChanges();
                 await _ipc.SendAsync(IpcCommand.ReloadRules);
                 MessageBox.Show("Saved.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -188,7 +211,7 @@ public partial class AppControlPage : Page
 
         ScanStatusText.Text = games.Count == 0
             ? "No games found."
-            : $"Found {games.Count} game(s): {added} added, {skipped} already in list.";
+            : $"Found {games.Count} executable(s): {added} added, {skipped} already in list.";
         LoadData();
     }
 
@@ -342,10 +365,17 @@ public partial class AppControlPage : Page
                     var gamePath = Path.Combine(appsDir, "common", installDir);
                     if (!Directory.Exists(gamePath)) continue;
 
-                    var exe = FindGameExe(gamePath, installDir);
-                    if (exe == null) continue;
+                    var exes = FindGameExes(gamePath, installDir);
+                    if (exes.Count == 0) continue;
 
-                    results.Add((name, Path.GetFileNameWithoutExtension(exe).ToLower()));
+                    foreach (var exe in exes)
+                    {
+                        var exeName = Path.GetFileName(exe).ToLower();
+                        var displayName = exes.Count == 1
+                            ? name
+                            : $"{name} ({Path.GetFileName(exe)})";
+                        results.Add((displayName, exeName));
+                    }
                 }
                 catch { }
             }
@@ -354,11 +384,11 @@ public partial class AppControlPage : Page
         return results;
     }
 
-    private static string? FindGameExe(string gamePath, string installDir)
+    private static List<string> FindGameExes(string gamePath, string installDir)
     {
         IEnumerable<string> candidates;
         try { candidates = Directory.EnumerateFiles(gamePath, "*.exe"); }
-        catch { return null; }
+        catch { return []; }
 
         // Filter out installers, redistributables, and crash handlers
         var exes = candidates.Where(f =>
@@ -375,19 +405,14 @@ public partial class AppControlPage : Page
                    !n.StartsWith("dotnet");
         }).ToList();
 
-        if (exes.Count == 0) return null;
-        if (exes.Count == 1) return exes[0];
+        if (exes.Count == 0) return [];
 
-        // Prefer an exe whose name matches or contains the install directory name
+        // Sort: prefer exes whose name matches the install directory, then by size descending
         var dirLower = installDir.ToLower().Replace(" ", "");
-        var match = exes.FirstOrDefault(f =>
+        return exes.OrderByDescending(f =>
         {
             var n = Path.GetFileNameWithoutExtension(f).ToLower().Replace(" ", "");
-            return n == dirLower || dirLower.Contains(n) || n.Contains(dirLower);
-        });
-        if (match != null) return match;
-
-        // Fall back to the largest exe (usually the game binary)
-        return exes.OrderByDescending(f => new FileInfo(f).Length).First();
+            return n == dirLower || dirLower.Contains(n) || n.Contains(dirLower) ? 1 : 0;
+        }).ThenByDescending(f => new FileInfo(f).Length).ToList();
     }
 }

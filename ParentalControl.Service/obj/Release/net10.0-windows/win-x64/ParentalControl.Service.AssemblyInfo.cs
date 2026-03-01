@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ParentalControl.Service")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2dc41c967a9b43d4666f70ae1b1559a2f877f5f2")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ad6bc0b4cc8a2d939d9b457eb448a86374cd0d89")]
 [assembly: System.Reflection.AssemblyProductAttribute("ParentalControl.Service")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ParentalControl.Service")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

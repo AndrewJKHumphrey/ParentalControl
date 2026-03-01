@@ -35,6 +35,20 @@ public partial class DashboardPage : Page
             {
                 ScreenTimeText.Text = $"{settings.TodayUsedMinutes} min";
 
+                int appUsed  = settings.TodayAppTimeUsedMinutes;
+                int appLimit = settings.AppTimeLimitMinutes + settings.TodayAppTimeBonusMinutes;
+                AppTimeUsedText.Text = $"{appUsed} min";
+#if DEBUG
+                if (settings.DebugAppTimeOverride && settings.AppTimeLimitMinutes != 0)
+                {
+                    AppTimeLimitText.Text = $"of 6 min limit ({Math.Max(0, 6 - appUsed)} min remaining) [DEBUG OVERRIDE]";
+                }
+                else
+#endif
+                AppTimeLimitText.Text = appLimit == 0
+                    ? "no daily limit set"
+                    : $"of {appLimit} min limit ({Math.Max(0, appLimit - appUsed)} min remaining)";
+
                 // Load enforcement toggles (only once to avoid re-triggering the changed handler)
                 if (!_enforcementLoaded)
                 {
@@ -132,6 +146,33 @@ public partial class DashboardPage : Page
         catch { }
 
         await _ipc.SendAsync(ParentalControl.Core.IpcCommand.ReloadRules);
+    }
+
+    private async void ExtendAppTime_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        int minutes = 15;
+        if (ExtendAppTimeBox.SelectedItem is ComboBoxItem item &&
+            int.TryParse(item.Content?.ToString(), out int parsed))
+            minutes = parsed;
+
+        ExtendAppTimeButton.IsEnabled = false;
+        try
+        {
+            await Task.Run(() =>
+            {
+                using var db = new AppDbContext();
+                var settings = db.Settings.FirstOrDefault();
+                if (settings == null) return;
+                settings.TodayAppTimeBonusMinutes += minutes;
+                db.SaveChanges();
+            });
+            await LoadDataAsync();
+        }
+        catch { }
+        finally
+        {
+            ExtendAppTimeButton.IsEnabled = true;
+        }
     }
 
     private async void ResetScreenTime_Click(object sender, System.Windows.RoutedEventArgs e)

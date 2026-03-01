@@ -31,6 +31,8 @@ public class ScreenTimeEnforcer
     private bool _lockedDueToTimeWindow = false;
     private bool _lockedDueToDailyLimit = false;
 
+    public bool IsScreenTimeLocked => _lockedDueToTimeWindow || _lockedDueToDailyLimit;
+
     public ScreenTimeEnforcer(ActivityLogger logger)
     {
         _logger = logger;
@@ -104,9 +106,7 @@ public class ScreenTimeEnforcer
                     SessionLock.LockActive();
                     _logger.Log(ActivityType.ScreenLocked,
                         $"Outside allowed hours ({limit.AllowedFrom}-{limit.AllowedUntil})");
-#if DEBUG
                     DebugStopIfFlagSet();
-#endif
                 }
                 return; // don't evaluate daily limit while outside allowed hours
             }
@@ -129,9 +129,7 @@ public class ScreenTimeEnforcer
                     SessionLock.LockActive();
                     _logger.Log(ActivityType.ScreenTimeLimitReached,
                         $"Daily limit of {limit.DailyLimitMinutes} min reached");
-#if DEBUG
                     DebugStopIfFlagSet();
-#endif
                 }
             }
             else
@@ -170,7 +168,6 @@ public class ScreenTimeEnforcer
         return true; // assume active if query fails — better to over-count than miss time
     }
 
-#if DEBUG
     // Exits the service process immediately after a lock event when the developer has
     // enabled the "stop service after lock" safety flag in Settings. This prevents a
     // testing mishap from locking the developer out of their own machine.
@@ -184,7 +181,6 @@ public class ScreenTimeEnforcer
         }
         catch { }
     }
-#endif
 
     // Distinct from IsUserActive: at the Windows login screen the session state is still
     // WTSActive (Winlogon owns it), so we check for a non-empty username to confirm a real

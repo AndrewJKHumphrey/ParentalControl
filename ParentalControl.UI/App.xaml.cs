@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Media;
 using Microsoft.EntityFrameworkCore;
 using ParentalControl.Core.Data;
+using ParentalControl.Core.Models;
 using ParentalControl.UI.Views;
 
 namespace ParentalControl.UI;
@@ -45,27 +46,32 @@ public partial class App : Application
             catch { /* Column already exists */ }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN DebugStopServiceAfterLock INTEGER NOT NULL DEFAULT 0"); }
             catch { /* Column already exists */ }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN DebugAppTimeOverride INTEGER NOT NULL DEFAULT 0"); }
+            catch { /* Column already exists */ }
 
-            // Seed common browsers into AppRules (unblocked by default)
-            foreach (var (proc, name) in new[]
-            {
-                ("msedge", "Microsoft Edge"),
-                ("chrome", "Google Chrome"),
-                ("firefox", "Mozilla Firefox"),
-                ("opera", "Opera"),
-                ("brave", "Brave Browser"),
-            })
-            {
-                try
-                {
-                    db.Database.ExecuteSqlRaw(
-                        "INSERT INTO AppRules (ProcessName, DisplayName, IsBlocked, CreatedAt) " +
-                        "SELECT ?, ?, 0, datetime('now') " +
-                        "WHERE NOT EXISTS (SELECT 1 FROM AppRules WHERE ProcessName = ?)",
-                        proc, name, proc);
-                }
-                catch { }
-            }
+            // App Time pool fields
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN AppTimeLimitMinutes INTEGER NOT NULL DEFAULT 60"); }
+            catch { /* Column already exists */ }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN TodayAppTimeUsedMinutes INTEGER NOT NULL DEFAULT 0"); }
+            catch { /* Column already exists */ }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN TodayAppTimeBonusMinutes INTEGER NOT NULL DEFAULT 0"); }
+            catch { /* Column already exists */ }
+
+            // New columns for access categorisation
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE AppRules ADD COLUMN AccessMode INTEGER NOT NULL DEFAULT 0"); }
+            catch { /* Column already exists */ }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE AppRules ADD COLUMN TodayPlaytimeSeconds INTEGER NOT NULL DEFAULT 0"); }
+            catch { /* Column already exists */ }
+
+            // Migrate legacy IsBlocked=1 rows to AccessMode=2 (Blocked)
+            try { db.Database.ExecuteSqlRaw("UPDATE AppRules SET AccessMode = 2 WHERE IsBlocked = 1 AND AccessMode = 0"); }
+            catch { }
+
+            // Reset today's playtime on startup (service is not yet running at this point)
+            try { db.Database.ExecuteSqlRaw("UPDATE AppRules SET TodayPlaytimeSeconds = 0"); }
+            catch { }
+
+            SeedBrowsers(db);
 
             // Migrate legacy "Dark"/"Light" AppTheme values to "Default" + ThemeIsDark flag
             try { db.Database.ExecuteSqlRaw("UPDATE Settings SET AppTheme = 'Default' WHERE AppTheme = 'Dark'"); }
@@ -174,6 +180,104 @@ public partial class App : Application
             // ── Tertiary: Magenta (Red-Purple) ────────────────────────────────
             ["Magenta"]   = (("#1E0818", "#170512", "#2E1028", "#3E183A", "#240C1E", "#882288", "#FFB0EE", "#CC70CC"),
                               ("#FFF0FA", "#FFE0F5", "#FFFCFE", "#FFC8F0", "#FFF5FB", "#AA2299", "#3A0030", "#880888")),
+
+            // ── Ice Blue — Azure / White ──────────────────────────────────────
+            ["Ice Blue"]      = (("#0A1018", "#060C12", "#10202E", "#182C3E", "#0C1A26", "#0090FF", "#F0F8FF", "#8BBCDC"),
+                                  ("#FAFCFF", "#F2F8FF", "#FFFFFF", "#E8F4FF", "#F5FAFF", "#0078D4", "#0A0E14", "#2A4A6A")),
+
+            // ── Complementary pairs ───────────────────────────────────────────
+
+            // Navy blue bg + Warm orange accent  (Blue ↔ Orange)
+            ["Sunset"]        = (("#0E1528", "#0A0F1E", "#182040", "#243060", "#141A34", "#E07028", "#FFD0A0", "#C07840"),
+                                  ("#FFF5EC", "#FFEEDD", "#FFFBF7", "#FFE4C8", "#FFF0E4", "#2244AA", "#0A1A40", "#3355AA")),
+
+            // Deep teal bg + Vivid magenta accent  (Teal ↔ Magenta)
+            ["Aurora"]        = (("#001A14", "#001010", "#002820", "#003828", "#001E18", "#C0308C", "#AAFFD8", "#60C898"),
+                                  ("#F0FFF8", "#E0FFF0", "#F8FFFC", "#C8FFEA", "#E8FFF4", "#B02888", "#002018", "#006040")),
+
+            // Deep violet bg + Chartreuse accent  (Violet ↔ Yellow-green)
+            ["Eclipse"]       = (("#120A22", "#0C0618", "#1E1030", "#2C1848", "#180E2C", "#90C020", "#E8D0FF", "#A088C8"),
+                                  ("#F8F5FF", "#EEE8FF", "#FDFBFF", "#E0D4FF", "#F4F0FF", "#6A9000", "#200A40", "#5020A0")),
+
+            // Dark cyan bg + Red-orange accent  (Cyan ↔ Red-orange)
+            ["Coral Reef"]    = (("#041C1C", "#021414", "#082C2C", "#0E3C3C", "#062424", "#E04820", "#A0F0E8", "#60C0B8"),
+                                  ("#F0FFFE", "#E0FFFC", "#F8FFFF", "#C8FFF8", "#E8FFFD", "#CC3800", "#021C18", "#005048")),
+
+            // Dark emerald bg + Vivid crimson accent  (Green ↔ Red)
+            ["Forest Fire"]   = (("#081A08", "#041004", "#102810", "#183818", "#0C2010", "#CC2020", "#FFE8F4", "#C890A8"),
+                                  ("#FFF0F0", "#FFE0E0", "#FFFAFA", "#FFD0D0", "#FFF5F5", "#1A6010", "#0A1A08", "#2A5020")),
+
+            // Near-black blue bg + Rich gold accent  (Midnight blue ↔ Amber)
+            ["Midnight Gold"] = (("#08080E", "#04040A", "#10101A", "#18182A", "#0C0C14", "#D4A000", "#FFE880", "#C0A040"),
+                                  ("#FFFBEE", "#FFF5D8", "#FFFEF8", "#FFEEB8", "#FFFBF0", "#0A0A3A", "#080820", "#1A1A60")),
+
+            // Dark wine/burgundy bg + Electric aqua accent  (Red ↔ Cyan)
+            ["Volcanic"]      = (("#1E0808", "#140404", "#2C1010", "#3C1818", "#240C0C", "#00C8C0", "#FFD0D0", "#C08080"),
+                                  ("#EEFFFF", "#D8FFFE", "#F5FFFF", "#C0FFFC", "#E8FFFF", "#880010", "#1A0408", "#600010")),
+
+            // Dark olive/forest bg + Cherry blossom pink accent  (Green ↔ Rose)
+            ["Sakura"]        = (("#141A08", "#0C1004", "#1E2810", "#2A3818", "#181E0C", "#E0408C", "#FFE8F4", "#C890A8"),
+                                  ("#FFF0F8", "#FFE0F0", "#FFFCFE", "#FFD0E8", "#FFF5FB", "#2A5010", "#101A08", "#3A6020")),
+
+            // Dark rust/burnt orange bg + Electric blue accent  (Orange ↔ Blue)
+            ["Wildfire"]      = (("#1E0E04", "#140804", "#2C1808", "#3C2410", "#241008", "#2060E8", "#FFE0C8", "#C08060"),
+                                  ("#EEF2FF", "#E0E8FF", "#F8FAFF", "#C8D8FF", "#EEF4FF", "#B84400", "#080E30", "#1A2A80")),
+
+            // Dark warm brown bg + Verdigris/seafoam accent  (Red-orange ↔ Blue-green)
+            ["Copper Patina"] = (("#1A0E08", "#110804", "#281810", "#38241A", "#20120C", "#30A888", "#D8C0A8", "#A08060"),
+                                  ("#EEFFF8", "#DCFFF0", "#F5FFFC", "#C0FFE8", "#E8FFF4", "#883010", "#180E04", "#602010")),
+
+            // Dark amber bg + Deep indigo accent  (Yellow-orange ↔ Blue-violet)
+            ["Solstice"]      = (("#1A1000", "#100A00", "#281800", "#382400", "#201400", "#5830D0", "#FFE8A0", "#C0A850"),
+                                  ("#F5F0FF", "#EEE5FF", "#FDFBFF", "#E0D0FF", "#F8F4FF", "#AA6600", "#180800", "#604000")),
+
+            // ── Nature ───────────────────────────────────────────────────────
+
+            // Near-black deep blue bg + Bioluminescent green accent
+            ["Deep Ocean"]    = (("#020A12", "#010608", "#041018", "#082028", "#030C16", "#00E890", "#B0F0E0", "#50C0A0"),
+                                  ("#EDFFF8", "#DAFFF2", "#F5FFFC", "#C0FFE8", "#E8FFF6", "#004A30", "#010C08", "#006040")),
+
+            // Dark warm ash/grey bg + Lava orange accent
+            ["Volcanic Ash"]  = (("#1A1410", "#120E0A", "#261E18", "#342824", "#201814", "#FF5500", "#F0E0D0", "#B09080"),
+                                  ("#FFF5F0", "#FFEBE0", "#FFFAF8", "#FFD8C0", "#FFF0E8", "#4A3020", "#1A1008", "#604030")),
+
+            // Dark cool slate bg + Aurora green accent
+            ["Arctic Night"]  = (("#0A0E14", "#060810", "#10161E", "#182028", "#0C1218", "#00E8A0", "#C8E8F8", "#78A8C8"),
+                                  ("#F0FFFE", "#E0FFFC", "#F8FFFF", "#C0FFF8", "#E8FFFD", "#006050", "#080E12", "#204050")),
+
+            // Very dark forest bg + Golden canopy light accent
+            ["Rainforest"]    = (("#061008", "#040A05", "#0A1A0C", "#102414", "#081410", "#E8C020", "#D0F0B8", "#80B860"),
+                                  ("#FDFEE8", "#FAFAD0", "#FEFEF5", "#F8F8A0", "#FBFBE8", "#1A4010", "#081008", "#2A5018")),
+
+            // Dark blue-grey bg + Electric lightning yellow accent
+            ["Storm"]         = (("#0C1018", "#080C12", "#121820", "#1C2430", "#0E141C", "#E8D800", "#D8E8F8", "#7898B8"),
+                                  ("#FDFEF0", "#FAFAD8", "#FEFEF8", "#F8F8B0", "#FCFCE8", "#2A3040", "#080C14", "#2A3850")),
+
+            // Dark warm sand/earth bg + Terracotta accent
+            ["Desert"]        = (("#1C1408", "#140E04", "#2A1E10", "#3A2A1A", "#22180C", "#CC5020", "#F0E0C0", "#C0A070"),
+                                  ("#FFF8EE", "#FFF0D8", "#FFFDF8", "#FFE4C0", "#FFF5E8", "#883010", "#1C1004", "#604020")),
+
+            // ── Aesthetic / Style ─────────────────────────────────────────────
+
+            // Deep purple-black bg + Neon hot pink accent
+            ["Synthwave"]     = (("#0D0518", "#080310", "#140828", "#1E0C3A", "#100620", "#FF1090", "#E0D0FF", "#8060C8"),
+                                  ("#FEF0FF", "#FCE0FF", "#FEFAFF", "#F8C8FF", "#FCF0FF", "#8800CC", "#1A0028", "#600090")),
+
+            // Near-black bg + Neon yellow-green accent
+            ["Cyberpunk"]     = (("#0E0E04", "#080800", "#181808", "#242410", "#10100A", "#CCFF00", "#F0FF80", "#90CC00"),
+                                  ("#F8FFEE", "#F0FFD8", "#FBFFEE", "#E0FF80", "#F4FFE8", "#304000", "#0A0E00", "#405010")),
+
+            // Very dark near-black bg + Deep crimson accent
+            ["Gothic"]        = (("#0A0404", "#060202", "#140808", "#200C0C", "#0E0606", "#8B0000", "#E8C8C8", "#A06868"),
+                                  ("#FFF0F0", "#FFE4E4", "#FFFBFB", "#FFD0D0", "#FFF5F5", "#4A0000", "#0A0404", "#400808")),
+
+            // Near-pure black bg + Silver/white accent
+            ["Noir"]          = (("#080808", "#040404", "#101010", "#181818", "#0C0C0C", "#C8C8C8", "#F8F8F8", "#A0A0A0"),
+                                  ("#FAFAFA", "#F0F0F0", "#FFFFFF", "#E8E8E8", "#F5F5F5", "#181818", "#080808", "#505050")),
+
+            // Dark aged brass/bronze bg + Copper accent
+            ["Steampunk"]     = (("#140E04", "#0C0800", "#201608", "#302210", "#1A1206", "#B86020", "#F0D880", "#C09040"),
+                                  ("#FFF8E8", "#FFF0D0", "#FFFDF5", "#FFE4A8", "#FFF8EC", "#5C2800", "#1A0C00", "#603010")),
         };
 
         // Fallback for legacy names
@@ -193,6 +297,33 @@ public partial class App : Application
 
         static SolidColorBrush Brush(string hex) =>
             new((Color)ColorConverter.ConvertFromString(hex));
+    }
+
+    public static void SeedBrowsers(AppDbContext db)
+    {
+        foreach (var (proc, displayName) in new[]
+        {
+            ("msedge.exe",  "Microsoft Edge"),
+            ("chrome.exe",  "Google Chrome"),
+            ("firefox.exe", "Mozilla Firefox"),
+            ("opera.exe",   "Opera"),
+            ("brave.exe",   "Brave Browser"),
+            ("vivaldi.exe", "Vivaldi"),
+        })
+        {
+            var procNoExt = proc[..^4];
+            if (!db.AppRules.Any(r => r.ProcessName == proc || r.ProcessName == procNoExt))
+            {
+                db.AppRules.Add(new AppRule
+                {
+                    ProcessName = proc,
+                    DisplayName = displayName,
+                    IsBlocked   = false,
+                    AccessMode  = (int)AppAccessMode.Unrestricted,
+                });
+            }
+        }
+        db.SaveChanges();
     }
 
     private static void EnsureServiceRunning()
