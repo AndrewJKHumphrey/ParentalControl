@@ -1,0 +1,60 @@
+<Page x:Class="ParentalControl.UI.Views.FocusModePage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Background="{DynamicResource AppBg}" Title="Focus Mode">
+    <ScrollViewer>
+        <StackPanel Margin="32">
+            <TextBlock Text="Focus Mode" FontSize="24" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"/>
+            <TextBlock Text="Set focus hours for each day of the week. Apps not marked 'Allowed in Focus Mode' on the App Control page will be closed during these windows."
+                       Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,24" TextWrapping="Wrap"/>
+
+            <!-- Profile selector + Focus Mode toggle -->
+            <Border Background="{DynamicResource CardBg}" CornerRadius="8"
+                    Padding="12,8" Margin="0,0,0,12">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Profile:" VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextPrimary}" Margin="0,0,12,0"/>
+                    <ComboBox x:Name="ProfileSelector" Width="200"
+                              SelectionChanged="ProfileSelector_Changed"/>
+                    <TextBlock Text="Focus Mode Enabled:" VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextPrimary}" Margin="24,0,12,0"/>
+                    <TextBlock Text="Off" VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextSecondary}" Margin="0,0,8,0" FontSize="13"/>
+                    <CheckBox x:Name="FocusModeToggle" Style="{StaticResource ToggleSwitch}"
+                              Checked="FocusModeToggle_Changed" Unchecked="FocusModeToggle_Changed"/>
+                    <TextBlock Text="On" VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextSecondary}" Margin="8,0,0,0" FontSize="13"/>
+                </StackPanel>
+            </Border>
+
+            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="20">
+                <DataGrid x:Name="ScheduleGrid" AutoGenerateColumns="False"
+                          Background="Transparent" Foreground="{DynamicResource TextPrimary}"
+                          BorderThickness="0" GridLinesVisibility="Horizontal"
+                          HeadersVisibility="Column" RowBackground="Transparent"
+                          AlternatingRowBackground="{DynamicResource AltRowBg}"
+                          CanUserAddRows="False" CanUserDeleteRows="False"
+                          CanUserSortColumns="False"
+                          CellEditEnding="ScheduleGrid_CellEditEnding">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Day" Binding="{Binding DayOfWeek}" Width="100" IsReadOnly="True"/>
+                        <DataGridCheckBoxColumn Header="Enabled" Binding="{Binding IsEnabled}" Width="80"/>
+                        <DataGridTextColumn Header="Focus From (e.g. 1500, 3pm, 15:00)"
+                                            Binding="{Binding FocusFromStr}" Width="240"/>
+                        <DataGridTextColumn Header="Focus Until (e.g. 2100, 9pm, 21:00)"
+                                            Binding="{Binding FocusUntilStr}" Width="240"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Border>
+
+            <Button Content="Save Changes" Margin="0,16,0,0" Height="38" Width="160"
+                    HorizontalAlignment="Left"
+                    Background="#89B4FA" Foreground="#1E1E2E" FontWeight="Bold"
+                    BorderThickness="0" Cursor="Hand"
+                    Click="SaveButton_Click"/>
+
+            <TextBlock x:Name="StatusText" Foreground="#A6E3A1" Margin="0,10,0,0" Visibility="Collapsed"/>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

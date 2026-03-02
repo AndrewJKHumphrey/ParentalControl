@@ -33,7 +33,11 @@ public class ScreenTimeEnforcer
     private bool _lockedDueToTimeWindow = false;
     private bool _lockedDueToDailyLimit = false;
 
-    public bool IsScreenTimeLocked => _lockedDueToTimeWindow || _lockedDueToDailyLimit;
+    private int    _activeProfileId = 0;
+    private string _activeUsername  = string.Empty;
+
+    public bool IsScreenTimeLocked  => _lockedDueToTimeWindow || _lockedDueToDailyLimit;
+    public bool TriggeredDebugStop  { get; private set; }
 
     public ScreenTimeEnforcer(ActivityLogger logger, NotificationService notifier)
     {
@@ -43,14 +47,16 @@ public class ScreenTimeEnforcer
 
     public void LoadRules()
     {
-        // Rules are read fresh from DB each tick, no caching needed
+        // Rules are read fresh from DB each tick; also refresh profile on explicit reload
+        var username  = GetActiveWindowsUsername();
+        _activeUsername  = username;
+        _activeProfileId = ResolveProfileId(username);
     }
 
     public void Tick()
     {
         var now = DateTime.Now;
 
-        // Always advance the clock so elapsed doesn't balloon after a gap
         var elapsed = (DateTime.UtcNow - _lastTickTime).TotalMinutes;
         _lastTickTime = DateTime.UtcNow;
 
@@ -60,19 +66,34 @@ public class ScreenTimeEnforcer
             var settings = db.Settings.FirstOrDefault();
             if (settings == null) return;
 
-            // Reset daily counter if date changed
-            if (settings.UsageDate.Date != DateTime.Now.Date)
+            // Resolve active profile
+            var activeUsername = GetActiveWindowsUsername();
+            if (!string.Equals(activeUsername, _activeUsername, StringComparison.OrdinalIgnoreCase))
             {
-                settings.UsageDate = DateTime.Now.Date;
-                settings.TodayUsedMinutes = 0;
-                settings.TodayBonusMinutes = 0;
+                _activeUsername  = activeUsername;
+                _activeProfileId = ResolveProfileId(activeUsername, db);
+                _pendingMinutes  = 0;
+                _lockedDueToTimeWindow = false;
+                _lockedDueToDailyLimit = false;
+            }
+            if (_activeProfileId == 0)
+                _activeProfileId = ResolveProfileId(activeUsername, db);
+
+            var profile = db.UserProfiles.Find(_activeProfileId);
+            if (profile == null || !profile.IsEnabled) return;
+
+            // Reset daily counter if date changed
+            if (profile.UsageDate.Date != DateTime.Now.Date)
+            {
+                profile.UsageDate       = DateTime.Now.Date;
+                profile.TodayUsedMinutes  = 0;
+                profile.TodayBonusMinutes = 0;
                 _pendingMinutes = 0;
                 _lockedDueToTimeWindow = false;
                 _lockedDueToDailyLimit = false;
             }
 
-            // Accumulate fractional minutes; ticks are 5s so elapsed is ~0.083 —
-            // casting directly to int would always truncate to 0.
+            // Accumulate fractional minutes
             if (IsUserActive())
                 _pendingMinutes += elapsed;
 
@@ -80,16 +101,15 @@ public class ScreenTimeEnforcer
             if (wholeMinutes > 0)
             {
                 _pendingMinutes -= wholeMinutes;
-                settings.TodayUsedMinutes += wholeMinutes;
+                profile.TodayUsedMinutes += wholeMinutes;
             }
 
             db.SaveChanges();
 
-            // Skip enforcement if Screen Time is disabled from the dashboard
             if (!settings.ScreenTimeEnabled) return;
 
-            // Enforce limits only if enabled for today
-            var limit = db.ScreenTimeLimits.FirstOrDefault(l => l.DayOfWeek == now.DayOfWeek);
+            var limit = db.ScreenTimeLimits.FirstOrDefault(
+                l => l.DayOfWeek == now.DayOfWeek && l.UserProfileId == _activeProfileId);
             if (limit == null || !limit.IsEnabled) return;
 
             var currentTime = TimeOnly.FromDateTime(now);
@@ -97,7 +117,6 @@ public class ScreenTimeEnforcer
             // --- Enforce allowed time window ---
             if (currentTime < limit.AllowedFrom || currentTime > limit.AllowedUntil)
             {
-                // Guard flag prevents re-locking every tick — lock fires once per time-window event
                 if (IsUserLoggedIn() && !_lockedDueToTimeWindow)
                 {
                     _lockedDueToTimeWindow = true;
@@ -111,19 +130,17 @@ public class ScreenTimeEnforcer
                         $"Outside allowed hours ({limit.AllowedFrom}-{limit.AllowedUntil})");
                     _notifier.SendScreenLockNotification(
                         $"Outside allowed hours ({limit.AllowedFrom:HH\\:mm}–{limit.AllowedUntil:HH\\:mm}).");
-                    DebugStopIfFlagSet();
+                    if (settings.DebugStopServiceAfterLock) TriggeredDebugStop = true;
                 }
-                return; // don't evaluate daily limit while outside allowed hours
+                return;
             }
 
-            // Back within allowed hours — reset time-window lock flag
             _lockedDueToTimeWindow = false;
 
             // --- Enforce daily limit ---
             if (limit.DailyLimitMinutes > 0 &&
-                settings.TodayUsedMinutes >= limit.DailyLimitMinutes + settings.TodayBonusMinutes)
+                profile.TodayUsedMinutes >= limit.DailyLimitMinutes + profile.TodayBonusMinutes)
             {
-                // Guard flag prevents re-locking every tick — lock fires once per day's limit event
                 if (IsUserLoggedIn() && !_lockedDueToDailyLimit)
                 {
                     _lockedDueToDailyLimit = true;
@@ -136,7 +153,7 @@ public class ScreenTimeEnforcer
                         $"Daily limit of {limit.DailyLimitMinutes} min reached");
                     _notifier.SendScreenLockNotification(
                         $"Daily screen time limit of {limit.DailyLimitMinutes} minutes reached.");
-                    DebugStopIfFlagSet();
+                    if (settings.DebugStopServiceAfterLock) TriggeredDebugStop = true;
                 }
             }
             else
@@ -145,6 +162,36 @@ public class ScreenTimeEnforcer
             }
         }
         catch { }
+    }
+
+    internal static string GetActiveWindowsUsername()
+    {
+        var sessionId = (int)WTSGetActiveConsoleSessionId();
+        if (sessionId == -1) return string.Empty;
+
+        if (WTSQuerySessionInformation(IntPtr.Zero, sessionId, 5 /* WTSUserName */,
+            out var pBuffer, out _))
+        {
+            var username = Marshal.PtrToStringUni(pBuffer) ?? string.Empty;
+            WTSFreeMemory(pBuffer);
+            return username.Trim();
+        }
+        return string.Empty;
+    }
+
+    internal static int ResolveProfileId(string username, AppDbContext? db = null)
+    {
+        bool owned = db == null;
+        db ??= new AppDbContext();
+        try
+        {
+            var profile = db.UserProfiles.FirstOrDefault(p =>
+                p.WindowsUsername.ToLower() == username.ToLower() && p.IsEnabled)
+                ?? db.UserProfiles.FirstOrDefault(p => p.WindowsUsername == "" && p.IsEnabled);
+            return profile?.Id ?? 1;
+        }
+        catch { return 1; }
+        finally { if (owned) db.Dispose(); }
     }
 
     private static void SendWarning(string message)
@@ -161,9 +208,8 @@ public class ScreenTimeEnforcer
 
     private static bool IsUserActive()
     {
-        // Use the console session (the interactive desktop), not the service's session 0
         var sessionId = (int)WTSGetActiveConsoleSessionId();
-        if (sessionId == -1) return false; // 0xFFFFFFFF = no active session
+        if (sessionId == -1) return false;
 
         if (WTSQuerySessionInformation(IntPtr.Zero, sessionId, 8 /* WTSConnectState */,
             out var pBuffer, out _))
@@ -172,39 +218,9 @@ public class ScreenTimeEnforcer
             WTSFreeMemory(pBuffer);
             return state == 0; // WTSActive
         }
-        return true; // assume active if query fails — better to over-count than miss time
+        return true;
     }
 
-    // Exits the service process immediately after a lock event when the developer has
-    // enabled the "stop service after lock" safety flag in Settings. This prevents a
-    // testing mishap from locking the developer out of their own machine.
-    private static void DebugStopIfFlagSet()
-    {
-        try
-        {
-            using var db = new AppDbContext();
-            if (db.Settings.FirstOrDefault()?.DebugStopServiceAfterLock == true)
-                Environment.Exit(0);
-        }
-        catch { }
-    }
-
-    // Distinct from IsUserActive: at the Windows login screen the session state is still
-    // WTSActive (Winlogon owns it), so we check for a non-empty username to confirm a real
-    // user account is actually logged in before attempting to disconnect.
     private static bool IsUserLoggedIn()
-    {
-        var sessionId = (int)WTSGetActiveConsoleSessionId();
-        if (sessionId == -1) return false;
-
-        if (WTSQuerySessionInformation(IntPtr.Zero, sessionId, 5 /* WTSUserName */,
-            out var pBuffer, out _))
-        {
-            var username = Marshal.PtrToStringUni(pBuffer) ?? string.Empty;
-            WTSFreeMemory(pBuffer);
-            return !string.IsNullOrWhiteSpace(username);
-        }
-        return true; // assume user is logged in if query fails — better to try locking than miss
-    }
-
+        => !string.IsNullOrWhiteSpace(GetActiveWindowsUsername());
 }

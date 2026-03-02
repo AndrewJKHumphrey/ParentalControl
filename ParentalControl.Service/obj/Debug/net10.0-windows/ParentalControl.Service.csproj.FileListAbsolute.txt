@@ -87,3 +87,8 @@ C:\Users\humph\ParentalControl\ParentalControl.Service\obj\Debug\net10.0-windows
 C:\Users\humph\ParentalControl\ParentalControl.Service\obj\Debug\net10.0-windows\ParentalControl.Service.genruntimeconfig.cache
 C:\Users\humph\ParentalControl\ParentalControl.Service\obj\Debug\net10.0-windows\ref\ParentalControl.Service.dll
 C:\Users\humph\ParentalControl\ParentalControl.Service\obj\Debug\net10.0-windows\ParentalControl.Service.sourcelink.json
+C:\Users\humph\ParentalControl\ParentalControl.Service\bin\Debug\net10.0-windows\BouncyCastle.Cryptography.dll
+C:\Users\humph\ParentalControl\ParentalControl.Service\bin\Debug\net10.0-windows\MailKit.dll
+C:\Users\humph\ParentalControl\ParentalControl.Service\bin\Debug\net10.0-windows\MimeKit.dll
+C:\Users\humph\ParentalControl\ParentalControl.Service\bin\Debug\net10.0-windows\System.Security.Cryptography.Pkcs.dll
+C:\Users\humph\ParentalControl\ParentalControl.Service\bin\Debug\net10.0-windows\runtimes\win\lib\net10.0\System.Security.Cryptography.Pkcs.dll

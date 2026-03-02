@@ -1,4 +1,5 @@
 using System.Windows.Controls;
+using System.Windows.Media;
 using System.Windows.Threading;
 using ParentalControl.Core.Data;
 using ParentalControl.Core.Models;
@@ -24,6 +25,15 @@ public partial class DashboardPage : Page
         Unloaded += (_, _) => _refreshTimer.Stop();
     }
 
+    private static UserProfile? ResolveActiveProfile(AppDbContext db)
+    {
+        var username = Environment.UserName;
+        return db.UserProfiles.AsEnumerable()
+            .FirstOrDefault(p => p.IsEnabled &&
+                string.Equals(p.WindowsUsername, username, StringComparison.OrdinalIgnoreCase))
+            ?? db.UserProfiles.FirstOrDefault(p => p.IsEnabled && p.WindowsUsername == "");
+    }
+
     private async Task LoadDataAsync()
     {
         try
@@ -31,15 +41,18 @@ public partial class DashboardPage : Page
             using var db = new AppDbContext();
 
             var settings = db.Settings.FirstOrDefault();
-            if (settings != null)
-            {
-                ScreenTimeText.Text = $"{settings.TodayUsedMinutes} min";
+            var profile  = ResolveActiveProfile(db);
 
-                int appUsed  = settings.TodayAppTimeUsedMinutes;
-                int appLimit = settings.AppTimeLimitMinutes + settings.TodayAppTimeBonusMinutes;
+            if (profile != null)
+            {
+                ActiveProfileText.Text = profile.DisplayName;
+                ScreenTimeText.Text    = $"{profile.TodayUsedMinutes} min";
+
+                int appUsed  = profile.TodayAppTimeUsedMinutes;
+                int appLimit = profile.AppTimeLimitMinutes + profile.TodayAppTimeBonusMinutes;
                 AppTimeUsedText.Text = $"{appUsed} min";
 #if DEBUG
-                if (settings.DebugAppTimeOverride && settings.AppTimeLimitMinutes != 0)
+                if (settings?.DebugAppTimeOverride == true && profile.AppTimeLimitMinutes != 0)
                 {
                     AppTimeLimitText.Text = $"of 6 min limit ({Math.Max(0, 6 - appUsed)} min remaining) [DEBUG OVERRIDE]";
                 }
@@ -48,11 +61,14 @@ public partial class DashboardPage : Page
                 AppTimeLimitText.Text = appLimit == 0
                     ? "no daily limit set"
                     : $"of {appLimit} min limit ({Math.Max(0, appLimit - appUsed)} min remaining)";
+            }
 
+            if (settings != null)
+            {
                 // Load enforcement toggles (only once to avoid re-triggering the changed handler)
                 if (!_enforcementLoaded)
                 {
-                    _enforcementLoaded = false; // keep false until all three are set
+                    _enforcementLoaded = false;
                     ScreenTimeToggle.IsChecked = settings.ScreenTimeEnabled;
                     AppControlToggle.IsChecked = settings.AppControlEnabled;
                     WebFilterToggle.IsChecked  = settings.WebFilterEnabled;
@@ -60,20 +76,42 @@ public partial class DashboardPage : Page
                 }
             }
 
-            var today = DateTime.Now.Date;
+            var today     = DateTime.Now.Date;
+            var profileId = profile?.Id ?? 1;
 
-            var limit = db.ScreenTimeLimits.FirstOrDefault(l => l.DayOfWeek == DateTime.Now.DayOfWeek);
+            var limit = db.ScreenTimeLimits.FirstOrDefault(
+                l => l.DayOfWeek == DateTime.Now.DayOfWeek && l.UserProfileId == profileId);
+
             if (limit != null && limit.IsEnabled)
             {
                 bool use12h = settings?.TimeFormat12Hour == true;
                 AllowedRangeText.Text = $"{FormatTime(limit.AllowedFrom, use12h)} – {FormatTime(limit.AllowedUntil, use12h)}";
-                int effective = limit.DailyLimitMinutes + (settings?.TodayBonusMinutes ?? 0);
+                int todayBonus = profile?.TodayBonusMinutes ?? 0;
+                int effective  = limit.DailyLimitMinutes + todayBonus;
                 DailyLimitText.Text = limit.DailyLimitMinutes == 0 ? "Unlimited" : $"{effective} min";
+
+                if (limit.DailyLimitMinutes == 0)
+                {
+                    TimeRemainingText.Text = "Unlimited";
+                    TimeRemainingText.Foreground = new SolidColorBrush(Color.FromRgb(0xCB, 0xA6, 0xF7));
+                }
+                else
+                {
+                    int remaining = Math.Max(0, effective - (profile?.TodayUsedMinutes ?? 0));
+                    TimeRemainingText.Text = FormatDuration(remaining);
+                    TimeRemainingText.Foreground = remaining > 30
+                        ? new SolidColorBrush(Color.FromRgb(0xA6, 0xE3, 0xA1))
+                        : remaining > 10
+                            ? new SolidColorBrush(Color.FromRgb(0xF9, 0xE2, 0xAF))
+                            : new SolidColorBrush(Color.FromRgb(0xF3, 0x8B, 0xA8));
+                }
             }
             else
             {
                 AllowedRangeText.Text = "No limit today";
-                DailyLimitText.Text = "No limit today";
+                DailyLimitText.Text   = "No limit today";
+                TimeRemainingText.Text = "No limit";
+                TimeRemainingText.Foreground = new SolidColorBrush(Color.FromRgb(0xCB, 0xA6, 0xF7));
             }
 
             var appsBlocked = db.ActivityEntries
@@ -91,6 +129,14 @@ public partial class DashboardPage : Page
             RecentGrid.ItemsSource = recent;
         }
         catch { }
+    }
+
+    private static string FormatDuration(int minutes)
+    {
+        if (minutes == 0) return "0m";
+        int h = minutes / 60;
+        int m = minutes % 60;
+        return h > 0 ? (m > 0 ? $"{h}h {m}m" : $"{h}h") : $"{m}m";
     }
 
     private static string FormatTime(TimeOnly t, bool use12h)
@@ -122,7 +168,7 @@ public partial class DashboardPage : Page
         await _ipc.SendAsync(ParentalControl.Core.IpcCommand.ReloadRules);
     }
 
-        private async void AdminToggle_Changed(object sender, System.Windows.RoutedEventArgs e)
+    private async void AdminToggle_Changed(object sender, System.Windows.RoutedEventArgs e)
     {
         if (!_enforcementLoaded) return;
 
@@ -139,7 +185,7 @@ public partial class DashboardPage : Page
 
                 ScreenTimeToggle.IsEnabled = flag;
                 AppControlToggle.IsEnabled = flag;
-                WebFilterToggle.IsEnabled = flag; 
+                WebFilterToggle.IsEnabled  = flag;
                 db.SaveChanges();
             }
         }
@@ -161,9 +207,9 @@ public partial class DashboardPage : Page
             await Task.Run(() =>
             {
                 using var db = new AppDbContext();
-                var settings = db.Settings.FirstOrDefault();
-                if (settings == null) return;
-                settings.TodayAppTimeBonusMinutes += minutes;
+                var profile = ResolveActiveProfile(db);
+                if (profile == null) return;
+                profile.TodayAppTimeBonusMinutes += minutes;
                 db.SaveChanges();
             });
             await LoadDataAsync();
@@ -188,9 +234,9 @@ public partial class DashboardPage : Page
             await Task.Run(() =>
             {
                 using var db = new AppDbContext();
-                var settings = db.Settings.FirstOrDefault();
-                if (settings == null) return;
-                settings.TodayBonusMinutes += minutes;
+                var profile = ResolveActiveProfile(db);
+                if (profile == null) return;
+                profile.TodayBonusMinutes += minutes;
                 db.SaveChanges();
             });
             await LoadDataAsync();

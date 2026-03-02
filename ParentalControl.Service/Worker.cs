@@ -11,15 +11,17 @@ namespace ParentalControl.Service;
 public class Worker : BackgroundService
 {
     private readonly ILogger<Worker> _log;
+    private readonly IHostApplicationLifetime _lifetime;
     private ActivityLogger? _activityLogger;
     private ProcessMonitor? _processMonitor;
     private ScreenTimeEnforcer? _screenTimeEnforcer;
     private WebsiteFilter? _websiteFilter;
     private IpcServer? _ipcServer;
 
-    public Worker(ILogger<Worker> log)
+    public Worker(ILogger<Worker> log, IHostApplicationLifetime lifetime)
     {
-        _log = log;
+        _log      = log;
+        _lifetime = lifetime;
     }
 
     public override async Task StartAsync(CancellationToken ct)
@@ -50,6 +52,13 @@ public class Worker : BackgroundService
             {
                 _screenTimeEnforcer!.Tick();
                 _processMonitor!.EnforceRules(_screenTimeEnforcer.IsScreenTimeLocked);
+
+                if (_screenTimeEnforcer.TriggeredDebugStop)
+                {
+                    _log.LogInformation("Debug stop flag triggered — stopping service.");
+                    _lifetime.StopApplication();
+                    return;
+                }
             }
             catch (Exception ex)
             {
@@ -109,6 +118,77 @@ public class Worker : BackgroundService
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN NotifyOnAppBlock INTEGER NOT NULL DEFAULT 1"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE AppRules ADD COLUMN TodayPlaytimeSeconds INTEGER NOT NULL DEFAULT 0"); } catch { }
             try { db.Database.ExecuteSqlRaw("UPDATE AppRules SET AccessMode = 2 WHERE IsBlocked = 1 AND AccessMode = 0"); } catch { }
+
+            // Focus Mode + Profiles additions
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE AppRules ADD COLUMN AllowedInFocusMode INTEGER NOT NULL DEFAULT 1"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE AppRules ADD COLUMN UserProfileId INTEGER NOT NULL DEFAULT 1"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE ScreenTimeLimits ADD COLUMN UserProfileId INTEGER NOT NULL DEFAULT 1"); } catch { }
+
+            // FocusSchedules table
+            try
+            {
+                db.Database.ExecuteSqlRaw(@"
+                    CREATE TABLE IF NOT EXISTS FocusSchedules (
+                        Id            INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                        DayOfWeek     INTEGER NOT NULL,
+                        IsEnabled     INTEGER NOT NULL DEFAULT 0,
+                        FocusFrom     TEXT    NOT NULL DEFAULT '15:00:00',
+                        FocusUntil    TEXT    NOT NULL DEFAULT '21:00:00',
+                        UserProfileId INTEGER NOT NULL DEFAULT 1
+                    )");
+            }
+            catch { }
+            try
+            {
+                db.Database.ExecuteSqlRaw(@"
+                    INSERT INTO FocusSchedules (DayOfWeek, IsEnabled, FocusFrom, FocusUntil, UserProfileId)
+                    SELECT v.day, 0, '15:00:00', '21:00:00', 1
+                    FROM (VALUES (0),(1),(2),(3),(4),(5),(6)) AS v(day)
+                    WHERE NOT EXISTS (SELECT 1 FROM FocusSchedules WHERE UserProfileId = 1)");
+            }
+            catch { }
+
+            // UserProfiles table
+            try
+            {
+                db.Database.ExecuteSqlRaw(@"
+                    CREATE TABLE IF NOT EXISTS UserProfiles (
+                        Id                       INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                        WindowsUsername          TEXT    NOT NULL DEFAULT '',
+                        DisplayName              TEXT    NOT NULL DEFAULT 'Default',
+                        IsEnabled                INTEGER NOT NULL DEFAULT 1,
+                        TodayUsedMinutes         INTEGER NOT NULL DEFAULT 0,
+                        UsageDate                TEXT    NOT NULL DEFAULT '',
+                        TodayBonusMinutes        INTEGER NOT NULL DEFAULT 0,
+                        TodayAppTimeUsedMinutes  INTEGER NOT NULL DEFAULT 0,
+                        TodayAppTimeBonusMinutes INTEGER NOT NULL DEFAULT 0,
+                        AppTimeLimitMinutes      INTEGER NOT NULL DEFAULT 60,
+                        FocusModeEnabled         INTEGER NOT NULL DEFAULT 0
+                    )");
+            }
+            catch { }
+            try
+            {
+                db.Database.ExecuteSqlRaw(@"
+                    INSERT INTO UserProfiles (Id, WindowsUsername, DisplayName, IsEnabled, UsageDate)
+                    SELECT 1, '', 'Default', 1, date('now')
+                    WHERE NOT EXISTS (SELECT 1 FROM UserProfiles WHERE Id = 1)");
+            }
+            catch { }
+            // One-time migration: copy existing usage from AppSettings into Default profile
+            try
+            {
+                db.Database.ExecuteSqlRaw(@"
+                    UPDATE UserProfiles
+                    SET TodayUsedMinutes         = (SELECT TodayUsedMinutes FROM Settings WHERE Id = 1),
+                        UsageDate                = (SELECT UsageDate FROM Settings WHERE Id = 1),
+                        TodayBonusMinutes        = (SELECT TodayBonusMinutes FROM Settings WHERE Id = 1),
+                        TodayAppTimeUsedMinutes  = (SELECT TodayAppTimeUsedMinutes FROM Settings WHERE Id = 1),
+                        TodayAppTimeBonusMinutes = (SELECT TodayAppTimeBonusMinutes FROM Settings WHERE Id = 1),
+                        AppTimeLimitMinutes      = (SELECT AppTimeLimitMinutes FROM Settings WHERE Id = 1)
+                    WHERE Id = 1 AND TodayUsedMinutes = 0");
+            }
+            catch { }
 
             // Seed common browsers (unblocked, AccessMode=0)
             foreach (var (proc, name) in new[]

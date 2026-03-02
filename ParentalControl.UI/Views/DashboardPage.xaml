@@ -29,9 +29,25 @@
 
                 <Border Style="{StaticResource StatCard}">
                     <StackPanel>
+                        <TextBlock Text="Time Remaining Today" Foreground="{DynamicResource TextSecondary}" FontSize="12"/>
+                        <TextBlock x:Name="TimeRemainingText" Text="--"
+                                   FontSize="28" FontWeight="Bold" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource StatCard}">
+                    <StackPanel>
                         <TextBlock Text="Allowed Time Range" Foreground="{DynamicResource TextSecondary}" FontSize="12"/>
                         <TextBlock x:Name="AllowedRangeText" Text="--:-- – --:--" Foreground="#A6E3A1"
                                    FontSize="28" FontWeight="Bold" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource StatCard}">
+                    <StackPanel>
+                        <TextBlock Text="Active Profile" Foreground="{DynamicResource TextSecondary}" FontSize="12"/>
+                        <TextBlock x:Name="ActiveProfileText" Text="--"
+                                   Foreground="#CBA6F7" FontSize="20" FontWeight="Bold" Margin="0,4,0,0"/>
                     </StackPanel>
                 </Border>
 
@@ -70,6 +86,13 @@
             <WrapPanel Margin="0,0,0,16">
                 <Border Style="{StaticResource StatCard}">
                     <StackPanel>
+                        <TextBlock Text="Apps Blocked Today" Foreground="{DynamicResource TextSecondary}" FontSize="12"/>
+                        <TextBlock x:Name="AppsBlockedText" Text="--" Foreground="#F38BA8"
+                                   FontSize="28" FontWeight="Bold" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource StatCard}">
+                    <StackPanel>
                         <TextBlock Text="App Time Used Today" Foreground="{DynamicResource TextSecondary}" FontSize="12"/>
                         <TextBlock x:Name="AppTimeUsedText" Text="-- min" Foreground="#FAB387"
                                    FontSize="28" FontWeight="Bold" Margin="0,4,0,0"/>
@@ -103,14 +126,6 @@
                                     Background="#F38BA8" Foreground="#1E1E2E" FontWeight="Bold"
                                     BorderThickness="0" Cursor="Hand" Click="ExtendAppTime_Click"/>
                         </StackPanel>
-                    </StackPanel>
-                </Border>
-
-                <Border Style="{StaticResource StatCard}">
-                    <StackPanel>
-                        <TextBlock Text="Apps Blocked Today" Foreground="{DynamicResource TextSecondary}" FontSize="12"/>
-                        <TextBlock x:Name="AppsBlockedText" Text="--" Foreground="#F38BA8"
-                                   FontSize="28" FontWeight="Bold" Margin="0,4,0,0"/>
                     </StackPanel>
                 </Border>
             </WrapPanel>

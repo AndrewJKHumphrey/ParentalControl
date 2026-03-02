@@ -85,3 +85,7 @@ C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Debug\net10.0-windows\Pare
 C:\Users\humph\ParentalControl\ParentalControl.UI\bin\Debug\net10.0-windows\BouncyCastle.Cryptography.dll
 C:\Users\humph\ParentalControl\ParentalControl.UI\bin\Debug\net10.0-windows\MailKit.dll
 C:\Users\humph\ParentalControl\ParentalControl.UI\bin\Debug\net10.0-windows\MimeKit.dll
+C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Debug\net10.0-windows\Views\FocusModePage.baml
+C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Debug\net10.0-windows\Views\ProfilesPage.baml
+C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Debug\net10.0-windows\Views\FocusModePage.g.cs
+C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Debug\net10.0-windows\Views\ProfilesPage.g.cs

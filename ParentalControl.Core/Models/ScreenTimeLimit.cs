@@ -8,4 +8,5 @@ public class ScreenTimeLimit
     public TimeOnly AllowedFrom { get; set; } = new TimeOnly(0, 0);
     public TimeOnly AllowedUntil { get; set; } = new TimeOnly(23, 59);
     public bool IsEnabled { get; set; }
+    public int UserProfileId { get; set; } = 1;
 }

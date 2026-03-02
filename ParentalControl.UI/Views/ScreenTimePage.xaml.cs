@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using ParentalControl.Core;
 using ParentalControl.Core.Data;
+using ParentalControl.Core.Models;
 using ParentalControl.UI.Services;
 
 namespace ParentalControl.UI.Views;
@@ -23,6 +24,7 @@ public partial class ScreenTimePage : Page
     private readonly IpcClient _ipc = new();
     private List<ScreenTimeLimitRow> _rows = new();
     private bool _use12h = false;
+    private int _selectedProfileId = 1;
 
     public ScreenTimePage()
     {
@@ -32,17 +34,31 @@ public partial class ScreenTimePage : Page
 
     private void InitPage()
     {
-        // Load format preference before showing anything
         try
         {
             using var db = new AppDbContext();
             var settings = db.Settings.FirstOrDefault();
             if (settings?.TimeFormat12Hour == true)
                 _use12h = true;
-        }
-        catch { }
 
-        LoadData();
+            var profiles = db.UserProfiles.OrderBy(p => p.Id).ToList();
+            ProfileSelector.ItemsSource   = profiles;
+            ProfileSelector.SelectedIndex = 0;
+            // SelectionChanged fires → LoadData()
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Failed to load profiles: {ex.Message}");
+        }
+    }
+
+    private void ProfileSelector_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (ProfileSelector.SelectedItem is UserProfile p)
+        {
+            _selectedProfileId = p.Id;
+            LoadData();
+        }
     }
 
     private string FormatTime(TimeOnly t)
@@ -58,18 +74,19 @@ public partial class ScreenTimePage : Page
     // hardcoded AM/PM strings on non-English Windows regional settings.
     private static bool TryParseDisplayTime(string s, out TimeOnly result)
     {
-        // 24h invariant: "00:00" – "23:59"
-        if (TimeOnly.TryParseExact(s, "HH:mm", CultureInfo.InvariantCulture,
-                DateTimeStyles.None, out result))
+        // 24h invariant: "0:00" – "23:59" (single or double-digit hour)
+        if (TimeOnly.TryParseExact(s.Trim(), new[] { "H:mm", "HH:mm" },
+                CultureInfo.InvariantCulture, DateTimeStyles.None, out result))
             return true;
 
-        // Custom 12h: "h:mm AM" / "h:mm PM"  (as produced by FormatTime)
+        // Custom 12h: "h:mm AM/PM" with or without a space before the suffix
         var upper = s.Trim().ToUpperInvariant();
-        bool pm = upper.EndsWith(" PM");
-        bool am = upper.EndsWith(" AM");
+        bool pm = upper.EndsWith(" PM") || upper.EndsWith("PM");
+        bool am = upper.EndsWith(" AM") || upper.EndsWith("AM");
         if (pm || am)
         {
-            var timePart = upper[..^3].Trim();
+            int suffixLen = (upper.EndsWith(" PM") || upper.EndsWith(" AM")) ? 3 : 2;
+            var timePart = upper[..^suffixLen].Trim();
             if (TimeOnly.TryParseExact(timePart, new[] { "h:mm", "hh:mm" },
                     CultureInfo.InvariantCulture, DateTimeStyles.None, out result))
             {
@@ -89,6 +106,7 @@ public partial class ScreenTimePage : Page
         {
             using var db = new AppDbContext();
             _rows = db.ScreenTimeLimits
+                .Where(l => l.UserProfileId == _selectedProfileId)
                 .OrderBy(l => l.DayOfWeek)
                 .Select(l => new ScreenTimeLimitRow
                 {
@@ -148,8 +166,9 @@ public partial class ScreenTimePage : Page
         if (string.IsNullOrWhiteSpace(input)) return null;
         input = input.Trim();
 
-        // Direct parse — handles "9:30 PM", "21:00", "9:30am", "9 AM", etc.
-        if (TimeOnly.TryParse(input, out var t))
+        // Use culture-invariant parser to avoid locale-dependent misinterpretation
+        // (TimeOnly.TryParse is culture-sensitive and can shift AM times by 12h).
+        if (TryParseDisplayTime(input, out var t))
             return FormatTime(t);
 
         // Digit-only shorthand with optional AM/PM suffix: "930pm", "9pm", "2000"

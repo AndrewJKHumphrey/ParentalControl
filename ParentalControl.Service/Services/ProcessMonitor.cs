@@ -23,10 +23,16 @@ public class ProcessMonitor
     private readonly Lock _rulesLock = new();
 
     // Enforcement sets (process names without .exe)
-    private readonly HashSet<string> _blockedProcesses        = new(StringComparer.OrdinalIgnoreCase);
-    private readonly HashSet<string> _screenTimeOnlyProcesses = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _blockedProcesses         = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _screenTimeOnlyProcesses  = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _focusRestrictedProcesses = new(StringComparer.OrdinalIgnoreCase);
+    private List<FocusSchedule> _focusSchedules = new();
 
-    // Shared App Time pool — tracks seconds any ScreenTimeOnly app was running this session
+    // Profile tracking
+    private int    _activeProfileId = 0;
+    private string _activeUsername  = string.Empty;
+
+    // Shared App Time pool
     private double   _appTimePendingSeconds = 0;
     private DateTime _lastTickTime          = DateTime.UtcNow;
     private DateTime _lastDbFlush           = DateTime.UtcNow;
@@ -35,28 +41,40 @@ public class ProcessMonitor
     // Warning state: maps process name → when the 5-min warning was issued
     private readonly Dictionary<string, DateTime> _warningIssuedAt = new(StringComparer.OrdinalIgnoreCase);
 
-    // Processes observed running while enforcement was not active (i.e. before the limit was hit)
-    // Used to distinguish "was playing when time ran out" from "opened after time already ran out"
+    // Processes running before the limit was hit (eligible for grace period)
     private readonly HashSet<string> _ranBeforeStop = new(StringComparer.OrdinalIgnoreCase);
 
     public ProcessMonitor(ActivityLogger logger, NotificationService notifier)
     {
         _logger   = logger;
         _notifier = notifier;
-        LoadRules();
     }
 
+    // Called externally (IPC ReloadRules) — reloads for the currently active profile
     public void LoadRules()
+    {
+        var username  = ScreenTimeEnforcer.GetActiveWindowsUsername();
+        var profileId = ScreenTimeEnforcer.ResolveProfileId(username);
+        _activeUsername  = username;
+        _activeProfileId = profileId;
+        LoadRulesForProfile(profileId);
+    }
+
+    private void LoadRulesForProfile(int profileId)
     {
         lock (_rulesLock)
         {
             _blockedProcesses.Clear();
             _screenTimeOnlyProcesses.Clear();
+            _focusRestrictedProcesses.Clear();
 
             try
             {
                 using var db = new AppDbContext();
-                var rules = db.AppRules.Select(r => new { r.ProcessName, r.AccessMode }).ToList();
+                var rules = db.AppRules
+                    .Where(r => r.UserProfileId == profileId)
+                    .Select(r => new { r.ProcessName, r.AccessMode, r.AllowedInFocusMode })
+                    .ToList();
 
                 foreach (var r in rules)
                 {
@@ -65,7 +83,14 @@ public class ProcessMonitor
                         _blockedProcesses.Add(name);
                     else if (r.AccessMode == (int)AppAccessMode.ScreenTimeOnly)
                         _screenTimeOnlyProcesses.Add(name);
+
+                    if (!r.AllowedInFocusMode)
+                        _focusRestrictedProcesses.Add(name);
                 }
+
+                _focusSchedules = db.FocusSchedules
+                    .Where(s => s.UserProfileId == profileId)
+                    .ToList();
             }
             catch { }
         }
@@ -73,7 +98,6 @@ public class ProcessMonitor
 
     public void EnforceRules(bool screenTimeLocked)
     {
-        // Check master app-control switch
         try
         {
             using var db = new AppDbContext();
@@ -82,67 +106,89 @@ public class ProcessMonitor
         }
         catch { }
 
+        // Resolve active profile; reload rules if the Windows user changed
+        var activeUsername = ScreenTimeEnforcer.GetActiveWindowsUsername();
+        if (!string.Equals(activeUsername, _activeUsername, StringComparison.OrdinalIgnoreCase))
+        {
+            _activeUsername = activeUsername;
+            int newProfileId = ScreenTimeEnforcer.ResolveProfileId(activeUsername);
+            if (newProfileId != _activeProfileId)
+            {
+                _activeProfileId       = newProfileId;
+                _appTimePendingSeconds = 0;
+                _warningIssuedAt.Clear();
+                _ranBeforeStop.Clear();
+                LoadRulesForProfile(_activeProfileId);
+            }
+        }
+        if (_activeProfileId == 0)
+        {
+            _activeProfileId = ScreenTimeEnforcer.ResolveProfileId(activeUsername);
+            LoadRulesForProfile(_activeProfileId);
+        }
+
         // Midnight reset
         var today = DateOnly.FromDateTime(DateTime.Today);
         if (today != _lastResetDate)
         {
-            _lastResetDate = today;
+            _lastResetDate         = today;
             _appTimePendingSeconds = 0;
             _warningIssuedAt.Clear();
             _ranBeforeStop.Clear();
             try
             {
                 using var db = new AppDbContext();
-                var settings = db.Settings.FirstOrDefault();
-                if (settings != null)
+                var profile = db.UserProfiles.Find(_activeProfileId);
+                if (profile != null)
                 {
-                    settings.TodayAppTimeUsedMinutes  = 0;
-                    settings.TodayAppTimeBonusMinutes = 0;
+                    profile.TodayAppTimeUsedMinutes  = 0;
+                    profile.TodayAppTimeBonusMinutes = 0;
                     db.SaveChanges();
                 }
             }
             catch { }
         }
 
-        // Elapsed time since last tick
         var now     = DateTime.UtcNow;
         var elapsed = (now - _lastTickTime).TotalSeconds;
         _lastTickTime = now;
 
-        // Read App Time limit and current usage once per tick
+        // Read App Time limit and usage from active UserProfile
         int limitMinutes = 0, usedMinutes = 0, bonusMinutes = 0;
-        bool debugOverride = false;
+        bool debugOverride = false, focusModeEnabled = false;
         try
         {
             using var db = new AppDbContext();
             var settings = db.Settings.FirstOrDefault();
-            if (settings != null)
+            var profile  = db.UserProfiles.Find(_activeProfileId);
+            if (profile != null)
             {
-                limitMinutes = settings.AppTimeLimitMinutes;
-                usedMinutes  = settings.TodayAppTimeUsedMinutes;
-                bonusMinutes = settings.TodayAppTimeBonusMinutes;
-                if (settings.DebugAppTimeOverride && limitMinutes != 0)
-                {
-                    limitMinutes = 6;
-                    debugOverride = true;
-                }
+                limitMinutes     = profile.AppTimeLimitMinutes;
+                usedMinutes      = profile.TodayAppTimeUsedMinutes;
+                bonusMinutes     = profile.TodayAppTimeBonusMinutes;
+                focusModeEnabled = profile.FocusModeEnabled;
+            }
+            if (settings?.DebugAppTimeOverride == true && limitMinutes != 0)
+            {
+                limitMinutes  = 6;
+                debugOverride = true;
             }
         }
         catch { }
 
-        bool appTimeLimitActive = limitMinutes > 0;
-        // Use effective minutes (DB value + in-memory pending) so enforcement fires
-        // as soon as the limit is hit, not up to 60 s later when the DB is next flushed.
-        int effectiveUsedMinutes = usedMinutes + (int)(_appTimePendingSeconds / 60.0);
+        bool appTimeLimitActive   = limitMinutes > 0;
+        int  effectiveUsedMinutes = usedMinutes + (int)(_appTimePendingSeconds / 60.0);
         bool appTimeLimitExceeded = appTimeLimitActive &&
             (effectiveUsedMinutes >= limitMinutes + bonusMinutes);
 
-        // Take local copies of rule sets
-        HashSet<string> blocked, screenTimeOnly;
+        bool focusModeActive = focusModeEnabled && IsFocusModeActive();
+
+        HashSet<string> blocked, screenTimeOnly, focusRestricted;
         lock (_rulesLock)
         {
-            blocked       = new HashSet<string>(_blockedProcesses,        StringComparer.OrdinalIgnoreCase);
-            screenTimeOnly = new HashSet<string>(_screenTimeOnlyProcesses, StringComparer.OrdinalIgnoreCase);
+            blocked         = new HashSet<string>(_blockedProcesses,         StringComparer.OrdinalIgnoreCase);
+            screenTimeOnly  = new HashSet<string>(_screenTimeOnlyProcesses,  StringComparer.OrdinalIgnoreCase);
+            focusRestricted = new HashSet<string>(_focusRestrictedProcesses, StringComparer.OrdinalIgnoreCase);
         }
 
         bool anyScreenTimeOnlyRunning = false;
@@ -157,7 +203,6 @@ public class ProcessMonitor
 
                     if (blocked.Contains(pName))
                     {
-                        // Always-blocked: kill immediately
                         process.Kill(entireProcessTree: true);
                         _logger.Log(ActivityType.AppBlocked, pName);
                         _notifier.SendAppBlockNotification(pName, "App is on the blocked list.");
@@ -172,7 +217,6 @@ public class ProcessMonitor
                         {
                             if (_warningIssuedAt.TryGetValue(pName, out var warnedAt))
                             {
-                                // Was running when limit hit — check if grace period has elapsed
                                 double gracePeriodMinutes = debugOverride ? (30.0 / 60.0) : 5.0;
                                 if ((now - warnedAt).TotalMinutes >= gracePeriodMinutes)
                                 {
@@ -182,17 +226,14 @@ public class ProcessMonitor
                                     _warningIssuedAt.Remove(pName);
                                     _ranBeforeStop.Remove(pName);
                                 }
-                                // else: inside grace window — leave running
                             }
                             else if (_ranBeforeStop.Contains(pName))
                             {
-                                // Was running before limit hit but not yet warned — send warning
                                 SendWarning(pName, debugOverride);
                                 _warningIssuedAt[pName] = now;
                             }
                             else
                             {
-                                // Opened after limit was already exceeded — kill immediately, no warning
                                 process.Kill(entireProcessTree: true);
                                 _logger.Log(ActivityType.AppBlocked, pName);
                                 _notifier.SendAppBlockNotification(pName, "App time limit already reached.");
@@ -200,10 +241,15 @@ public class ProcessMonitor
                         }
                         else
                         {
-                            // Conditions clear — track as running, cancel any pending warning
                             _ranBeforeStop.Add(pName);
                             _warningIssuedAt.Remove(pName);
                         }
+                    }
+                    else if (focusModeActive && focusRestricted.Contains(pName))
+                    {
+                        process.Kill(entireProcessTree: true);
+                        _logger.Log(ActivityType.AppBlocked, pName);
+                        _notifier.SendAppBlockNotification(pName, "Focus mode is active.");
                     }
                 }
                 catch { }
@@ -215,11 +261,9 @@ public class ProcessMonitor
         }
         catch { }
 
-        // Accumulate shared App Time pool if any ScreenTimeOnly app was running
         if (anyScreenTimeOnlyRunning && !appTimeLimitExceeded)
             _appTimePendingSeconds += elapsed;
 
-        // Flush App Time usage to DB every ~60 seconds, or immediately when limit is hit
         bool flushNow = (now - _lastDbFlush).TotalSeconds >= 60 ||
                         (appTimeLimitExceeded && _appTimePendingSeconds > 0);
         if (flushNow)
@@ -231,6 +275,23 @@ public class ProcessMonitor
 
     // -------------------------------------------------------------------------
 
+    private bool IsFocusModeActive()
+    {
+        try
+        {
+            var now       = TimeOnly.FromDateTime(DateTime.Now);
+            var dayOfWeek = DateTime.Now.DayOfWeek;
+            List<FocusSchedule> schedules;
+            lock (_rulesLock)
+                schedules = _focusSchedules.ToList();
+
+            var schedule = schedules.FirstOrDefault(s => s.DayOfWeek == dayOfWeek);
+            if (schedule == null || !schedule.IsEnabled) return false;
+            return now >= schedule.FocusFrom && now <= schedule.FocusUntil;
+        }
+        catch { return false; }
+    }
+
     private void FlushAppTime()
     {
         var wholeMinutes = (int)(_appTimePendingSeconds / 60.0);
@@ -241,9 +302,9 @@ public class ProcessMonitor
         try
         {
             using var db = new AppDbContext();
-            var settings = db.Settings.FirstOrDefault();
-            if (settings == null) return;
-            settings.TodayAppTimeUsedMinutes += wholeMinutes;
+            var profile = db.UserProfiles.Find(_activeProfileId);
+            if (profile == null) return;
+            profile.TodayAppTimeUsedMinutes += wholeMinutes;
             db.SaveChanges();
         }
         catch { }

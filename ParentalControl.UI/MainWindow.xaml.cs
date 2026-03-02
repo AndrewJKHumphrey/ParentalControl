@@ -2,6 +2,7 @@ using System.ServiceProcess;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Threading;
 using ParentalControl.UI.Views;
 
 using ParentalControl.UI.Services;
@@ -18,7 +19,13 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         Navigate("Dashboard");
-        Loaded += (_, _) => RefreshServiceButton();
+        Loaded += (_, _) =>
+        {
+            RefreshServiceButton();
+            var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+            timer.Tick += (_, _) => RefreshServiceButton();
+            timer.Start();
+        };
     }
 
     private void NavButton_Click(object sender, RoutedEventArgs e)
@@ -34,6 +41,8 @@ public partial class MainWindow : Window
             "Dashboard"   => (object)new DashboardPage(),
             "ScreenTime"  => new ScreenTimePage(),
             "AppControl"  => new AppControlPage(),
+            "FocusMode"   => new FocusModePage(),
+            "Profiles"    => new ProfilesPage(),
             "WebFilter"   => new WebFilterPage(),
             "ActivityLog" => new ActivityLogPage(),
             "Settings"    => new SettingsPage(),

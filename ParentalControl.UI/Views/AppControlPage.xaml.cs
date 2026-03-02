@@ -12,11 +12,37 @@ namespace ParentalControl.UI.Views;
 public partial class AppControlPage : Page
 {
     private readonly IpcClient _ipc = new();
+    private int _selectedProfileId = 1;
 
     public AppControlPage()
     {
         InitializeComponent();
-        Loaded += (_, _) => LoadData();
+        Loaded += (_, _) => InitPage();
+    }
+
+    private void InitPage()
+    {
+        try
+        {
+            using var db = new AppDbContext();
+            var profiles = db.UserProfiles.OrderBy(p => p.Id).ToList();
+            ProfileSelector.ItemsSource   = profiles;
+            ProfileSelector.SelectedIndex = 0;
+            // SelectionChanged fires and calls LoadData()
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Failed to load profiles: {ex.Message}");
+        }
+    }
+
+    private void ProfileSelector_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (ProfileSelector.SelectedItem is UserProfile p)
+        {
+            _selectedProfileId = p.Id;
+            LoadData();
+        }
     }
 
     private void LoadData()
@@ -24,11 +50,14 @@ public partial class AppControlPage : Page
         try
         {
             using var db = new AppDbContext();
-            AppRulesGrid.ItemsSource = db.AppRules.OrderBy(r => r.ProcessName).ToList();
+            AppRulesGrid.ItemsSource = db.AppRules
+                .Where(r => r.UserProfileId == _selectedProfileId)
+                .OrderBy(r => r.ProcessName)
+                .ToList();
 
-            var settings = db.Settings.FirstOrDefault();
-            if (settings != null)
-                AppTimeLimitBox.Text = settings.AppTimeLimitMinutes.ToString();
+            var profile = db.UserProfiles.Find(_selectedProfileId);
+            if (profile != null)
+                AppTimeLimitBox.Text = profile.AppTimeLimitMinutes.ToString();
         }
         catch (Exception ex)
         {
@@ -44,13 +73,15 @@ public partial class AppControlPage : Page
         try
         {
             using var db = new AppDbContext();
-            if (!db.AppRules.Any(r => r.ProcessName == processName))
+            if (!db.AppRules.Any(r => r.ProcessName == processName && r.UserProfileId == _selectedProfileId))
             {
                 db.AppRules.Add(new AppRule
                 {
-                    ProcessName = processName.ToLower(),
-                    DisplayName = string.IsNullOrEmpty(DisplayNameBox.Text) ? processName : DisplayNameBox.Text.Trim(),
-                    AccessMode  = (int)AppAccessMode.Blocked,
+                    ProcessName     = processName.ToLower(),
+                    DisplayName     = string.IsNullOrEmpty(DisplayNameBox.Text) ? processName : DisplayNameBox.Text.Trim(),
+                    AccessMode      = (int)AppAccessMode.Blocked,
+                    UserProfileId   = _selectedProfileId,
+                    AllowedInFocusMode = true,
                 });
                 db.SaveChanges();
             }
@@ -94,9 +125,10 @@ public partial class AppControlPage : Page
                     var existing = db.AppRules.Find(r.Id);
                     if (existing != null)
                     {
-                        existing.AccessMode  = r.AccessMode;
-                        existing.DisplayName = r.DisplayName;
-                        existing.ProcessName = r.ProcessName;
+                        existing.AccessMode        = r.AccessMode;
+                        existing.DisplayName       = r.DisplayName;
+                        existing.ProcessName       = r.ProcessName;
+                        existing.AllowedInFocusMode = r.AllowedInFocusMode;
                     }
                 }
 
@@ -112,9 +144,9 @@ public partial class AppControlPage : Page
                     return;
                 }
                 {
-                    var settings = db.Settings.FirstOrDefault();
-                    if (settings != null)
-                        settings.AppTimeLimitMinutes = limitMins;
+                    var profile = db.UserProfiles.Find(_selectedProfileId);
+                    if (profile != null)
+                        profile.AppTimeLimitMinutes = limitMins;
                 }
 
                 db.SaveChanges();
@@ -201,9 +233,11 @@ public partial class AppControlPage : Page
             }
             db.AppRules.Add(new AppRule
             {
-                DisplayName = name,
-                ProcessName = processName,
-                IsBlocked = false,
+                DisplayName        = name,
+                ProcessName        = processName,
+                IsBlocked          = false,
+                UserProfileId      = _selectedProfileId,
+                AllowedInFocusMode = true,
             });
             added++;
         }

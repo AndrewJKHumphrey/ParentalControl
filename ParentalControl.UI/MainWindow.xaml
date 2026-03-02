@@ -22,6 +22,10 @@
                         Tag="ScreenTime" Click="NavButton_Click"/>
                 <Button Style="{StaticResource NavButton}" Content="  App Control"
                         Tag="AppControl" Click="NavButton_Click"/>
+                <Button Style="{StaticResource NavButton}" Content="  Focus Mode"
+                        Tag="FocusMode" Click="NavButton_Click"/>
+                <Button Style="{StaticResource NavButton}" Content="  Profiles"
+                        Tag="Profiles" Click="NavButton_Click"/>
                 <Button Style="{StaticResource NavButton}" Content="  Web Filter"
                         Tag="WebFilter" Click="NavButton_Click" Visibility="Collapsed"/>
                 <Button Style="{StaticResource NavButton}" Content="  Activity Log"

@@ -12,15 +12,28 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0" Text="App Control" FontSize="24" FontWeight="Bold"
                    Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"/>
         <TextBlock Grid.Row="1" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,20" TextWrapping="Wrap"
-                   Text="Manage application access. Set each app to Unrestricted, Allowed during app time (uses the shared App Time pool), or Blocked (always killed)."/>
+                   Text="Manage application access per profile. Set each app to Unrestricted, Allowed during app time, or Blocked. Check 'Focus Mode' to allow an app during focus hours."/>
+
+        <!-- Profile selector -->
+        <Border Grid.Row="2" Background="{DynamicResource CardBg}" CornerRadius="8"
+                Padding="12,8" Margin="0,0,0,12">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="Profile:" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextPrimary}" Margin="0,0,12,0" FontWeight="SemiBold"/>
+                <ComboBox x:Name="ProfileSelector" Width="200"
+                          DisplayMemberPath="DisplayName"
+                          SelectionChanged="ProfileSelector_Changed"/>
+            </StackPanel>
+        </Border>
 
         <!-- Add new rule -->
-        <Grid Grid.Row="2" Margin="0,0,0,16">
+        <Grid Grid.Row="3" Margin="0,0,0,16">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
@@ -47,7 +60,7 @@
         </Grid>
 
         <!-- Steam scan -->
-        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,12" VerticalAlignment="Center">
+        <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,0,0,12" VerticalAlignment="Center">
             <Button x:Name="QuickScanButton" Content="Quick Scan (Steam)" Height="36" Padding="16,0"
                     Background="#CBA6F7" Foreground="#1E1E2E" FontWeight="Bold"
                     BorderThickness="0" Cursor="Hand" Click="QuickScanSteam_Click"
@@ -63,7 +76,7 @@
         </StackPanel>
 
         <!-- App Time limit setting -->
-        <Border Grid.Row="4" Background="{DynamicResource CardBg}" CornerRadius="8"
+        <Border Grid.Row="5" Background="{DynamicResource CardBg}" CornerRadius="8"
                 Padding="16,12" Margin="0,0,0,12">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                 <TextBlock Text="Daily App Time Limit:" VerticalAlignment="Center"
@@ -79,7 +92,7 @@
         </Border>
 
         <!-- Rules list -->
-        <Border Grid.Row="5" Background="{DynamicResource CardBg}" CornerRadius="8" Padding="8"
+        <Border Grid.Row="6" Background="{DynamicResource CardBg}" CornerRadius="8" Padding="8"
                 MaxHeight="450">
             <DataGrid x:Name="AppRulesGrid" AutoGenerateColumns="False"
                       Background="Transparent" Foreground="{DynamicResource TextPrimary}"
@@ -107,6 +120,17 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
+                    <!-- Focus Mode allowed checkbox -->
+                    <DataGridTemplateColumn Header="Focus Mode" Width="100">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox IsChecked="{Binding AllowedInFocusMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          ToolTip="Allow this app to run during Focus Mode hours"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
                     <!-- Remove row -->
                     <DataGridTemplateColumn Header="Remove" Width="80">
                         <DataGridTemplateColumn.CellTemplate>
@@ -123,7 +147,7 @@
             </DataGrid>
         </Border>
 
-        <Button Grid.Row="6" Content="Save Changes" Margin="0,12,0,0" Height="38" Width="160"
+        <Button Grid.Row="7" Content="Save Changes" Margin="0,12,0,0" Height="38" Width="160"
                 HorizontalAlignment="Left"
                 Background="#89B4FA" Foreground="#1E1E2E" FontWeight="Bold"
                 BorderThickness="0" Cursor="Hand"

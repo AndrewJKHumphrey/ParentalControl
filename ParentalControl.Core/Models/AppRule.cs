@@ -15,5 +15,7 @@ public class AppRule
     /// <summary>Legacy column kept in DB; use AccessMode for logic.</summary>
     public bool   IsBlocked           { get; set; }
     public int    AccessMode          { get; set; } = (int)AppAccessMode.Unrestricted;
+    public bool   AllowedInFocusMode  { get; set; } = true;
+    public int    UserProfileId       { get; set; } = 1;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
