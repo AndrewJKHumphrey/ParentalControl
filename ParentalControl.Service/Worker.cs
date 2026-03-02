@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Win32;
+using System.Security.Principal;
 using ParentalControl.Core.Data;
 using ParentalControl.Core.Models;
 using ParentalControl.Core.Services;
@@ -120,9 +122,10 @@ public class Worker : BackgroundService
             try { db.Database.ExecuteSqlRaw("UPDATE AppRules SET AccessMode = 2 WHERE IsBlocked = 1 AND AccessMode = 0"); } catch { }
 
             // Focus Mode + Profiles additions
-            try { db.Database.ExecuteSqlRaw("ALTER TABLE AppRules ADD COLUMN AllowedInFocusMode INTEGER NOT NULL DEFAULT 1"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE AppRules ADD COLUMN AllowedInFocusMode INTEGER NOT NULL DEFAULT 0"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE AppRules ADD COLUMN UserProfileId INTEGER NOT NULL DEFAULT 1"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE ScreenTimeLimits ADD COLUMN UserProfileId INTEGER NOT NULL DEFAULT 1"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE FocusSchedules ADD COLUMN UserProfileId INTEGER NOT NULL DEFAULT 1"); } catch { }
 
             // FocusSchedules table
             try
@@ -138,15 +141,44 @@ public class Worker : BackgroundService
                     )");
             }
             catch { }
+            for (int day = 0; day < 7; day++)
+            {
+                int d = day;
+                try
+                {
+                    db.Database.ExecuteSqlRaw(
+                        "INSERT INTO FocusSchedules (DayOfWeek, IsEnabled, FocusFrom, FocusUntil, UserProfileId) " +
+                        $"SELECT {d}, 0, '15:00:00', '21:00:00', 1 " +
+                        $"WHERE NOT EXISTS (SELECT 1 FROM FocusSchedules WHERE DayOfWeek = {d} AND UserProfileId = 1)");
+                }
+                catch { }
+            }
+
+            // AppTimeSchedules table
             try
             {
                 db.Database.ExecuteSqlRaw(@"
-                    INSERT INTO FocusSchedules (DayOfWeek, IsEnabled, FocusFrom, FocusUntil, UserProfileId)
-                    SELECT v.day, 0, '15:00:00', '21:00:00', 1
-                    FROM (VALUES (0),(1),(2),(3),(4),(5),(6)) AS v(day)
-                    WHERE NOT EXISTS (SELECT 1 FROM FocusSchedules WHERE UserProfileId = 1)");
+                    CREATE TABLE IF NOT EXISTS AppTimeSchedules (
+                        Id                INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                        DayOfWeek         INTEGER NOT NULL,
+                        IsEnabled         INTEGER NOT NULL DEFAULT 0,
+                        DailyLimitMinutes INTEGER NOT NULL DEFAULT 60,
+                        UserProfileId     INTEGER NOT NULL DEFAULT 1
+                    )");
             }
             catch { }
+            for (int day = 0; day < 7; day++)
+            {
+                int d = day;
+                try
+                {
+                    db.Database.ExecuteSqlRaw(
+                        "INSERT INTO AppTimeSchedules (DayOfWeek, IsEnabled, DailyLimitMinutes, UserProfileId) " +
+                        $"SELECT {d}, 0, 60, 1 " +
+                        $"WHERE NOT EXISTS (SELECT 1 FROM AppTimeSchedules WHERE DayOfWeek = {d} AND UserProfileId = 1)");
+                }
+                catch { }
+            }
 
             // UserProfiles table
             try
@@ -212,6 +244,10 @@ public class Worker : BackgroundService
                 }
                 catch { }
             }
+
+            // Auto-seed a UserProfile for every Windows user account on this machine.
+            // Runs every startup so newly added accounts are picked up automatically.
+            SeedWindowsUserProfiles(db);
         }
         catch (Exception ex)
         {
@@ -220,5 +256,115 @@ public class Worker : BackgroundService
                 $"ParentalControl DB init failed: {ex.Message}",
                 System.Diagnostics.EventLogEntryType.Error);
         }
+    }
+
+    private static void SeedWindowsUserProfiles(AppDbContext db)
+    {
+        var windowsUsers = GetLocalWindowsUsers();
+        foreach (var username in windowsUsers)
+        {
+            // Skip if a profile already exists for this account (case-insensitive)
+            if (db.UserProfiles.Any(p =>
+                    p.WindowsUsername.ToLower() == username.ToLower()))
+                continue;
+
+            var profile = new UserProfile
+            {
+                WindowsUsername = username,
+                DisplayName     = username,   // default display name = account name
+                IsEnabled       = true,
+                UsageDate       = DateTime.Now.Date,
+            };
+            db.UserProfiles.Add(profile);
+            db.SaveChanges();
+
+            // Seed 7 ScreenTimeLimits for the new profile
+            for (int i = 0; i < 7; i++)
+            {
+                db.ScreenTimeLimits.Add(new ScreenTimeLimit
+                {
+                    DayOfWeek         = (DayOfWeek)i,
+                    IsEnabled         = false,
+                    DailyLimitMinutes = 0,
+                    AllowedFrom       = new TimeOnly(0, 0),
+                    AllowedUntil      = new TimeOnly(23, 59),
+                    UserProfileId     = profile.Id,
+                });
+            }
+
+            // Seed 7 FocusSchedules for the new profile
+            for (int i = 0; i < 7; i++)
+            {
+                db.FocusSchedules.Add(new FocusSchedule
+                {
+                    DayOfWeek     = (DayOfWeek)i,
+                    IsEnabled     = false,
+                    FocusFrom     = new TimeOnly(15, 0),
+                    FocusUntil    = new TimeOnly(21, 0),
+                    UserProfileId = profile.Id,
+                });
+            }
+
+            // Seed 7 AppTimeSchedules for the new profile
+            for (int i = 0; i < 7; i++)
+            {
+                db.AppTimeSchedules.Add(new AppTimeSchedule
+                {
+                    DayOfWeek         = (DayOfWeek)i,
+                    IsEnabled         = false,
+                    DailyLimitMinutes = 60,
+                    UserProfileId     = profile.Id,
+                });
+            }
+            db.SaveChanges();
+        }
+    }
+
+    // Returns the username for every S-1-5-21-* SID in the registry ProfileList.
+    // Falls back to the profile folder name if SID translation fails.
+    private static List<string> GetLocalWindowsUsers()
+    {
+        var users = new List<string>();
+        try
+        {
+            using var profileList = Registry.LocalMachine.OpenSubKey(
+                @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList");
+            if (profileList == null) return users;
+
+            foreach (var sidStr in profileList.GetSubKeyNames())
+            {
+                // Only process standard user SIDs; skip built-in system accounts
+                if (!sidStr.StartsWith("S-1-5-21-")) continue;
+
+                try
+                {
+                    using var subKey = profileList.OpenSubKey(sidStr);
+                    var profilePath = subKey?.GetValue("ProfileImagePath") as string;
+                    if (string.IsNullOrWhiteSpace(profilePath)) continue;
+
+                    string username;
+                    try
+                    {
+                        var sid     = new SecurityIdentifier(sidStr);
+                        var account = (NTAccount)sid.Translate(typeof(NTAccount));
+                        var full    = account.Value; // "MACHINE\Username" or "DOMAIN\Username"
+                        username = full.Contains('\\')
+                            ? full[(full.LastIndexOf('\\') + 1)..]
+                            : full;
+                    }
+                    catch
+                    {
+                        // Fall back to the profile folder name (e.g. C:\Users\Alice → Alice)
+                        username = Path.GetFileName(profilePath.TrimEnd('\\'));
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(username))
+                        users.Add(username);
+                }
+                catch { }
+            }
+        }
+        catch { }
+        return users;
     }
 }

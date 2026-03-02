@@ -48,11 +48,15 @@ public partial class DashboardPage : Page
                 ActiveProfileText.Text = profile.DisplayName;
                 ScreenTimeText.Text    = $"{profile.TodayUsedMinutes} min";
 
-                int appUsed  = profile.TodayAppTimeUsedMinutes;
-                int appLimit = profile.AppTimeLimitMinutes + profile.TodayAppTimeBonusMinutes;
+                int appUsed = profile.TodayAppTimeUsedMinutes;
+                var todayAppSchedule = db.AppTimeSchedules.FirstOrDefault(
+                    s => s.DayOfWeek == DateTime.Now.DayOfWeek && s.UserProfileId == profile.Id);
+                int baseLimit = (todayAppSchedule?.IsEnabled == true) ? todayAppSchedule.DailyLimitMinutes : 0;
+                int appLimit  = baseLimit > 0 ? baseLimit + profile.TodayAppTimeBonusMinutes : 0;
+
                 AppTimeUsedText.Text = $"{appUsed} min";
 #if DEBUG
-                if (settings?.DebugAppTimeOverride == true && profile.AppTimeLimitMinutes != 0)
+                if (settings?.DebugAppTimeOverride == true && baseLimit != 0)
                 {
                     AppTimeLimitText.Text = $"of 6 min limit ({Math.Max(0, 6 - appUsed)} min remaining) [DEBUG OVERRIDE]";
                 }
@@ -88,7 +92,6 @@ public partial class DashboardPage : Page
                 AllowedRangeText.Text = $"{FormatTime(limit.AllowedFrom, use12h)} – {FormatTime(limit.AllowedUntil, use12h)}";
                 int todayBonus = profile?.TodayBonusMinutes ?? 0;
                 int effective  = limit.DailyLimitMinutes + todayBonus;
-                DailyLimitText.Text = limit.DailyLimitMinutes == 0 ? "Unlimited" : $"{effective} min";
 
                 if (limit.DailyLimitMinutes == 0)
                 {
@@ -109,7 +112,6 @@ public partial class DashboardPage : Page
             else
             {
                 AllowedRangeText.Text = "No limit today";
-                DailyLimitText.Text   = "No limit today";
                 TimeRemainingText.Text = "No limit";
                 TimeRemainingText.Foreground = new SolidColorBrush(Color.FromRgb(0xCB, 0xA6, 0xF7));
             }

@@ -6,32 +6,8 @@
         <StackPanel Margin="32">
             <TextBlock Text="Profiles" FontSize="24" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"/>
-            <TextBlock Text="Create a profile for each Windows user account on this machine. The service enforces that profile's rules when that user is logged in. Leave Windows Username blank to create a catch-all default profile."
+            <TextBlock Text="Profiles are automatically created for each Windows user account found on this machine when the service starts. Edit the Display Name or toggle Enabled to customise each profile. The service enforces the matching profile's rules when that user is logged in."
                        Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,24" TextWrapping="Wrap"/>
-
-            <!-- Add profile -->
-            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="20" Margin="0,0,0,16">
-                <StackPanel>
-                    <TextBlock Text="Add Profile" FontWeight="SemiBold" FontSize="14"
-                               Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,12"/>
-                    <WrapPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,16,8">
-                            <TextBlock Text="Display Name:" VerticalAlignment="Center" Width="120"
-                                       Foreground="{DynamicResource TextSecondary}"/>
-                            <TextBox x:Name="DisplayNameBox" Width="200" Height="32"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,16,8">
-                            <TextBlock Text="Windows Username:" VerticalAlignment="Center" Width="140"
-                                       Foreground="{DynamicResource TextSecondary}"/>
-                            <TextBox x:Name="UsernameBox" Width="200" Height="32"/>
-                        </StackPanel>
-                        <Button Content="Add Profile" Height="32" Width="110" Margin="0,0,0,8"
-                                Background="#A6E3A1" Foreground="#1E1E2E" FontWeight="Bold"
-                                BorderThickness="0" Cursor="Hand"
-                                Click="AddProfile_Click"/>
-                    </WrapPanel>
-                </StackPanel>
-            </Border>
 
             <!-- Profiles list -->
             <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="20">
@@ -43,8 +19,9 @@
                           CanUserAddRows="False" CanUserDeleteRows="False"
                           CanUserSortColumns="False">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Display Name" Binding="{Binding DisplayName}" Width="180"/>
-                        <DataGridTextColumn Header="Windows Username" Binding="{Binding WindowsUsername}" Width="200"/>
+                        <DataGridTextColumn Header="Display Name" Binding="{Binding DisplayName}" Width="200"/>
+                        <DataGridTextColumn Header="Windows Username" Binding="{Binding WindowsUsername}"
+                                            Width="200" IsReadOnly="True"/>
                         <DataGridCheckBoxColumn Header="Enabled" Binding="{Binding IsEnabled}" Width="80"/>
                         <DataGridTemplateColumn Header="Remove" Width="90">
                             <DataGridTemplateColumn.CellTemplate>

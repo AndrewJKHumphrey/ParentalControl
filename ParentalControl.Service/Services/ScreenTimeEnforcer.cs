@@ -120,6 +120,7 @@ public class ScreenTimeEnforcer
                 if (IsUserLoggedIn() && !_lockedDueToTimeWindow)
                 {
                     _lockedDueToTimeWindow = true;
+                    if (settings.DebugStopServiceAfterLock) TriggeredDebugStop = true;
                     SendWarning(
                         $"You are outside the allowed hours " +
                         $"({limit.AllowedFrom.ToString("HH:mm")}–{limit.AllowedUntil.ToString("HH:mm")}). " +
@@ -130,7 +131,6 @@ public class ScreenTimeEnforcer
                         $"Outside allowed hours ({limit.AllowedFrom}-{limit.AllowedUntil})");
                     _notifier.SendScreenLockNotification(
                         $"Outside allowed hours ({limit.AllowedFrom:HH\\:mm}–{limit.AllowedUntil:HH\\:mm}).");
-                    if (settings.DebugStopServiceAfterLock) TriggeredDebugStop = true;
                 }
                 return;
             }
@@ -144,6 +144,7 @@ public class ScreenTimeEnforcer
                 if (IsUserLoggedIn() && !_lockedDueToDailyLimit)
                 {
                     _lockedDueToDailyLimit = true;
+                    if (settings.DebugStopServiceAfterLock) TriggeredDebugStop = true;
                     SendWarning(
                         $"Daily screen time limit of {limit.DailyLimitMinutes} minutes has been reached. " +
                         $"The screen will lock in 30 seconds.");
@@ -153,7 +154,6 @@ public class ScreenTimeEnforcer
                         $"Daily limit of {limit.DailyLimitMinutes} min reached");
                     _notifier.SendScreenLockNotification(
                         $"Daily screen time limit of {limit.DailyLimitMinutes} minutes reached.");
-                    if (settings.DebugStopServiceAfterLock) TriggeredDebugStop = true;
                 }
             }
             else

@@ -75,19 +75,34 @@
                        Visibility="Collapsed"/>
         </StackPanel>
 
-        <!-- App Time limit setting -->
+        <!-- App Time Schedule (per-day) -->
         <Border Grid.Row="5" Background="{DynamicResource CardBg}" CornerRadius="8"
-                Padding="16,12" Margin="0,0,0,12">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="Daily App Time Limit:" VerticalAlignment="Center"
-                           Foreground="{DynamicResource TextPrimary}" Margin="0,0,12,0"/>
-                <TextBox x:Name="AppTimeLimitBox" Width="60" Height="32" TextAlignment="Center"
-                         Background="{DynamicResource AppBg}" Foreground="{DynamicResource TextPrimary}"
-                         BorderBrush="{DynamicResource BorderColor}" BorderThickness="1"
-                         Padding="4,4" FontSize="13" VerticalContentAlignment="Center"/>
-                <TextBlock Text="minutes per day for 'Allowed during app time' apps  (0 = unlimited)"
-                           VerticalAlignment="Center" Margin="8,0,0,0"
-                           Foreground="{DynamicResource TextSecondary}" FontSize="12"/>
+                Padding="8" Margin="0,0,0,12">
+            <StackPanel>
+                <TextBlock Text="Daily App Time Schedule" FontSize="14" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimary}" Margin="8,8,8,4"/>
+                <TextBlock Text="Enable a day and set its minute limit for 'Allowed during app time' apps. Disabled days have no app time limit."
+                           Foreground="{DynamicResource TextSecondary}" FontSize="12"
+                           Margin="8,0,8,8" TextWrapping="Wrap"/>
+                <DataGrid x:Name="AppTimeScheduleGrid" AutoGenerateColumns="False"
+                          Background="Transparent" Foreground="{DynamicResource TextPrimary}"
+                          BorderThickness="0" GridLinesVisibility="None"
+                          HeadersVisibility="Column" IsReadOnly="False"
+                          CanUserAddRows="False" CanUserDeleteRows="False"
+                          RowBackground="Transparent" AlternatingRowBackground="{DynamicResource AltRowBg}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Day" Binding="{Binding DayOfWeek}" IsReadOnly="True" Width="110"/>
+                        <DataGridTemplateColumn Header="Enabled" Width="80">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox IsChecked="{Binding IsEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="Daily Limit (minutes)" Binding="{Binding DailyLimitMinutes}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
             </StackPanel>
         </Border>
 

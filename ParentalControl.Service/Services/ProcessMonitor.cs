@@ -163,7 +163,9 @@ public class ProcessMonitor
             var profile  = db.UserProfiles.Find(_activeProfileId);
             if (profile != null)
             {
-                limitMinutes     = profile.AppTimeLimitMinutes;
+                var todaySchedule = db.AppTimeSchedules.FirstOrDefault(
+                    s => s.DayOfWeek == DateTime.Now.DayOfWeek && s.UserProfileId == _activeProfileId);
+                limitMinutes     = (todaySchedule?.IsEnabled == true) ? todaySchedule.DailyLimitMinutes : 0;
                 usedMinutes      = profile.TodayAppTimeUsedMinutes;
                 bonusMinutes     = profile.TodayAppTimeBonusMinutes;
                 focusModeEnabled = profile.FocusModeEnabled;

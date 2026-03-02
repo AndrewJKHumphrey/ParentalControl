@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
     public DbSet<AppSettings> Settings { get; set; }
     public DbSet<FocusSchedule> FocusSchedules { get; set; }
     public DbSet<UserProfile> UserProfiles { get; set; }
+    public DbSet<AppTimeSchedule> AppTimeSchedules { get; set; }
 
     public static string DbPath
     {
@@ -65,6 +66,19 @@ public class AppDbContext : DbContext
                 IsEnabled = false,
                 FocusFrom  = new TimeOnly(15, 0),
                 FocusUntil = new TimeOnly(21, 0),
+                UserProfileId = 1
+            });
+        }
+
+        // Seed default app time schedules (one per day, all disabled / 60 min default)
+        for (int i = 0; i < 7; i++)
+        {
+            modelBuilder.Entity<AppTimeSchedule>().HasData(new AppTimeSchedule
+            {
+                Id = i + 1,
+                DayOfWeek = (DayOfWeek)i,
+                IsEnabled = false,
+                DailyLimitMinutes = 60,
                 UserProfileId = 1
             });
         }

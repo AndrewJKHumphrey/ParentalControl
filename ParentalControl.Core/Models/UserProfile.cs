@@ -14,4 +14,6 @@ public class UserProfile
     public int      TodayAppTimeBonusMinutes { get; set; } = 0;
     public int      AppTimeLimitMinutes      { get; set; } = 60;
     public bool     FocusModeEnabled         { get; set; } = false;
+
+    public override string ToString() => DisplayName;
 }

@@ -457,3 +457,7 @@ C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Release\net10.0-windows\wi
 C:\Users\humph\ParentalControl\ParentalControl.UI\bin\Release\net10.0-windows\win-x64\BouncyCastle.Cryptography.dll
 C:\Users\humph\ParentalControl\ParentalControl.UI\bin\Release\net10.0-windows\win-x64\MailKit.dll
 C:\Users\humph\ParentalControl\ParentalControl.UI\bin\Release\net10.0-windows\win-x64\MimeKit.dll
+C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Release\net10.0-windows\win-x64\Views\FocusModePage.baml
+C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Release\net10.0-windows\win-x64\Views\ProfilesPage.baml
+C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Release\net10.0-windows\win-x64\Views\FocusModePage.g.cs
+C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Release\net10.0-windows\win-x64\Views\ProfilesPage.g.cs

@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using ParentalControl.Core;
 using ParentalControl.Core.Data;
 using ParentalControl.Core.Models;
@@ -30,80 +31,13 @@ public partial class ProfilesPage : Page
         }
     }
 
-    private async void AddProfile_Click(object sender, RoutedEventArgs e)
-    {
-        var displayName = DisplayNameBox.Text.Trim();
-        var username    = UsernameBox.Text.Trim();
-
-        if (string.IsNullOrEmpty(displayName))
-        {
-            MessageBox.Show("Display Name is required.", "Validation",
-                MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
-        }
-
-        try
-        {
-            using var db = new AppDbContext();
-            var newProfile = new UserProfile
-            {
-                DisplayName     = displayName,
-                WindowsUsername = username,
-                IsEnabled       = true,
-                UsageDate       = DateTime.Now.Date,
-            };
-            db.UserProfiles.Add(newProfile);
-            db.SaveChanges();
-
-            // Seed 7 ScreenTimeLimits for the new profile
-            for (int i = 0; i < 7; i++)
-            {
-                db.ScreenTimeLimits.Add(new ScreenTimeLimit
-                {
-                    DayOfWeek         = (DayOfWeek)i,
-                    IsEnabled         = false,
-                    DailyLimitMinutes = 0,
-                    AllowedFrom       = new TimeOnly(0, 0),
-                    AllowedUntil      = new TimeOnly(23, 59),
-                    UserProfileId     = newProfile.Id,
-                });
-            }
-
-            // Seed 7 FocusSchedules for the new profile
-            for (int i = 0; i < 7; i++)
-            {
-                db.FocusSchedules.Add(new FocusSchedule
-                {
-                    DayOfWeek     = (DayOfWeek)i,
-                    IsEnabled     = false,
-                    FocusFrom     = new TimeOnly(15, 0),
-                    FocusUntil    = new TimeOnly(21, 0),
-                    UserProfileId = newProfile.Id,
-                });
-            }
-            db.SaveChanges();
-
-            DisplayNameBox.Clear();
-            UsernameBox.Clear();
-            await _ipc.SendAsync(IpcCommand.ReloadRules);
-            LoadData();
-
-            StatusText.Text = $"Profile '{displayName}' added.";
-            StatusText.Visibility = Visibility.Visible;
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"Failed to add profile: {ex.Message}");
-        }
-    }
-
     private async void DeleteProfile_Click(object sender, RoutedEventArgs e)
     {
         if (sender is Button btn && btn.Tag is int id)
         {
             if (id == 1)
             {
-                MessageBox.Show("Cannot remove the Default profile.", "Not Allowed",
+                MessageBox.Show("Cannot remove the Default (catch-all) profile.", "Not Allowed",
                     MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
@@ -150,14 +84,14 @@ public partial class ProfilesPage : Page
             {
                 var existing = db.UserProfiles.Find(p.Id);
                 if (existing == null) continue;
-                existing.DisplayName     = p.DisplayName;
-                existing.WindowsUsername = p.WindowsUsername;
-                existing.IsEnabled       = p.IsEnabled;
+                existing.DisplayName = p.DisplayName;
+                existing.IsEnabled   = p.IsEnabled;
             }
             db.SaveChanges();
             await _ipc.SendAsync(IpcCommand.ReloadRules);
 
             StatusText.Text = "Saved.";
+            StatusText.Foreground = new SolidColorBrush(Color.FromRgb(166, 227, 161));
             StatusText.Visibility = Visibility.Visible;
         }
         catch (Exception ex)

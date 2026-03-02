@@ -290,8 +290,104 @@ public partial class App : Application
                                   ("#FAFAFA", "#F0F0F0", "#FFFFFF", "#E8E8E8", "#F5F5F5", "#181818", "#080808", "#505050")),
 
             // Dark aged brass/bronze bg + Copper accent
-            ["Steampunk"]     = (("#140E04", "#0C0800", "#201608", "#302210", "#1A1206", "#B86020", "#F0D880", "#C09040"),
-                                  ("#FFF8E8", "#FFF0D0", "#FFFDF5", "#FFE4A8", "#FFF8EC", "#5C2800", "#1A0C00", "#603010")),
+            ["Steampunk"]       = (("#140E04", "#0C0800", "#201608", "#302210", "#1A1206", "#B86020", "#F0D880", "#C09040"),
+                                    ("#FFF8E8", "#FFF0D0", "#FFFDF5", "#FFE4A8", "#FFF8EC", "#5C2800", "#1A0C00", "#603010")),
+
+            // ── Retro / Terminal ──────────────────────────────────────────────
+
+            // Classic green phosphor CRT monitor
+            ["CRT Green"]       = (("#0A1A0A", "#061206", "#102A10", "#183818", "#0C1E0C", "#00FF41", "#00FF41", "#00AA30"),
+                                    ("#F0FFF0", "#E0FFE0", "#D0FFD0", "#B0FFB0", "#E8FFE8", "#009910", "#0A2A0A", "#1A6A1A")),
+
+            // Classic amber phosphor CRT monitor
+            ["CRT Amber"]       = (("#1A1200", "#110C00", "#281C00", "#382800", "#201400", "#FFB300", "#FFB300", "#CC8800"),
+                                    ("#FFFBEE", "#FFF5D8", "#FFEEB8", "#FFE080", "#FFF8E4", "#885500", "#2C1A00", "#6A4000")),
+
+            // 80s Miami Vice neon — deep magenta-black + hot pink + electric blue
+            ["Retrowave"]       = (("#0D0018", "#08000F", "#18002C", "#240040", "#120022", "#FF007F", "#FF80FF", "#00CFFF"),
+                                    ("#FFF0FF", "#FFE0FE", "#FFD0FC", "#FFC0F8", "#FFECFF", "#CC0066", "#1A0030", "#6600AA")),
+
+            // ── Editor Themes ─────────────────────────────────────────────────
+
+            // Cool arctic slate — the popular developer palette
+            ["Nord"]            = (("#2E3440", "#242932", "#3B4252", "#434C5E", "#333847", "#5E81AC", "#ECEFF4", "#D8DEE9"),
+                                    ("#ECEFF4", "#E5E9F0", "#D8DEE9", "#C8D0DC", "#DDE2EA", "#5E81AC", "#2E3440", "#4C566A")),
+
+            // Deep purple-black + bright pink/green/orange — the famous dark theme
+            ["Dracula"]         = (("#282A36", "#1E2029", "#44475A", "#525568", "#373A4A", "#BD93F9", "#F8F8F2", "#6272A4"),
+                                    ("#F8F8F2", "#F0F0E8", "#EEEEE5", "#E4E4D5", "#F4F4EC", "#BD93F9", "#282A36", "#6272A4")),
+
+            // Warm earthy retro — tan bg, muted olive/brick accents
+            ["Gruvbox"]         = (("#282828", "#1D2021", "#3C3836", "#504945", "#32302F", "#D79921", "#EBDBB2", "#A89984"),
+                                    ("#FBF1C7", "#F2E5BC", "#EBDBB2", "#D5C4A1", "#F2EAC0", "#AF3A03", "#3C3836", "#7C6F64")),
+
+            // Charcoal black + vivid teal/orange/rose
+            ["Monokai"]         = (("#272822", "#1E1F1A", "#3E3D32", "#4E4D42", "#2E2D28", "#F92672", "#F8F8F2", "#75715E"),
+                                    ("#F9F8F5", "#F0EFE8", "#E8E7DA", "#DEDDC8", "#F4F3EC", "#F92672", "#272822", "#75715E")),
+
+            // Deep blue-purple bg + pink and bright teal highlights
+            ["Tokyo Night"]     = (("#1A1B26", "#16161E", "#292E42", "#2F3549", "#1E1F2E", "#7AA2F7", "#C0CAF5", "#565F89"),
+                                    ("#E1E2E7", "#D5D6DC", "#C8C9D0", "#BABBC3", "#DCDDEA", "#2E7DE9", "#3760BF", "#6172B0")),
+
+            // Precision-balanced warm amber + cool teal
+            ["Solarized"]       = (("#002B36", "#00212B", "#073642", "#0D4350", "#052F3A", "#268BD2", "#93A1A1", "#657B83"),
+                                    ("#FDF6E3", "#F5EDDB", "#EEE8D5", "#E4DDCA", "#F5EED8", "#268BD2", "#657B83", "#93A1A1")),
+
+            // ── Soft / Pastel ─────────────────────────────────────────────────
+
+            // Pale lilac bg + soft violet accent
+            ["Lavender"]        = (("#1C1520", "#160F1A", "#2A1E30", "#382840", "#201828", "#C77DFF", "#E8D8F8", "#B8A0CC"),
+                                    ("#F5F0FF", "#EDE8F8", "#E0D8F5", "#D0C8EC", "#EAE4F5", "#9B59B6", "#2D1B4E", "#6B4A8A")),
+
+            // Dusty rose bg + warm rose accent
+            ["Blush"]           = (("#201218", "#180C10", "#301A24", "#402030", "#28161E", "#FF8FAB", "#F8E0E8", "#CCA0B0"),
+                                    ("#FFF0F5", "#FFE4EC", "#FFD8E4", "#FFC8D8", "#FFEAF0", "#D4437A", "#3D1420", "#8A3050")),
+
+            // Cool mint green bg + aqua accent
+            ["Mint"]            = (("#0E1C18", "#0A1412", "#162C26", "#1E3830", "#12221E", "#00E5B0", "#D0F5EC", "#80C8B0"),
+                                    ("#F0FFF8", "#E4FFF2", "#D4FFEC", "#C4FFE4", "#ECFFF5", "#00A878", "#0A2E20", "#2A6A50")),
+
+            // ── Cozy / Warm Neutral ───────────────────────────────────────────
+
+            // Deep espresso brown bg + warm cream text
+            ["Espresso"]        = (("#1A0E08", "#110804", "#281808", "#3A2410", "#201206", "#C07030", "#F5E8D8", "#C0A080"),
+                                    ("#FFF8F0", "#F5EDE0", "#EEE0CC", "#E4D0B8", "#FAF0E4", "#6F3800", "#2C1400", "#7A4820")),
+
+            // Dark burgundy-wood bg + champagne gold accent
+            ["Rosewood"]        = (("#1A0810", "#120508", "#2A1018", "#3A1828", "#200C14", "#C89050", "#F0E0D0", "#C09080"),
+                                    ("#FFF5F0", "#FFEAE0", "#FFD8C8", "#FFC8B0", "#FFEDE4", "#8B0020", "#280008", "#6A2030")),
+
+            // Aged paper tan bg + warm ink accent
+            ["Parchment"]       = (("#1C1610", "#140E08", "#2A2018", "#382E22", "#221C14", "#A07840", "#EED8A8", "#B09060"),
+                                    ("#F8EDD0", "#F0E4C0", "#E8D8A8", "#DCC890", "#F4E4C4", "#806030", "#2A1C08", "#7A5830")),
+
+            // ── Seasonal ─────────────────────────────────────────────────────
+
+            // Deep rust bg + burnt orange accent
+            ["Autumn"]          = (("#1A0C08", "#120604", "#2C1408", "#3C2010", "#20100A", "#D06020", "#F5D0A0", "#C08050"),
+                                    ("#FFF5E8", "#FFE8D0", "#FFD8B8", "#FFC8A0", "#FFEDE0", "#C03800", "#300800", "#803020")),
+
+            // Near-black cool slate bg + ice blue accent
+            ["Winter"]          = (("#0A0E14", "#060810", "#0E1824", "#162230", "#0C141C", "#88CCFF", "#E8F4FF", "#90B0CC"),
+                                    ("#F0F8FF", "#E8F4FF", "#DFF0FF", "#D0E8FF", "#EBF5FF", "#2288CC", "#0A1E30", "#4080A8")),
+
+            // Deep forest bg + cherry blossom pink accent
+            ["Spring"]          = (("#0C1810", "#081008", "#142818", "#1E3820", "#101E14", "#FF80C0", "#D0F0D0", "#80B880"),
+                                    ("#F4FFF0", "#EBF8E0", "#DCF0D0", "#CCE8C0", "#EEF8E8", "#C0287A", "#0A2A10", "#3A6A30")),
+
+            // ── Other ─────────────────────────────────────────────────────────
+
+            // Near-black bg + nebula purple accent
+            ["Galaxy"]          = (("#080410", "#040208", "#100818", "#180C24", "#0C0614", "#A040FF", "#F0E8FF", "#9080C0"),
+                                    ("#F5F0FF", "#EEE8FF", "#E4D8FF", "#D8C8FF", "#F0E8FF", "#7000DD", "#1A0040", "#5010A0")),
+
+            // Pure black bg + vivid yellow accent — maximum readability
+            ["High Contrast"]   = (("#000000", "#000000", "#0A0A0A", "#151515", "#060606", "#FFFF00", "#FFFFFF", "#E0E0E0"),
+                                    ("#FFFFFF", "#FFFFFF", "#F0F0F0", "#E0E0E0", "#F8F8F8", "#0000CC", "#000000", "#202020")),
+
+            // Warm brown bg + aged amber text
+            ["Sepia"]           = (("#180E08", "#100804", "#261808", "#342410", "#1E1208", "#C89050", "#EED890", "#B09050"),
+                                    ("#FEF8EC", "#F8EED8", "#F0E4C0", "#E8D8A8", "#FAF2DC", "#8B6020", "#2C1808", "#7A5030")),
         };
 
         // Fallback for legacy names

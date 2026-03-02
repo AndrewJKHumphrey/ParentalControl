@@ -9,10 +9,19 @@ using ParentalControl.UI.Services;
 
 namespace ParentalControl.UI.Views;
 
+public class AppTimeScheduleRow
+{
+    public int       Id                { get; set; }
+    public DayOfWeek DayOfWeek         { get; set; }
+    public bool      IsEnabled         { get; set; }
+    public int       DailyLimitMinutes { get; set; }
+}
+
 public partial class AppControlPage : Page
 {
     private readonly IpcClient _ipc = new();
     private int _selectedProfileId = 1;
+    private List<AppTimeScheduleRow> _scheduleRows = new();
 
     public AppControlPage()
     {
@@ -50,14 +59,27 @@ public partial class AppControlPage : Page
         try
         {
             using var db = new AppDbContext();
+            // For non-Default profiles: show Default rules + profile-specific rules combined.
+            // Default rules act as an inherited baseline visible alongside profile overrides.
+            var showDefault = _selectedProfileId != 1;
             AppRulesGrid.ItemsSource = db.AppRules
-                .Where(r => r.UserProfileId == _selectedProfileId)
+                .Where(r => r.UserProfileId == _selectedProfileId
+                         || (showDefault && r.UserProfileId == 1))
                 .OrderBy(r => r.ProcessName)
                 .ToList();
 
-            var profile = db.UserProfiles.Find(_selectedProfileId);
-            if (profile != null)
-                AppTimeLimitBox.Text = profile.AppTimeLimitMinutes.ToString();
+            _scheduleRows = db.AppTimeSchedules
+                .Where(s => s.UserProfileId == _selectedProfileId)
+                .OrderBy(s => s.DayOfWeek)
+                .Select(s => new AppTimeScheduleRow
+                {
+                    Id                = s.Id,
+                    DayOfWeek         = s.DayOfWeek,
+                    IsEnabled         = s.IsEnabled,
+                    DailyLimitMinutes = s.DailyLimitMinutes,
+                })
+                .ToList();
+            AppTimeScheduleGrid.ItemsSource = _scheduleRows;
         }
         catch (Exception ex)
         {
@@ -81,7 +103,7 @@ public partial class AppControlPage : Page
                     DisplayName     = string.IsNullOrEmpty(DisplayNameBox.Text) ? processName : DisplayNameBox.Text.Trim(),
                     AccessMode      = (int)AppAccessMode.Blocked,
                     UserProfileId   = _selectedProfileId,
-                    AllowedInFocusMode = true,
+                    AllowedInFocusMode = false,
                 });
                 db.SaveChanges();
             }
@@ -115,48 +137,57 @@ public partial class AppControlPage : Page
 
     private async void SaveButton_Click(object sender, RoutedEventArgs e)
     {
-        if (AppRulesGrid.ItemsSource is List<AppRule> rules)
+        if (AppRulesGrid.ItemsSource is not List<AppRule> rules) return;
+
+        // Validate schedule rows before touching DB
+        var scheduleErrors = new List<string>();
+        foreach (var row in _scheduleRows)
         {
-            try
-            {
-                using var db = new AppDbContext();
-                foreach (var r in rules)
-                {
-                    var existing = db.AppRules.Find(r.Id);
-                    if (existing != null)
-                    {
-                        existing.AccessMode        = r.AccessMode;
-                        existing.DisplayName       = r.DisplayName;
-                        existing.ProcessName       = r.ProcessName;
-                        existing.AllowedInFocusMode = r.AllowedInFocusMode;
-                    }
-                }
+            if (row.IsEnabled && row.DailyLimitMinutes < 1)
+                scheduleErrors.Add($"{row.DayOfWeek}: limit must be at least 1 minute when enabled.");
+        }
+        if (scheduleErrors.Count > 0)
+        {
+            MessageBox.Show(string.Join("\n", scheduleErrors), "Invalid App Time Schedule",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
 
-                // Save App Time limit (0 = unlimited, otherwise minimum 30)
-                if (!int.TryParse(AppTimeLimitBox.Text.Trim(), out int limitMins) || limitMins < 0)
-                {
-                    MessageBox.Show("App Time Limit must be 0 (unlimited) or a number of minutes.", "Invalid Value", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-                if (limitMins > 0 && limitMins < 30)
-                {
-                    MessageBox.Show("App Time Limit must be at least 30 minutes, or 0 for no limit.", "Invalid Value", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-                {
-                    var profile = db.UserProfiles.Find(_selectedProfileId);
-                    if (profile != null)
-                        profile.AppTimeLimitMinutes = limitMins;
-                }
+        try
+        {
+            using var db = new AppDbContext();
 
-                db.SaveChanges();
-                await _ipc.SendAsync(IpcCommand.ReloadRules);
-                MessageBox.Show("Saved.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
+            // Save app rules
+            foreach (var r in rules)
             {
-                MessageBox.Show($"Save failed: {ex.Message}");
+                var existing = db.AppRules.Find(r.Id);
+                if (existing != null)
+                {
+                    existing.AccessMode         = r.AccessMode;
+                    existing.DisplayName        = r.DisplayName;
+                    existing.ProcessName        = r.ProcessName;
+                    existing.AllowedInFocusMode = r.AllowedInFocusMode;
+                }
             }
+
+            // Save app time schedule rows
+            foreach (var row in _scheduleRows)
+            {
+                var schedule = db.AppTimeSchedules.Find(row.Id);
+                if (schedule != null)
+                {
+                    schedule.IsEnabled         = row.IsEnabled;
+                    schedule.DailyLimitMinutes = row.DailyLimitMinutes;
+                }
+            }
+
+            db.SaveChanges();
+            await _ipc.SendAsync(IpcCommand.ReloadRules);
+            MessageBox.Show("Saved.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Save failed: {ex.Message}");
         }
     }
 
@@ -226,7 +257,7 @@ public partial class AppControlPage : Page
         using var db = new AppDbContext();
         foreach (var (name, processName) in games)
         {
-            if (db.AppRules.Any(r => r.ProcessName == processName))
+            if (db.AppRules.Any(r => r.ProcessName == processName && r.UserProfileId == _selectedProfileId))
             {
                 skipped++;
                 continue;
@@ -237,7 +268,7 @@ public partial class AppControlPage : Page
                 ProcessName        = processName,
                 IsBlocked          = false,
                 UserProfileId      = _selectedProfileId,
-                AllowedInFocusMode = true,
+                AllowedInFocusMode = false,
             });
             added++;
         }

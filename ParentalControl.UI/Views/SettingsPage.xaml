@@ -252,6 +252,33 @@
                         <ComboBoxItem Content="Gothic"/>
                         <ComboBoxItem Content="Noir"/>
                         <ComboBoxItem Content="Steampunk"/>
+                        <!-- Retro / Terminal -->
+                        <ComboBoxItem Content="CRT Green"/>
+                        <ComboBoxItem Content="CRT Amber"/>
+                        <ComboBoxItem Content="Retrowave"/>
+                        <!-- Editor -->
+                        <ComboBoxItem Content="Nord"/>
+                        <ComboBoxItem Content="Dracula"/>
+                        <ComboBoxItem Content="Gruvbox"/>
+                        <ComboBoxItem Content="Monokai"/>
+                        <ComboBoxItem Content="Tokyo Night"/>
+                        <ComboBoxItem Content="Solarized"/>
+                        <!-- Soft / Pastel -->
+                        <ComboBoxItem Content="Lavender"/>
+                        <ComboBoxItem Content="Blush"/>
+                        <ComboBoxItem Content="Mint"/>
+                        <!-- Cozy / Warm Neutral -->
+                        <ComboBoxItem Content="Espresso"/>
+                        <ComboBoxItem Content="Rosewood"/>
+                        <ComboBoxItem Content="Parchment"/>
+                        <!-- Seasonal -->
+                        <ComboBoxItem Content="Autumn"/>
+                        <ComboBoxItem Content="Winter"/>
+                        <ComboBoxItem Content="Spring"/>
+                        <!-- Other -->
+                        <ComboBoxItem Content="Galaxy"/>
+                        <ComboBoxItem Content="High Contrast"/>
+                        <ComboBoxItem Content="Sepia"/>
                     </ComboBox>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <TextBlock Text="Light Mode" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13"/>
