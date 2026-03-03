@@ -48,29 +48,8 @@
                 </StackPanel>
             </Border>
 
-            <!-- Behavior Options -->
-            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="20" Margin="0,0,0,24">
-                <StackPanel>
-                    <TextBlock Text="Behavior Options" Foreground="{DynamicResource TextPrimary}"
-                               FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
-
-                    <TextBlock Text="Account is protected by a password"
-                               Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"/>
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,8">
-                        <TextBlock Text="Off" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13"/>
-                        <CheckBox x:Name="ChildHasPasswordBox" Style="{StaticResource ToggleSwitch}"
-                                  Checked="ChildHasPassword_Changed"
-                                  Unchecked="ChildHasPassword_Changed"/>
-                        <TextBlock Text="On" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="8,0,0,0" FontSize="13"/>
-                    </StackPanel>
-                    <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextSecondary}" FontSize="12"
-                               Margin="0,0,0,16"
-                               Text="When this is enabled, it will only lock once per violation since the password will prevent further access.&#x0a;Unchecked violations will be checked repeatedly after login."/>
-                </StackPanel>
-            </Border>
-
-            <!-- Notifications -->
-            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="20" Margin="0,0,0,24">
+            <!-- Notifications (hidden until UX is finalised) -->
+            <Border Visibility="Collapsed" Background="{DynamicResource CardBg}" CornerRadius="8" Padding="20" Margin="0,0,0,24">
                 <StackPanel>
                     <TextBlock Text="Notifications" Foreground="{DynamicResource TextPrimary}"
                                FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
@@ -90,6 +69,9 @@
                                      Foreground="{DynamicResource TextPrimary}" Margin="0,0,20,0"
                                      Checked="NotifyMode_Changed"/>
                         <RadioButton x:Name="ModeTextRadio" Content="Text message" GroupName="NotifyMode"
+                                     Foreground="{DynamicResource TextPrimary}" Margin="0,0,20,0"
+                                     Checked="NotifyMode_Changed"/>
+                        <RadioButton x:Name="ModePushRadio" Content="Push notification (ntfy.sh)" GroupName="NotifyMode"
                                      Foreground="{DynamicResource TextPrimary}"
                                      Checked="NotifyMode_Changed"/>
                     </StackPanel>
@@ -124,7 +106,21 @@
                         </ComboBox>
                     </StackPanel>
 
-                    <!-- Separator -->
+                    <!-- Push (ntfy.sh) destination -->
+                    <StackPanel x:Name="NtfyDestPanel" Visibility="Collapsed" Margin="0,0,0,16">
+                        <TextBlock Text="Topic name (any unique string — share it with no one):"
+                                   Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,4"/>
+                        <TextBox x:Name="NtfyTopicBox" Height="36"
+                                 Background="{DynamicResource AppBg}" Foreground="{DynamicResource TextPrimary}"
+                                 BorderBrush="{DynamicResource BorderColor}" BorderThickness="1" Padding="8,4"
+                                 LostFocus="NtfyTopic_LostFocus"/>
+                        <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextSecondary}" FontSize="12"
+                                   Margin="0,6,0,0"
+                                   Text="Install the free ntfy app on your phone (ntfy.sh), tap '+' and subscribe to this topic. You'll receive a push notification whenever ParentGuard sends an alert — no account or password needed."/>
+                    </StackPanel>
+
+                    <!-- Separator + Sending account (hidden in Push mode) -->
+                    <StackPanel x:Name="SendingAccountPanel">
                     <Rectangle Height="1" Fill="{DynamicResource BorderColor}" Margin="0,0,0,16"/>
 
                     <!-- Sending account -->
@@ -175,6 +171,7 @@
                             </StackPanel>
                         </StackPanel>
                     </Expander>
+                    </StackPanel><!-- /SendingAccountPanel -->
 
                     <!-- Separator -->
                     <Rectangle Height="1" Fill="{DynamicResource BorderColor}" Margin="0,0,0,16"/>
@@ -212,8 +209,8 @@
                     <TextBlock Text="Theme:" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,8"/>
                     <ComboBox x:Name="ThemeBox" Width="200" Height="32" HorizontalAlignment="Left"
                               SelectionChanged="ThemeBox_SelectionChanged" Margin="0,0,0,16">
+                        <!-- ── Single-colour  (Red → Magenta spectrum) ─────────────── -->
                         <ComboBoxItem Content="Default"/>
-                        <!-- Spectrum order: Red → Magenta (primary, secondary, tertiary) -->
                         <ComboBoxItem Content="Red"/>
                         <ComboBoxItem Content="Vermilion"/>
                         <ComboBoxItem Content="Orange"/>
@@ -226,59 +223,64 @@
                         <ComboBoxItem Content="Indigo"/>
                         <ComboBoxItem Content="Purple"/>
                         <ComboBoxItem Content="Magenta"/>
-                        <ComboBoxItem Content="Ice Blue"/>
-                        <!-- Complementary pairs -->
-                        <ComboBoxItem Content="Sunset"/>
-                        <ComboBoxItem Content="Aurora"/>
-                        <ComboBoxItem Content="Eclipse"/>
-                        <ComboBoxItem Content="Coral Reef"/>
-                        <ComboBoxItem Content="Forest Fire"/>
-                        <ComboBoxItem Content="Midnight Gold"/>
+                        <!-- ── Two-colour  (sorted by primary / background hue) ───── -->
+                        <!-- Red -->
                         <ComboBoxItem Content="Volcanic"/>
-                        <ComboBoxItem Content="Sakura"/>
-                        <ComboBoxItem Content="Wildfire"/>
-                        <ComboBoxItem Content="Copper Patina"/>
-                        <ComboBoxItem Content="Solstice"/>
-                        <!-- Nature -->
-                        <ComboBoxItem Content="Deep Ocean"/>
-                        <ComboBoxItem Content="Volcanic Ash"/>
-                        <ComboBoxItem Content="Arctic Night"/>
-                        <ComboBoxItem Content="Rainforest"/>
-                        <ComboBoxItem Content="Storm"/>
-                        <ComboBoxItem Content="Desert"/>
-                        <!-- Aesthetic / Style -->
-                        <ComboBoxItem Content="Synthwave"/>
-                        <ComboBoxItem Content="Cyberpunk"/>
                         <ComboBoxItem Content="Gothic"/>
-                        <ComboBoxItem Content="Noir"/>
-                        <ComboBoxItem Content="Steampunk"/>
-                        <!-- Retro / Terminal -->
-                        <ComboBoxItem Content="CRT Green"/>
-                        <ComboBoxItem Content="CRT Amber"/>
-                        <ComboBoxItem Content="Retrowave"/>
-                        <!-- Editor -->
-                        <ComboBoxItem Content="Nord"/>
-                        <ComboBoxItem Content="Dracula"/>
-                        <ComboBoxItem Content="Gruvbox"/>
-                        <ComboBoxItem Content="Monokai"/>
-                        <ComboBoxItem Content="Tokyo Night"/>
-                        <ComboBoxItem Content="Solarized"/>
-                        <!-- Soft / Pastel -->
-                        <ComboBoxItem Content="Lavender"/>
-                        <ComboBoxItem Content="Blush"/>
-                        <ComboBoxItem Content="Mint"/>
-                        <!-- Cozy / Warm Neutral -->
-                        <ComboBoxItem Content="Espresso"/>
+                        <ComboBoxItem Content="Midnight Rose"/>
                         <ComboBoxItem Content="Rosewood"/>
-                        <ComboBoxItem Content="Parchment"/>
-                        <!-- Seasonal -->
+                        <!-- Red-Orange -->
                         <ComboBoxItem Content="Autumn"/>
-                        <ComboBoxItem Content="Winter"/>
+                        <ComboBoxItem Content="Wildfire"/>
+                        <!-- Orange / Brown -->
+                        <ComboBoxItem Content="Copper Patina"/>
+                        <ComboBoxItem Content="Desert"/>
+                        <ComboBoxItem Content="Volcanic Ash"/>
+                        <ComboBoxItem Content="Espresso"/>
+                        <ComboBoxItem Content="Steampunk"/>
+                        <ComboBoxItem Content="Parchment"/>
+                        <ComboBoxItem Content="Antique"/>
+                        <!-- Amber / Yellow-Orange -->
+                        <ComboBoxItem Content="CRT Amber"/>
+                        <ComboBoxItem Content="Solstice"/>
+                        <ComboBoxItem Content="Gruvbox"/>
+                        <!-- Yellow-Green -->
+                        <ComboBoxItem Content="Cherry Grove"/>
+                        <!-- Green -->
+                        <ComboBoxItem Content="Forest Fire"/>
+                        <ComboBoxItem Content="Rainforest"/>
+                        <ComboBoxItem Content="CRT Green"/>
+                        <ComboBoxItem Content="Lagoon"/>
                         <ComboBoxItem Content="Spring"/>
-                        <!-- Other -->
+                        <!-- Teal / Cyan -->
+                        <ComboBoxItem Content="Coral Reef"/>
+                        <ComboBoxItem Content="Aurora"/>
+                        <!-- Blue -->
+                        <ComboBoxItem Content="Deep Ocean"/>
+                        <ComboBoxItem Content="Arctic Night"/>
+                        <ComboBoxItem Content="Storm"/>
+                        <ComboBoxItem Content="Winter"/>
+                        <ComboBoxItem Content="Summer"/>
+                        <ComboBoxItem Content="Sunset"/>
+                        <ComboBoxItem Content="Midnight Gold"/>
+                        <ComboBoxItem Content="Solarized"/>
+                        <ComboBoxItem Content="Nord"/>
+                        <!-- Blue-Purple -->
+                        <ComboBoxItem Content="Tokyo Night"/>
+                        <ComboBoxItem Content="Eclipse"/>
+                        <ComboBoxItem Content="Dracula"/>
+                        <ComboBoxItem Content="Twilight"/>
+                        <ComboBoxItem Content="Synthwave"/>
+                        <!-- Magenta / Dark Purple -->
+                        <ComboBoxItem Content="Retrowave"/>
                         <ComboBoxItem Content="Galaxy"/>
+                        <!-- Neutral / Black -->
+                        <ComboBoxItem Content="Noir"/>
+                        <ComboBoxItem Content="Cyberpunk"/>
+                        <ComboBoxItem Content="Monokai"/>
                         <ComboBoxItem Content="High Contrast"/>
-                        <ComboBoxItem Content="Sepia"/>
+                        <!-- My themes -->
+                        <ComboBoxItem Content="Ice Blue"/>
                     </ComboBox>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <TextBlock Text="Light Mode" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13"/>

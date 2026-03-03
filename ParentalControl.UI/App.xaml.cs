@@ -70,6 +70,7 @@ public partial class App : Application
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN SmtpUseSsl INTEGER NOT NULL DEFAULT 1"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN NotifyOnScreenLock INTEGER NOT NULL DEFAULT 1"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN NotifyOnAppBlock INTEGER NOT NULL DEFAULT 1"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN NtfyTopic TEXT NOT NULL DEFAULT ''"); } catch { }
 
             // New columns for access categorisation
             try { db.Database.ExecuteSqlRaw("ALTER TABLE AppRules ADD COLUMN AccessMode INTEGER NOT NULL DEFAULT 0"); }
@@ -230,7 +231,7 @@ public partial class App : Application
                                   ("#EEFFFF", "#D8FFFE", "#F5FFFF", "#C0FFFC", "#E8FFFF", "#880010", "#1A0408", "#600010")),
 
             // Dark olive/forest bg + Cherry blossom pink accent  (Green ↔ Rose)
-            ["Sakura"]        = (("#141A08", "#0C1004", "#1E2810", "#2A3818", "#181E0C", "#E0408C", "#FFE8F4", "#C890A8"),
+            ["Cherry Grove"]  = (("#141A08", "#0C1004", "#1E2810", "#2A3818", "#181E0C", "#E0408C", "#FFE8F4", "#C890A8"),
                                   ("#FFF0F8", "#FFE0F0", "#FFFCFE", "#FFD0E8", "#FFF5FB", "#2A5010", "#101A08", "#3A6020")),
 
             // Dark rust/burnt orange bg + Electric blue accent  (Orange ↔ Blue)
@@ -335,16 +336,16 @@ public partial class App : Application
 
             // ── Soft / Pastel ─────────────────────────────────────────────────
 
-            // Pale lilac bg + soft violet accent
-            ["Lavender"]        = (("#1C1520", "#160F1A", "#2A1E30", "#382840", "#201828", "#C77DFF", "#E8D8F8", "#B8A0CC"),
+            // Dark lilac bg + soft violet accent  (Purple ↔ Violet)
+            ["Twilight"]        = (("#1C1520", "#160F1A", "#2A1E30", "#382840", "#201828", "#C77DFF", "#E8D8F8", "#B8A0CC"),
                                     ("#F5F0FF", "#EDE8F8", "#E0D8F5", "#D0C8EC", "#EAE4F5", "#9B59B6", "#2D1B4E", "#6B4A8A")),
 
-            // Dusty rose bg + warm rose accent
-            ["Blush"]           = (("#201218", "#180C10", "#301A24", "#402030", "#28161E", "#FF8FAB", "#F8E0E8", "#CCA0B0"),
+            // Dark dusty rose bg + vivid rose accent  (Rose ↔ Crimson)
+            ["Midnight Rose"]   = (("#201218", "#180C10", "#301A24", "#402030", "#28161E", "#FF8FAB", "#F8E0E8", "#CCA0B0"),
                                     ("#FFF0F5", "#FFE4EC", "#FFD8E4", "#FFC8D8", "#FFEAF0", "#D4437A", "#3D1420", "#8A3050")),
 
-            // Cool mint green bg + aqua accent
-            ["Mint"]            = (("#0E1C18", "#0A1412", "#162C26", "#1E3830", "#12221E", "#00E5B0", "#D0F5EC", "#80C8B0"),
+            // Dark teal-green bg + bright aqua accent  (Teal ↔ Aqua)
+            ["Lagoon"]          = (("#0E1C18", "#0A1412", "#162C26", "#1E3830", "#12221E", "#00E5B0", "#D0F5EC", "#80C8B0"),
                                     ("#F0FFF8", "#E4FFF2", "#D4FFEC", "#C4FFE4", "#ECFFF5", "#00A878", "#0A2E20", "#2A6A50")),
 
             // ── Cozy / Warm Neutral ───────────────────────────────────────────
@@ -371,6 +372,10 @@ public partial class App : Application
             ["Winter"]          = (("#0A0E14", "#060810", "#0E1824", "#162230", "#0C141C", "#88CCFF", "#E8F4FF", "#90B0CC"),
                                     ("#F0F8FF", "#E8F4FF", "#DFF0FF", "#D0E8FF", "#EBF5FF", "#2288CC", "#0A1E30", "#4080A8")),
 
+            // Deep warm navy bg + blazing sun-gold accent  (Navy ↔ Gold)
+            ["Summer"]          = (("#060E1C", "#030811", "#0C1A32", "#142244", "#0A1628", "#EDAB00", "#FFF5CC", "#C8A840"),
+                                    ("#FFFBEE", "#FFF5D8", "#FEFEF0", "#FFEEA0", "#FFFCE0", "#005599", "#020E2C", "#0A3A70")),
+
             // Deep forest bg + cherry blossom pink accent
             ["Spring"]          = (("#0C1810", "#081008", "#142818", "#1E3820", "#101E14", "#FF80C0", "#D0F0D0", "#80B880"),
                                     ("#F4FFF0", "#EBF8E0", "#DCF0D0", "#CCE8C0", "#EEF8E8", "#C0287A", "#0A2A10", "#3A6A30")),
@@ -385,8 +390,8 @@ public partial class App : Application
             ["High Contrast"]   = (("#000000", "#000000", "#0A0A0A", "#151515", "#060606", "#FFFF00", "#FFFFFF", "#E0E0E0"),
                                     ("#FFFFFF", "#FFFFFF", "#F0F0F0", "#E0E0E0", "#F8F8F8", "#0000CC", "#000000", "#202020")),
 
-            // Warm brown bg + aged amber text
-            ["Sepia"]           = (("#180E08", "#100804", "#261808", "#342410", "#1E1208", "#C89050", "#EED890", "#B09050"),
+            // Warm aged-paper brown bg + amber-gold ink accent  (Umber ↔ Amber)
+            ["Antique"]         = (("#180E08", "#100804", "#261808", "#342410", "#1E1208", "#C89050", "#EED890", "#B09050"),
                                     ("#FEF8EC", "#F8EED8", "#F0E4C0", "#E8D8A8", "#FAF2DC", "#8B6020", "#2C1808", "#7A5030")),
         };
 

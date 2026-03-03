@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build ParentalControl.UI/ParentalControl.UI.csproj --no-restore -v quiet)",
+      "Bash(dotnet build ParentalControl.Service/ParentalControl.Service.csproj --configuration Debug)"
+    ]
+  }
+}

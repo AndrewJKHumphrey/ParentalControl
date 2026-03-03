@@ -28,7 +28,6 @@ public partial class SettingsPage : Page
             var settings = db.Settings.FirstOrDefault();
             if (settings != null)
             {
-                ChildHasPasswordBox.IsChecked = settings.ChildAccountHasPassword;
                 Format12hToggle.IsChecked = settings.TimeFormat12Hour;
                 DarkModeToggle.IsChecked = settings.ThemeIsDark;
                 DebugStopServiceToggle.IsChecked = settings.DebugStopServiceAfterLock;
@@ -38,12 +37,18 @@ public partial class SettingsPage : Page
                 NotificationsEnabledToggle.IsChecked = settings.NotificationsEnabled;
                 ModeEmailRadio.IsChecked             = settings.NotificationMode == 0;
                 ModeTextRadio.IsChecked              = settings.NotificationMode == 1;
+                ModePushRadio.IsChecked              = settings.NotificationMode == 2;
                 EmailDestPanel.Visibility            = settings.NotificationMode == 0
                                                        ? Visibility.Visible : Visibility.Collapsed;
                 TextDestPanel.Visibility             = settings.NotificationMode == 1
                                                        ? Visibility.Visible : Visibility.Collapsed;
+                NtfyDestPanel.Visibility             = settings.NotificationMode == 2
+                                                       ? Visibility.Visible : Visibility.Collapsed;
+                SendingAccountPanel.Visibility       = settings.NotificationMode == 2
+                                                       ? Visibility.Collapsed : Visibility.Visible;
                 NotificationAddressBox.Text          = settings.NotificationMode == 0 ? settings.NotificationAddress : string.Empty;
                 PhoneNumberBox.Text                  = settings.PhoneNumber;
+                NtfyTopicBox.Text                    = settings.NtfyTopic;
 
                 // Select saved carrier
                 CarrierBox.SelectedIndex = 0;
@@ -78,21 +83,6 @@ public partial class SettingsPage : Page
         catch { }
 
         _loaded = true;
-    }
-
-    private void ChildHasPassword_Changed(object sender, RoutedEventArgs e)
-    {
-        var hasPassword = ChildHasPasswordBox.IsChecked == true;
-
-        try
-        {
-            using var db = new AppDbContext();
-            var settings = db.Settings.FirstOrDefault();
-            if (settings == null) return;
-            settings.ChildAccountHasPassword = hasPassword;
-            db.SaveChanges();
-        }
-        catch { }
     }
 
     private void TimeFormat_Changed(object sender, RoutedEventArgs e)
@@ -366,8 +356,11 @@ public partial class SettingsPage : Page
     {
         if (!_loaded) return;
         bool isEmail = ModeEmailRadio.IsChecked == true;
-        EmailDestPanel.Visibility = isEmail ? Visibility.Visible : Visibility.Collapsed;
-        TextDestPanel.Visibility  = isEmail ? Visibility.Collapsed : Visibility.Visible;
+        bool isPush  = ModePushRadio.IsChecked  == true;
+        EmailDestPanel.Visibility      = isEmail             ? Visibility.Visible   : Visibility.Collapsed;
+        TextDestPanel.Visibility       = (!isEmail && !isPush) ? Visibility.Visible : Visibility.Collapsed;
+        NtfyDestPanel.Visibility       = isPush              ? Visibility.Visible   : Visibility.Collapsed;
+        SendingAccountPanel.Visibility = isPush              ? Visibility.Collapsed : Visibility.Visible;
         SaveNotificationSettings();
     }
 
@@ -378,6 +371,12 @@ public partial class SettingsPage : Page
     }
 
     private void PhoneNumber_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded) return;
+        SaveNotificationSettings();
+    }
+
+    private void NtfyTopic_LostFocus(object sender, RoutedEventArgs e)
     {
         if (!_loaded) return;
         SaveNotificationSettings();
@@ -454,7 +453,9 @@ public partial class SettingsPage : Page
             if (settings == null) return;
 
             settings.NotificationsEnabled = NotificationsEnabledToggle.IsChecked == true;
-            settings.NotificationMode     = ModeEmailRadio.IsChecked == true ? 0 : 1;
+            settings.NotificationMode     = ModeEmailRadio.IsChecked == true ? 0 :
+                                            ModeTextRadio.IsChecked  == true ? 1 : 2;
+            settings.NtfyTopic            = NtfyTopicBox.Text.Trim();
             settings.PhoneNumber          = PhoneNumberBox.Text.Trim();
 
             // Compute carrier gateway from selected item's Tag

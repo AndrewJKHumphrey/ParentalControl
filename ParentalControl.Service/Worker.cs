@@ -118,6 +118,7 @@ public class Worker : BackgroundService
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN SmtpUseSsl INTEGER NOT NULL DEFAULT 1"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN NotifyOnScreenLock INTEGER NOT NULL DEFAULT 1"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN NotifyOnAppBlock INTEGER NOT NULL DEFAULT 1"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN NtfyTopic TEXT NOT NULL DEFAULT ''"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE AppRules ADD COLUMN TodayPlaytimeSeconds INTEGER NOT NULL DEFAULT 0"); } catch { }
             try { db.Database.ExecuteSqlRaw("UPDATE AppRules SET AccessMode = 2 WHERE IsBlocked = 1 AND AccessMode = 0"); } catch { }
 
@@ -126,6 +127,7 @@ public class Worker : BackgroundService
             try { db.Database.ExecuteSqlRaw("ALTER TABLE AppRules ADD COLUMN UserProfileId INTEGER NOT NULL DEFAULT 1"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE ScreenTimeLimits ADD COLUMN UserProfileId INTEGER NOT NULL DEFAULT 1"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE FocusSchedules ADD COLUMN UserProfileId INTEGER NOT NULL DEFAULT 1"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE UserProfiles ADD COLUMN ChildAccountHasPassword INTEGER NOT NULL DEFAULT 0"); } catch { }
 
             // FocusSchedules table
             try
@@ -141,18 +143,6 @@ public class Worker : BackgroundService
                     )");
             }
             catch { }
-            for (int day = 0; day < 7; day++)
-            {
-                int d = day;
-                try
-                {
-                    db.Database.ExecuteSqlRaw(
-                        "INSERT INTO FocusSchedules (DayOfWeek, IsEnabled, FocusFrom, FocusUntil, UserProfileId) " +
-                        $"SELECT {d}, 0, '15:00:00', '21:00:00', 1 " +
-                        $"WHERE NOT EXISTS (SELECT 1 FROM FocusSchedules WHERE DayOfWeek = {d} AND UserProfileId = 1)");
-                }
-                catch { }
-            }
 
             // AppTimeSchedules table
             try
@@ -167,18 +157,6 @@ public class Worker : BackgroundService
                     )");
             }
             catch { }
-            for (int day = 0; day < 7; day++)
-            {
-                int d = day;
-                try
-                {
-                    db.Database.ExecuteSqlRaw(
-                        "INSERT INTO AppTimeSchedules (DayOfWeek, IsEnabled, DailyLimitMinutes, UserProfileId) " +
-                        $"SELECT {d}, 0, 60, 1 " +
-                        $"WHERE NOT EXISTS (SELECT 1 FROM AppTimeSchedules WHERE DayOfWeek = {d} AND UserProfileId = 1)");
-                }
-                catch { }
-            }
 
             // UserProfiles table
             try
@@ -197,28 +175,6 @@ public class Worker : BackgroundService
                         AppTimeLimitMinutes      INTEGER NOT NULL DEFAULT 60,
                         FocusModeEnabled         INTEGER NOT NULL DEFAULT 0
                     )");
-            }
-            catch { }
-            try
-            {
-                db.Database.ExecuteSqlRaw(@"
-                    INSERT INTO UserProfiles (Id, WindowsUsername, DisplayName, IsEnabled, UsageDate)
-                    SELECT 1, '', 'Default', 1, date('now')
-                    WHERE NOT EXISTS (SELECT 1 FROM UserProfiles WHERE Id = 1)");
-            }
-            catch { }
-            // One-time migration: copy existing usage from AppSettings into Default profile
-            try
-            {
-                db.Database.ExecuteSqlRaw(@"
-                    UPDATE UserProfiles
-                    SET TodayUsedMinutes         = (SELECT TodayUsedMinutes FROM Settings WHERE Id = 1),
-                        UsageDate                = (SELECT UsageDate FROM Settings WHERE Id = 1),
-                        TodayBonusMinutes        = (SELECT TodayBonusMinutes FROM Settings WHERE Id = 1),
-                        TodayAppTimeUsedMinutes  = (SELECT TodayAppTimeUsedMinutes FROM Settings WHERE Id = 1),
-                        TodayAppTimeBonusMinutes = (SELECT TodayAppTimeBonusMinutes FROM Settings WHERE Id = 1),
-                        AppTimeLimitMinutes      = (SELECT AppTimeLimitMinutes FROM Settings WHERE Id = 1)
-                    WHERE Id = 1 AND TodayUsedMinutes = 0");
             }
             catch { }
 

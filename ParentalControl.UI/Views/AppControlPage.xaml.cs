@@ -59,14 +59,25 @@ public partial class AppControlPage : Page
         try
         {
             using var db = new AppDbContext();
-            // For non-Default profiles: show Default rules + profile-specific rules combined.
-            // Default rules act as an inherited baseline visible alongside profile overrides.
-            var showDefault = _selectedProfileId != 1;
             AppRulesGrid.ItemsSource = db.AppRules
-                .Where(r => r.UserProfileId == _selectedProfileId
-                         || (showDefault && r.UserProfileId == 1))
+                .Where(r => r.UserProfileId == _selectedProfileId)
                 .OrderBy(r => r.ProcessName)
                 .ToList();
+
+            if (!db.AppTimeSchedules.Any(s => s.UserProfileId == _selectedProfileId))
+            {
+                foreach (DayOfWeek day in Enum.GetValues<DayOfWeek>())
+                {
+                    db.AppTimeSchedules.Add(new AppTimeSchedule
+                    {
+                        UserProfileId     = _selectedProfileId,
+                        DayOfWeek         = day,
+                        IsEnabled         = false,
+                        DailyLimitMinutes = 60,
+                    });
+                }
+                db.SaveChanges();
+            }
 
             _scheduleRows = db.AppTimeSchedules
                 .Where(s => s.UserProfileId == _selectedProfileId)
@@ -132,6 +143,78 @@ public partial class AppControlPage : Page
             {
                 MessageBox.Show($"Failed to delete: {ex.Message}");
             }
+        }
+    }
+
+    private async void SaveToAllButton_Click(object sender, RoutedEventArgs e)
+    {
+        var scheduleErrors = new List<string>();
+        foreach (var row in _scheduleRows)
+        {
+            if (row.IsEnabled && row.DailyLimitMinutes < 1)
+                scheduleErrors.Add($"{row.DayOfWeek}: limit must be at least 1 minute when enabled.");
+        }
+        if (scheduleErrors.Count > 0)
+        {
+            MessageBox.Show(string.Join("\n", scheduleErrors), "Invalid App Time Schedule",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        try
+        {
+            using var db = new AppDbContext();
+            var allProfileIds = db.UserProfiles.Select(p => p.Id).ToList();
+
+            // App time schedule: copy to all profiles
+            foreach (var profileId in allProfileIds)
+            {
+                foreach (var row in _scheduleRows)
+                {
+                    var schedule = db.AppTimeSchedules.FirstOrDefault(
+                        s => s.UserProfileId == profileId && s.DayOfWeek == row.DayOfWeek);
+                    if (schedule == null) continue;
+                    schedule.IsEnabled         = row.IsEnabled;
+                    schedule.DailyLimitMinutes = row.DailyLimitMinutes;
+                }
+            }
+
+            // App rules: update matching rules in other profiles by process name
+            if (AppRulesGrid.ItemsSource is List<AppRule> rules)
+            {
+                foreach (var profileId in allProfileIds.Where(id => id != _selectedProfileId))
+                {
+                    foreach (var r in rules)
+                    {
+                        var target = db.AppRules.FirstOrDefault(
+                            x => x.UserProfileId == profileId && x.ProcessName == r.ProcessName);
+                        if (target != null)
+                        {
+                            target.AccessMode         = r.AccessMode;
+                            target.AllowedInFocusMode = r.AllowedInFocusMode;
+                        }
+                        else
+                        {
+                            db.AppRules.Add(new AppRule
+                            {
+                                ProcessName        = r.ProcessName,
+                                DisplayName        = r.DisplayName,
+                                AccessMode         = r.AccessMode,
+                                AllowedInFocusMode = r.AllowedInFocusMode,
+                                UserProfileId      = profileId,
+                            });
+                        }
+                    }
+                }
+            }
+
+            db.SaveChanges();
+            await _ipc.SendAsync(IpcCommand.ReloadRules);
+            MessageBox.Show("Saved to all profiles.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Save failed: {ex.Message}");
         }
     }
 

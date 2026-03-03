@@ -1,3 +1,4 @@
+using System.Net.Http;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
@@ -7,6 +8,8 @@ namespace ParentalControl.Core.Services;
 
 public class NotificationService
 {
+    private static readonly HttpClient _http = new();
+
     // Per-process rate-limiting: don't flood the parent with repeated blocked-app emails.
     // One notification per process per 10 minutes maximum.
     private readonly Dictionary<string, DateTime> _lastSent = new(StringComparer.OrdinalIgnoreCase);
@@ -42,6 +45,31 @@ public class NotificationService
             // Check per-event-type toggle
             if (checkScreenLock  && !s.NotifyOnScreenLock) return;
             if (!checkScreenLock && !s.NotifyOnAppBlock)   return;
+
+            // Mode 2: ntfy.sh push notification (no credentials required)
+            if (s.NotificationMode == 2)
+            {
+                if (string.IsNullOrWhiteSpace(s.NtfyTopic)) return;
+
+                if (processName != null)
+                {
+                    var nowUtc = DateTime.UtcNow;
+                    if (_lastSent.TryGetValue(processName, out var last) &&
+                        (nowUtc - last).TotalMinutes < 10)
+                        return;
+                    _lastSent[processName] = nowUtc;
+                }
+
+                var content = new StringContent(body);
+                content.Headers.Add("Title", subject);
+                try
+                {
+                    _http.PostAsync($"https://ntfy.sh/{Uri.EscapeDataString(s.NtfyTopic)}", content)
+                         .GetAwaiter().GetResult();
+                }
+                catch { }
+                return;
+            }
 
             if (string.IsNullOrWhiteSpace(s.NotificationAddress) ||
                 string.IsNullOrWhiteSpace(s.SmtpHost)            ||
@@ -85,6 +113,28 @@ public class NotificationService
             using var db = new AppDbContext();
             var s = db.Settings.FirstOrDefault();
             if (s == null) return (false, "Settings not found.");
+
+            // Mode 2: ntfy.sh push notification
+            if (s.NotificationMode == 2)
+            {
+                if (string.IsNullOrWhiteSpace(s.NtfyTopic))
+                    return (false, "No ntfy topic configured.");
+                try
+                {
+                    var content = new StringContent("This is a test notification from ParentGuard.");
+                    content.Headers.Add("Title", "ParentGuard: Test Notification");
+                    var response = _http.PostAsync(
+                        $"https://ntfy.sh/{Uri.EscapeDataString(s.NtfyTopic)}", content)
+                        .GetAwaiter().GetResult();
+                    return response.IsSuccessStatusCode
+                        ? (true,  $"Test push sent to topic '{s.NtfyTopic}'.")
+                        : (false, $"ntfy.sh returned {(int)response.StatusCode}.");
+                }
+                catch (Exception ex)
+                {
+                    return (false, $"Failed: {ex.Message}");
+                }
+            }
 
             if (string.IsNullOrWhiteSpace(s.NotificationAddress))
                 return (false, "No notification address configured.");

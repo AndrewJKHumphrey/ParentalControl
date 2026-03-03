@@ -1,5 +1,5 @@
 ﻿ParentalControl.UI
-1.0.0.0
+
 
 winexe
 C#
@@ -12,9 +12,9 @@ TRACE;DEBUG;NET;NET10_0;NETCOREAPP;WINDOWS;WINDOWS7_0;NET5_0_OR_GREATER;NET6_0_O
 C:\Users\humph\ParentalControl\ParentalControl.UI\App.xaml
 10-759483651
 
-17-479387615
+151788876532
 230-1138591777
 MainWindow.xaml;Views\ActivityLogPage.xaml;Views\AppControlPage.xaml;Views\DashboardPage.xaml;Views\FocusModePage.xaml;Views\LoginWindow.xaml;Views\ProfilesPage.xaml;Views\ScreenTimePage.xaml;Views\SettingsPage.xaml;Views\WebFilterPage.xaml;
 
-True
+False
 

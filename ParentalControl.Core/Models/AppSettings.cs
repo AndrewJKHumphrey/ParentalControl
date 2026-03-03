@@ -24,7 +24,7 @@ public class AppSettings
 
     // Notifications
     public bool   NotificationsEnabled { get; set; } = false;
-    public int    NotificationMode     { get; set; } = 0;  // 0 = email, 1 = text
+    public int    NotificationMode     { get; set; } = 0;  // 0 = email, 1 = text, 2 = push (ntfy.sh)
     public string NotificationAddress  { get; set; } = string.Empty;
     public string PhoneNumber          { get; set; } = string.Empty;
     public string CarrierGateway       { get; set; } = string.Empty;
@@ -35,4 +35,5 @@ public class AppSettings
     public bool   SmtpUseSsl           { get; set; } = true;
     public bool   NotifyOnScreenLock   { get; set; } = true;
     public bool   NotifyOnAppBlock     { get; set; } = true;
+    public string NtfyTopic           { get; set; } = string.Empty;
 }

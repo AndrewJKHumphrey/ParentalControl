@@ -6,8 +6,8 @@
         <StackPanel Margin="32">
             <TextBlock Text="Profiles" FontSize="24" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"/>
-            <TextBlock Text="Profiles are automatically created for each Windows user account found on this machine when the service starts. Edit the Display Name or toggle Enabled to customise each profile. The service enforces the matching profile's rules when that user is logged in."
-                       Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,24" TextWrapping="Wrap"/>
+            <TextBlock Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,24" TextWrapping="Wrap"
+                       Text="Profiles are automatically created for each Windows user account found on this machine when the service starts. Edit the Display Name, toggle Enabled, or mark whether the child's account is protected by a Windows password (when enabled, the service only locks once per violation since the password prevents re-entry without a parent)."/>
 
             <!-- Profiles list -->
             <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="20">
@@ -23,6 +23,9 @@
                         <DataGridTextColumn Header="Windows Username" Binding="{Binding WindowsUsername}"
                                             Width="200" IsReadOnly="True"/>
                         <DataGridCheckBoxColumn Header="Enabled" Binding="{Binding IsEnabled}" Width="80"/>
+                        <DataGridCheckBoxColumn Header="Has Password" Binding="{Binding ChildAccountHasPassword}"
+                                                Width="110"
+                                                ToolTipService.ToolTip="Enable if this child account has a Windows password — the service will only lock once per violation since the password prevents unsupervised re-entry."/>
                         <DataGridTemplateColumn Header="Remove" Width="90">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>

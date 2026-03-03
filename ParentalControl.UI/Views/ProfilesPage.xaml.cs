@@ -35,13 +35,6 @@ public partial class ProfilesPage : Page
     {
         if (sender is Button btn && btn.Tag is int id)
         {
-            if (id == 1)
-            {
-                MessageBox.Show("Cannot remove the Default (catch-all) profile.", "Not Allowed",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
             var result = MessageBox.Show(
                 "This will delete the profile and all its rules. Continue?",
                 "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Question);
@@ -84,8 +77,9 @@ public partial class ProfilesPage : Page
             {
                 var existing = db.UserProfiles.Find(p.Id);
                 if (existing == null) continue;
-                existing.DisplayName = p.DisplayName;
-                existing.IsEnabled   = p.IsEnabled;
+                existing.DisplayName              = p.DisplayName;
+                existing.IsEnabled               = p.IsEnabled;
+                existing.ChildAccountHasPassword = p.ChildAccountHasPassword;
             }
             db.SaveChanges();
             await _ipc.SendAsync(IpcCommand.ReloadRules);

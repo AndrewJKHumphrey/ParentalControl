@@ -194,6 +194,54 @@ public partial class ScreenTimePage : Page
         return FormatTime(t);
     }
 
+    private async void SaveToAllButton_Click(object sender, RoutedEventArgs e)
+    {
+        var errors = new List<string>();
+        foreach (var row in _rows)
+        {
+            var fromNorm  = NormalizeTimeInput(row.AllowedFromStr);
+            var untilNorm = NormalizeTimeInput(row.AllowedUntilStr);
+            if (fromNorm  == null) errors.Add($"{row.DayOfWeek}: invalid 'Allowed From' value \"{row.AllowedFromStr}\"");
+            else row.AllowedFromStr  = fromNorm;
+            if (untilNorm == null) errors.Add($"{row.DayOfWeek}: invalid 'Allowed Until' value \"{row.AllowedUntilStr}\"");
+            else row.AllowedUntilStr = untilNorm;
+        }
+        if (errors.Count > 0)
+        {
+            MessageBox.Show(string.Join("\n", errors), "Invalid Time Values",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        try
+        {
+            using var db = new AppDbContext();
+            var allProfileIds = db.UserProfiles.Select(p => p.Id).ToList();
+            foreach (var profileId in allProfileIds)
+            {
+                foreach (var row in _rows)
+                {
+                    var limit = db.ScreenTimeLimits.FirstOrDefault(
+                        l => l.UserProfileId == profileId && l.DayOfWeek == row.DayOfWeek);
+                    if (limit == null) continue;
+                    limit.IsEnabled         = row.IsEnabled;
+                    limit.DailyLimitMinutes = row.DailyLimitMinutes;
+                    if (TryParseDisplayTime(row.AllowedFromStr,  out var from))  limit.AllowedFrom  = from;
+                    if (TryParseDisplayTime(row.AllowedUntilStr, out var until)) limit.AllowedUntil = until;
+                }
+            }
+            db.SaveChanges();
+            await _ipc.SendAsync(IpcCommand.ReloadRules);
+            StatusText.Text       = "Saved to all profiles.";
+            StatusText.Foreground = new SolidColorBrush(Color.FromRgb(166, 227, 161));
+            StatusText.Visibility = Visibility.Visible;
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Save failed: {ex.Message}");
+        }
+    }
+
     private async void SaveButton_Click(object sender, RoutedEventArgs e)
     {
         // Pre-validate all time fields before touching the DB

@@ -186,11 +186,10 @@ public class ScreenTimeEnforcer
         try
         {
             var profile = db.UserProfiles.FirstOrDefault(p =>
-                p.WindowsUsername.ToLower() == username.ToLower() && p.IsEnabled)
-                ?? db.UserProfiles.FirstOrDefault(p => p.WindowsUsername == "" && p.IsEnabled);
-            return profile?.Id ?? 1;
+                p.WindowsUsername.ToLower() == username.ToLower() && p.IsEnabled);
+            return profile?.Id ?? 0;
         }
-        catch { return 1; }
+        catch { return 0; }
         finally { if (owned) db.Dispose(); }
     }
 
