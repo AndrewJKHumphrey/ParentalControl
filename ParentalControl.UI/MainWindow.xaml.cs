@@ -7,6 +7,7 @@ using ParentalControl.UI.Views;
 
 using ParentalControl.UI.Services;
 using ParentalControl.Core;
+using ParentalControl.Core.Data;
 
 namespace ParentalControl.UI;
 
@@ -15,9 +16,20 @@ public partial class MainWindow : Window
     private const string ServiceName = "ParentalControlService";
     private readonly IpcClient _ipc = new();
 
+    // Base design dimensions at 1080p (1.0 scale)
+    private const double BaseWidth  = 960;
+    private const double BaseHeight = 640;
+
     public MainWindow()
     {
         InitializeComponent();
+
+        using (var db = new AppDbContext())
+        {
+            var scale = db.Settings.FirstOrDefault()?.UiScale ?? "1080p";
+            ApplyScale(scale);
+        }
+
         Navigate("Dashboard");
         Loaded += (_, _) =>
         {
@@ -26,6 +38,19 @@ public partial class MainWindow : Window
             timer.Tick += (_, _) => RefreshServiceButton();
             timer.Start();
         };
+    }
+
+    public void ApplyScale(string label)
+    {
+        double scale = label switch
+        {
+            "1440p" => 1.333,
+            "2160p" => 2.0,
+            _       => 1.0,
+        };
+        RootGrid.LayoutTransform = new ScaleTransform(scale, scale);
+        Width  = Math.Round(BaseWidth  * scale);
+        Height = Math.Round(BaseHeight * scale);
     }
 
     private void NavButton_Click(object sender, RoutedEventArgs e)
@@ -38,15 +63,14 @@ public partial class MainWindow : Window
     {
         ContentFrame.Content = page switch
         {
-            "Dashboard"   => (object)new DashboardPage(),
+            "Dashboard"   => new DashboardPage(),
             "ScreenTime"  => new ScreenTimePage(),
             "AppControl"  => new AppControlPage(),
             "FocusMode"   => new FocusModePage(),
             "Profiles"    => new ProfilesPage(),
-            "WebFilter"   => new WebFilterPage(),
             "ActivityLog" => new ActivityLogPage(),
             "Settings"    => new SettingsPage(),
-            _ => null!
+            _ => null
         };
     }
 

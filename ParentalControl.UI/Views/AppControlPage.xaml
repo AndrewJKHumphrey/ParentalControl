@@ -33,7 +33,7 @@
         </Border>
 
         <!-- Add new rule -->
-        <Grid Grid.Row="3" Margin="0,0,0,16">
+        <Grid Grid.Row="4" Margin="0,0,0,16">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
@@ -59,24 +59,23 @@
                     BorderThickness="0" Cursor="Hand" Click="AddRule_Click"/>
         </Grid>
 
-        <!-- Steam scan -->
-        <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,0,0,12" VerticalAlignment="Center">
-            <Button x:Name="QuickScanButton" Content="Quick Scan (Steam)" Height="36" Padding="16,0"
+        <!-- Game scan -->
+        <StackPanel Grid.Row="5" Orientation="Horizontal" Margin="0,0,0,12" VerticalAlignment="Center">
+            <TextBlock Text="Drive:" VerticalAlignment="Center"
+                       Foreground="{DynamicResource TextPrimary}" Margin="0,0,8,0"/>
+            <ComboBox x:Name="DriveSelector" Width="100" Height="36" Margin="0,0,8,0"
+                      VerticalContentAlignment="Center"/>
+            <Button x:Name="ScanButton" Content="Scan for Games" Height="36" Padding="16,0"
                     Background="#CBA6F7" Foreground="#1E1E2E" FontWeight="Bold"
-                    BorderThickness="0" Cursor="Hand" Click="QuickScanSteam_Click"
-                    ToolTip="Scans the default Steam library and any libraries registered in Steam"/>
-            <Button x:Name="DeepScanButton" Content="Deep Scan (All Drives)" Height="36" Padding="16,0"
-                    Margin="8,0,0,0"
-                    Background="#89DCEB" Foreground="#1E1E2E" FontWeight="Bold"
-                    BorderThickness="0" Cursor="Hand" Click="DeepScanSteam_Click"
-                    ToolTip="Searches every drive for Steam game folders — may take a moment"/>
+                    BorderThickness="0" Cursor="Hand" Click="ScanGames_Click"
+                    ToolTip="Scan selected drive for games from Steam, GOG, Epic, EA, Battle.net, and Ubisoft Connect"/>
             <TextBlock x:Name="ScanStatusText" VerticalAlignment="Center" Margin="12,0,0,0"
                        Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap"
                        Visibility="Collapsed"/>
         </StackPanel>
 
         <!-- App Time Schedule (per-day) -->
-        <Border Grid.Row="5" Background="{DynamicResource CardBg}" CornerRadius="8"
+        <Border Grid.Row="3" Background="{DynamicResource CardBg}" CornerRadius="8"
                 Padding="8" Margin="0,0,0,12">
             <StackPanel>
                 <TextBlock Text="Daily App Time Schedule" FontSize="14" FontWeight="SemiBold"
@@ -84,6 +83,17 @@
                 <TextBlock Text="Enable a day and set its minute limit for 'Allowed during app time' apps. Disabled days have no app time limit."
                            Foreground="{DynamicResource TextSecondary}" FontSize="12"
                            Margin="8,0,8,8" TextWrapping="Wrap"/>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,8,8">
+                    <TextBlock Text="Apply to:" VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextPrimary}" Margin="0,0,12,0"/>
+                    <ComboBox x:Name="DayRangeBox" Width="140"
+                              SelectionChanged="DayRangeBox_Changed">
+                        <ComboBoxItem Content="Single Day" IsSelected="True"/>
+                        <ComboBoxItem Content="Weekdays"/>
+                        <ComboBoxItem Content="Weekends"/>
+                        <ComboBoxItem Content="Everyday"/>
+                    </ComboBox>
+                </StackPanel>
                 <DataGrid x:Name="AppTimeScheduleGrid" AutoGenerateColumns="False"
                           Background="Transparent" Foreground="{DynamicResource TextPrimary}"
                           BorderThickness="0" GridLinesVisibility="None"
@@ -91,7 +101,7 @@
                           CanUserAddRows="False" CanUserDeleteRows="False"
                           RowBackground="Transparent" AlternatingRowBackground="{DynamicResource AltRowBg}">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Day" Binding="{Binding DayOfWeek}" IsReadOnly="True" Width="110"/>
+                        <DataGridTextColumn Header="Day" Binding="{Binding DayLabel}" IsReadOnly="True" Width="110"/>
                         <DataGridTemplateColumn Header="Enabled" Width="80">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
@@ -118,6 +128,15 @@
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Display Name" Binding="{Binding DisplayName}" Width="*"/>
                     <DataGridTextColumn Header="Process Name" Binding="{Binding ProcessName}" Width="*"/>
+                    <DataGridTextColumn Header="Rating" Binding="{Binding EsrbRating}" IsReadOnly="True" Width="60"/>
+                    <DataGridTextColumn Header="Genres" Binding="{Binding Genres}" IsReadOnly="True" Width="*">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="ToolTip" Value="{Binding Tags}"/>
+                                <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
 
                     <!-- Access mode -->
                     <DataGridTemplateColumn Header="Access" Width="150">

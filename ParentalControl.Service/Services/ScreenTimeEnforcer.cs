@@ -10,7 +10,7 @@ public class ScreenTimeEnforcer
     [DllImport("kernel32.dll")]
     private static extern uint WTSGetActiveConsoleSessionId();
 
-    [DllImport("wtsapi32.dll")]
+    [DllImport("wtsapi32.dll", CharSet = CharSet.Unicode)]
     private static extern bool WTSQuerySessionInformation(
         IntPtr hServer, int sessionId, int wtsInfoClass,
         out IntPtr ppBuffer, out int pBytesReturned);
@@ -27,14 +27,29 @@ public class ScreenTimeEnforcer
 
     private readonly ActivityLogger _logger;
     private readonly NotificationService _notifier;
-    private DateTime _lastTickTime = DateTime.UtcNow;
-    private double _pendingMinutes = 0;
+    private DateTime _lastTickTime  = DateTime.UtcNow;
+    private DateTime _nextDebugDump = DateTime.MinValue;
+    private double _pendingMinutes  = 0;
 
     private bool _lockedDueToTimeWindow = false;
     private bool _lockedDueToDailyLimit = false;
 
     private int    _activeProfileId = 0;
     private string _activeUsername  = string.Empty;
+
+    private static readonly string _debugLog =
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                     "ParentalControl", "debug.log");
+
+    private static void WriteDebug(string msg)
+    {
+        try
+        {
+            File.AppendAllText(_debugLog,
+                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {msg}{Environment.NewLine}");
+        }
+        catch { }
+    }
 
     public bool IsScreenTimeLocked  => _lockedDueToTimeWindow || _lockedDueToDailyLimit;
     public bool TriggeredDebugStop  { get; private set; }
@@ -64,7 +79,9 @@ public class ScreenTimeEnforcer
         {
             using var db = new AppDbContext();
             var settings = db.Settings.FirstOrDefault();
-            if (settings == null) return;
+            if (settings == null) { WriteDebug("EXIT: settings row missing"); return; }
+
+            bool debug = settings.DebugStopServiceAfterLock;
 
             // Resolve active profile
             var activeUsername = GetActiveWindowsUsername();
@@ -75,17 +92,30 @@ public class ScreenTimeEnforcer
                 _pendingMinutes  = 0;
                 _lockedDueToTimeWindow = false;
                 _lockedDueToDailyLimit = false;
+                if (debug) WriteDebug($"User changed → '{activeUsername}', profileId={_activeProfileId}");
             }
             if (_activeProfileId == 0)
                 _activeProfileId = ResolveProfileId(activeUsername, db);
 
+            // Periodic debug dump (once per minute when debug flag is on)
+            if (debug && DateTime.UtcNow >= _nextDebugDump)
+            {
+                _nextDebugDump = DateTime.UtcNow.AddMinutes(1);
+                WriteDebug($"TICK user='{activeUsername}' profileId={_activeProfileId} " +
+                           $"ScreenTimeEnabled={settings.ScreenTimeEnabled}");
+            }
+
             var profile = db.UserProfiles.Find(_activeProfileId);
-            if (profile == null || !profile.IsEnabled) return;
+            if (profile == null || !profile.IsEnabled)
+            {
+                if (debug) WriteDebug($"EXIT: profile null or disabled (id={_activeProfileId})");
+                return;
+            }
 
             // Reset daily counter if date changed
             if (profile.UsageDate.Date != DateTime.Now.Date)
             {
-                profile.UsageDate       = DateTime.Now.Date;
+                profile.UsageDate         = DateTime.Now.Date;
                 profile.TodayUsedMinutes  = 0;
                 profile.TodayBonusMinutes = 0;
                 _pendingMinutes = 0;
@@ -106,13 +136,25 @@ public class ScreenTimeEnforcer
 
             db.SaveChanges();
 
-            if (!settings.ScreenTimeEnabled) return;
+            if (!settings.ScreenTimeEnabled)
+            {
+                if (debug) WriteDebug("EXIT: ScreenTimeEnabled=false");
+                return;
+            }
 
             var limit = db.ScreenTimeLimits.FirstOrDefault(
                 l => l.DayOfWeek == now.DayOfWeek && l.UserProfileId == _activeProfileId);
-            if (limit == null || !limit.IsEnabled) return;
+            if (limit == null || !limit.IsEnabled)
+            {
+                if (debug) WriteDebug($"EXIT: limit null or disabled for day={now.DayOfWeek} profileId={_activeProfileId}");
+                return;
+            }
 
             var currentTime = TimeOnly.FromDateTime(now);
+
+            if (debug) WriteDebug($"TIME CHECK: current={currentTime} allowedFrom={limit.AllowedFrom} allowedUntil={limit.AllowedUntil} " +
+                                   $"outside={currentTime < limit.AllowedFrom || currentTime > limit.AllowedUntil} " +
+                                   $"loggedIn={IsUserLoggedIn()} alreadyLocked={_lockedDueToTimeWindow}");
 
             // --- Enforce allowed time window ---
             if (currentTime < limit.AllowedFrom || currentTime > limit.AllowedUntil)
@@ -120,6 +162,7 @@ public class ScreenTimeEnforcer
                 if (IsUserLoggedIn() && !_lockedDueToTimeWindow)
                 {
                     _lockedDueToTimeWindow = true;
+                    if (debug) WriteDebug("LOCKING: outside allowed time window");
                     if (settings.DebugStopServiceAfterLock) TriggeredDebugStop = true;
                     SendWarning(
                         $"You are outside the allowed hours " +
@@ -144,6 +187,7 @@ public class ScreenTimeEnforcer
                 if (IsUserLoggedIn() && !_lockedDueToDailyLimit)
                 {
                     _lockedDueToDailyLimit = true;
+                    if (debug) WriteDebug($"LOCKING: daily limit {limit.DailyLimitMinutes} min reached");
                     if (settings.DebugStopServiceAfterLock) TriggeredDebugStop = true;
                     SendWarning(
                         $"Daily screen time limit of {limit.DailyLimitMinutes} minutes has been reached. " +
@@ -161,7 +205,10 @@ public class ScreenTimeEnforcer
                 _lockedDueToDailyLimit = false;
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            WriteDebug($"EXCEPTION in Tick: {ex.GetType().Name}: {ex.Message}");
+        }
     }
 
     internal static string GetActiveWindowsUsername()

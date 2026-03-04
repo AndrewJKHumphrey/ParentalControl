@@ -3,7 +3,7 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       Background="{DynamicResource AppBg}" Title="Settings">
     <ScrollViewer>
-        <StackPanel Margin="32" MaxWidth="480">
+        <StackPanel Margin="32" MaxWidth="500">
             <TextBlock Text="Settings" FontSize="24" FontWeight="Bold"
 
                        Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,32"/>
@@ -209,30 +209,40 @@
                     <TextBlock Text="Theme:" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,8"/>
                     <ComboBox x:Name="ThemeBox" Width="200" Height="32" HorizontalAlignment="Left"
                               SelectionChanged="ThemeBox_SelectionChanged" Margin="0,0,0,16">
-                        <!-- ── Single-colour  (Red → Magenta spectrum) ─────────────── -->
+
+                        <!-- ── Single-colour ─────────────────────────────────────────── -->
                         <ComboBoxItem Content="Default"/>
+                        <!-- DEBUG only — hidden in Release builds via code-behind -->
+                        <ComboBoxItem x:Name="DebugThemeItem" Content="Dev Mode" Visibility="Collapsed"/>
+                        <!-- Red → Rose spectrum -->
                         <ComboBoxItem Content="Red"/>
+                        <ComboBoxItem Content="Scarlet"/>
                         <ComboBoxItem Content="Vermilion"/>
                         <ComboBoxItem Content="Orange"/>
                         <ComboBoxItem Content="Amber"/>
                         <ComboBoxItem Content="Yellow"/>
+                        <ComboBoxItem Content="Chartreuse"/>
                         <ComboBoxItem Content="Lime"/>
                         <ComboBoxItem Content="Green"/>
                         <ComboBoxItem Content="Teal"/>
+                        <ComboBoxItem Content="Cyan"/>
                         <ComboBoxItem Content="Blue"/>
                         <ComboBoxItem Content="Indigo"/>
+                        <ComboBoxItem Content="Violet"/>
                         <ComboBoxItem Content="Purple"/>
                         <ComboBoxItem Content="Magenta"/>
-                        <!-- ── Two-colour  (sorted by primary / background hue) ───── -->
-                        <!-- Red -->
+                        <ComboBoxItem Content="Rose"/>
+
+                        <!-- ── Two-colour  (sorted by background hue) ────────────────── -->
+                        <!-- Red bg -->
                         <ComboBoxItem Content="Volcanic"/>
                         <ComboBoxItem Content="Gothic"/>
                         <ComboBoxItem Content="Midnight Rose"/>
                         <ComboBoxItem Content="Rosewood"/>
-                        <!-- Red-Orange -->
+                        <!-- Red-Orange bg -->
                         <ComboBoxItem Content="Autumn"/>
                         <ComboBoxItem Content="Wildfire"/>
-                        <!-- Orange / Brown -->
+                        <!-- Orange / Brown bg -->
                         <ComboBoxItem Content="Copper Patina"/>
                         <ComboBoxItem Content="Desert"/>
                         <ComboBoxItem Content="Volcanic Ash"/>
@@ -240,22 +250,22 @@
                         <ComboBoxItem Content="Steampunk"/>
                         <ComboBoxItem Content="Parchment"/>
                         <ComboBoxItem Content="Antique"/>
-                        <!-- Amber / Yellow-Orange -->
+                        <!-- Amber / Yellow-Orange bg -->
                         <ComboBoxItem Content="CRT Amber"/>
                         <ComboBoxItem Content="Solstice"/>
                         <ComboBoxItem Content="Gruvbox"/>
-                        <!-- Yellow-Green -->
+                        <!-- Yellow-Green bg -->
                         <ComboBoxItem Content="Cherry Grove"/>
-                        <!-- Green -->
+                        <!-- Green bg -->
                         <ComboBoxItem Content="Forest Fire"/>
                         <ComboBoxItem Content="Rainforest"/>
                         <ComboBoxItem Content="CRT Green"/>
                         <ComboBoxItem Content="Lagoon"/>
                         <ComboBoxItem Content="Spring"/>
-                        <!-- Teal / Cyan -->
+                        <!-- Teal / Cyan bg -->
                         <ComboBoxItem Content="Coral Reef"/>
                         <ComboBoxItem Content="Aurora"/>
-                        <!-- Blue -->
+                        <!-- Blue bg -->
                         <ComboBoxItem Content="Deep Ocean"/>
                         <ComboBoxItem Content="Arctic Night"/>
                         <ComboBoxItem Content="Storm"/>
@@ -265,29 +275,290 @@
                         <ComboBoxItem Content="Midnight Gold"/>
                         <ComboBoxItem Content="Solarized"/>
                         <ComboBoxItem Content="Nord"/>
-                        <!-- Blue-Purple -->
+                        <!-- Blue-Purple bg -->
                         <ComboBoxItem Content="Tokyo Night"/>
                         <ComboBoxItem Content="Eclipse"/>
                         <ComboBoxItem Content="Dracula"/>
                         <ComboBoxItem Content="Twilight"/>
                         <ComboBoxItem Content="Synthwave"/>
-                        <!-- Magenta / Dark Purple -->
+                        <!-- Magenta / Dark Purple bg -->
                         <ComboBoxItem Content="Retrowave"/>
                         <ComboBoxItem Content="Galaxy"/>
-                        <!-- Neutral / Black -->
+                        <!-- Neutral / Black bg -->
                         <ComboBoxItem Content="Noir"/>
                         <ComboBoxItem Content="Cyberpunk"/>
                         <ComboBoxItem Content="Monokai"/>
                         <ComboBoxItem Content="High Contrast"/>
-                        <!-- My themes -->
-                        <ComboBoxItem Content="Ice Blue"/>
+
+                        <!-- ── Three-colour  (sorted by background hue → accent hue) ── -->
+                        <!-- Red bg -->
+                        <ComboBoxItem Content="Bloodrite"/>
+                        <ComboBoxItem Content="Inferno"/>
+                        <!-- Vermilion bg -->
+                        <ComboBoxItem Content="Magma"/>
+                        <!-- Orange bg -->
+                        <ComboBoxItem Content="Citrus Storm"/>
+                        <!-- Amber bg -->
+                        <ComboBoxItem Content="Desert Bloom"/>
+                        <ComboBoxItem Content="Amber Waves"/>
+                        <!-- Yellow bg -->
+                        <ComboBoxItem Content="Bumblebee"/>
+                        <!-- Olive bg -->
+                        <ComboBoxItem Content="Venom"/>
+                        <!-- Lime bg -->
+                        <ComboBoxItem Content="Acid Wash"/>
+                        <!-- Chartreuse bg -->
+                        <ComboBoxItem Content="Toxic"/>
+                        <!-- Green bg -->
+                        <ComboBoxItem Content="Jungle Fire"/>
+                        <ComboBoxItem Content="Emerald Crown"/>
+                        <ComboBoxItem Content="Poison"/>
+                        <!-- Teal bg -->
+                        <ComboBoxItem Content="Dragon Jade"/>
+                        <ComboBoxItem Content="Mermaid"/>
+                        <ComboBoxItem Content="Carnival"/>
+                        <!-- Cyan bg -->
+                        <ComboBoxItem Content="Arctic Aurora"/>
+                        <ComboBoxItem Content="Frozen Fire"/>
+                        <!-- Blue bg -->
+                        <ComboBoxItem Content="Monarch"/>
+                        <ComboBoxItem Content="Circuit"/>
+                        <ComboBoxItem Content="Blueprint"/>
+                        <ComboBoxItem Content="Sapphire Flame"/>
+                        <!-- Indigo bg -->
+                        <ComboBoxItem Content="Starlight"/>
+                        <ComboBoxItem Content="Nebula"/>
+                        <!-- Purple bg -->
+                        <ComboBoxItem Content="Twilight Fire"/>
+                        <ComboBoxItem Content="Witchcraft"/>
+                        <!-- Violet bg -->
+                        <ComboBoxItem Content="Hex"/>
+                        <!-- Magenta bg -->
+                        <ComboBoxItem Content="Flamingo"/>
+                        <ComboBoxItem Content="Cherry Bomb"/>
+                        <!-- Dark bg -->
+                        <ComboBoxItem Content="Neon Trinity"/>
+
                     </ComboBox>
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,16">
                         <TextBlock Text="Light Mode" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13"/>
                         <CheckBox x:Name="DarkModeToggle" Style="{StaticResource ToggleSwitch}"
                                   Checked="DarkMode_Changed" Unchecked="DarkMode_Changed"/>
                         <TextBlock Text="Dark Mode" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="8,0,0,0" FontSize="13"/>
                     </StackPanel>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="UI Scale" Foreground="{DynamicResource TextPrimary}" FontWeight="Medium"/>
+                            <TextBlock Text="Match to your monitor's vertical resolution so the app looks the same across screens."
+                                       Foreground="{DynamicResource TextSecondary}" FontSize="12" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <ComboBox x:Name="UiScaleBox" Grid.Column="1" Width="110" VerticalAlignment="Center"
+                                  SelectionChanged="UiScale_Changed">
+                            <ComboBoxItem Content="1080p"/>
+                            <ComboBoxItem Content="1440p"/>
+                            <ComboBoxItem Content="2160p"/>
+                        </ComboBox>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Game Scanning -->
+            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="20" Margin="0,0,0,24">
+                <StackPanel>
+                    <TextBlock Text="Game Scanning" Foreground="{DynamicResource TextPrimary}"
+                               FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                    <TextBlock Text="RAWG API Key:" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,4"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="RawgApiKeyBox" Height="36" IsReadOnly="True"
+                                 Background="{DynamicResource AppBg}" Foreground="{DynamicResource TextSecondary}"
+                                 BorderBrush="{DynamicResource BorderColor}" BorderThickness="1" Padding="8,4"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="8,0,0,0">
+                            <Button x:Name="RawgKeyEditButton" Content="Edit"
+                                    Height="36" Width="60"
+                                    Background="#89B4FA" Foreground="#1E1E2E" FontWeight="Bold"
+                                    BorderThickness="0" Cursor="Hand" Click="RawgKeyEdit_Click"/>
+                            <Button x:Name="RawgKeySaveButton" Content="Save"
+                                    Height="36" Width="60" Visibility="Collapsed"
+                                    Background="#A6E3A1" Foreground="#1E1E2E" FontWeight="Bold"
+                                    BorderThickness="0" Cursor="Hand" Click="RawgKeySave_Click"/>
+                            <Button x:Name="RawgKeyCancelButton" Content="Cancel"
+                                    Height="36" Width="60" Visibility="Collapsed" Margin="4,0,0,0"
+                                    Background="{DynamicResource CardBg}" Foreground="{DynamicResource TextSecondary}"
+                                    BorderBrush="{DynamicResource BorderColor}" BorderThickness="1"
+                                    Cursor="Hand" Click="RawgKeyCancel_Click"/>
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextSecondary}" FontSize="12"
+                               Margin="0,6,0,0"
+                               Text="Used to look up ESRB ratings during game scans. Mature and Adults Only games are automatically blocked when added. Click Edit to change the key."/>
+                </StackPanel>
+            </Border>
+
+            <!-- Scan Rules (combined) -->
+            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="20" Margin="0,0,0,24">
+                <StackPanel>
+                    <TextBlock Text="Scan Rules" FontSize="16" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,4"/>
+                    <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextSecondary}" FontSize="12"
+                               Margin="0,0,0,16"
+                               Text="Configure how games are automatically categorized when scanned. Expand a section to filter by genre or content tag."/>
+
+                    <!-- ── Blocking ── -->
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Block at ESRB rating" Foreground="{DynamicResource TextPrimary}" FontWeight="Medium"/>
+                            <TextBlock Text="Games rated at or above this level are automatically blocked on scan."
+                                       Foreground="{DynamicResource TextSecondary}" FontSize="12" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <ComboBox x:Name="ScanBlockRatingBox" Grid.Column="1" Width="100" VerticalAlignment="Center"
+                                  SelectionChanged="ScanBlockRating_Changed">
+                            <ComboBoxItem Content="None"/>
+                            <ComboBoxItem Content="E"/>
+                            <ComboBoxItem Content="E10+"/>
+                            <ComboBoxItem Content="T"/>
+                            <ComboBoxItem Content="M"/>
+                            <ComboBoxItem Content="AO"/>
+                        </ComboBox>
+                    </Grid>
+                    <Expander Header="Block — Genres &amp; Tags" IsExpanded="False"
+                              Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,0">
+                        <StackPanel Margin="0,8,0,0">
+                            <TextBlock Text="Block by genre" Foreground="{DynamicResource TextPrimary}"
+                                       FontWeight="Medium" Margin="0,0,0,4"/>
+                            <TextBlock Text="Games matching any selected genre are blocked on scan."
+                                       Foreground="{DynamicResource TextSecondary}" FontSize="12" Margin="0,0,0,8"/>
+                            <Border BorderBrush="{DynamicResource BorderColor}" BorderThickness="1"
+                                    CornerRadius="4" Padding="8" MaxHeight="110" Margin="0,0,0,12">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <WrapPanel x:Name="GenresPanel"/>
+                                </ScrollViewer>
+                            </Border>
+                            <TextBlock Text="Block by content tag" Foreground="{DynamicResource TextPrimary}"
+                                       FontWeight="Medium" Margin="0,0,0,4"/>
+                            <TextBlock Text="Games with any selected tag are blocked on scan."
+                                       Foreground="{DynamicResource TextSecondary}" FontSize="12" Margin="0,0,0,8"/>
+                            <Border BorderBrush="{DynamicResource BorderColor}" BorderThickness="1"
+                                    CornerRadius="4" Padding="8" MaxHeight="110">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <WrapPanel x:Name="TagsPanel"/>
+                                </ScrollViewer>
+                            </Border>
+                        </StackPanel>
+                    </Expander>
+
+                    <Separator Margin="0,16,0,16" Background="{DynamicResource BorderColor}"/>
+
+                    <!-- ── App Time ── -->
+                    <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextSecondary}" FontSize="12"
+                               Margin="0,0,0,8"
+                               Text="App Time and Focus Mode rules apply only when a game doesn't match a blocking rule."/>
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="App Time at ESRB rating" Foreground="{DynamicResource TextPrimary}" FontWeight="Medium"/>
+                            <TextBlock Text="Games rated at or above this level are placed on app time."
+                                       Foreground="{DynamicResource TextSecondary}" FontSize="12" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <ComboBox x:Name="ScanAppTimeRatingBox" Grid.Column="1" Width="100" VerticalAlignment="Center"
+                                  SelectionChanged="ScanAppTimeRating_Changed">
+                            <ComboBoxItem Content="None"/>
+                            <ComboBoxItem Content="E"/>
+                            <ComboBoxItem Content="E10+"/>
+                            <ComboBoxItem Content="T"/>
+                            <ComboBoxItem Content="M"/>
+                            <ComboBoxItem Content="AO"/>
+                        </ComboBox>
+                    </Grid>
+                    <Expander Header="App Time — Genres &amp; Tags" IsExpanded="False"
+                              Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,0">
+                        <StackPanel Margin="0,8,0,0">
+                            <TextBlock Text="By genre" Foreground="{DynamicResource TextPrimary}"
+                                       FontWeight="Medium" Margin="0,0,0,4"/>
+                            <TextBlock Text="Games matching any selected genre are placed on app time."
+                                       Foreground="{DynamicResource TextSecondary}" FontSize="12" Margin="0,0,0,8"/>
+                            <Border BorderBrush="{DynamicResource BorderColor}" BorderThickness="1"
+                                    CornerRadius="4" Padding="8" MaxHeight="110" Margin="0,0,0,12">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <WrapPanel x:Name="AppTimeGenresPanel"/>
+                                </ScrollViewer>
+                            </Border>
+                            <TextBlock Text="By content tag" Foreground="{DynamicResource TextPrimary}"
+                                       FontWeight="Medium" Margin="0,0,0,4"/>
+                            <TextBlock Text="Games with any selected tag are placed on app time."
+                                       Foreground="{DynamicResource TextSecondary}" FontSize="12" Margin="0,0,0,8"/>
+                            <Border BorderBrush="{DynamicResource BorderColor}" BorderThickness="1"
+                                    CornerRadius="4" Padding="8" MaxHeight="110">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <WrapPanel x:Name="AppTimeTagsPanel"/>
+                                </ScrollViewer>
+                            </Border>
+                        </StackPanel>
+                    </Expander>
+
+                    <Separator Margin="0,16,0,16" Background="{DynamicResource BorderColor}"/>
+
+                    <!-- ── Focus Mode ── -->
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Focus Mode at ESRB rating" Foreground="{DynamicResource TextPrimary}" FontWeight="Medium"/>
+                            <TextBlock Text="Games rated at or below this level are allowed during focus mode."
+                                       Foreground="{DynamicResource TextSecondary}" FontSize="12" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <ComboBox x:Name="ScanFocusModeRatingBox" Grid.Column="1" Width="100" VerticalAlignment="Center"
+                                  SelectionChanged="ScanFocusModeRating_Changed">
+                            <ComboBoxItem Content="None"/>
+                            <ComboBoxItem Content="E"/>
+                            <ComboBoxItem Content="E10+"/>
+                            <ComboBoxItem Content="T"/>
+                            <ComboBoxItem Content="M"/>
+                            <ComboBoxItem Content="AO"/>
+                        </ComboBox>
+                    </Grid>
+                    <Expander Header="Focus Mode — Genres &amp; Tags" IsExpanded="False"
+                              Foreground="{DynamicResource TextSecondary}">
+                        <StackPanel Margin="0,8,0,0">
+                            <TextBlock Text="By genre" Foreground="{DynamicResource TextPrimary}"
+                                       FontWeight="Medium" Margin="0,0,0,4"/>
+                            <TextBlock Text="Games matching any selected genre are allowed during focus mode."
+                                       Foreground="{DynamicResource TextSecondary}" FontSize="12" Margin="0,0,0,8"/>
+                            <Border BorderBrush="{DynamicResource BorderColor}" BorderThickness="1"
+                                    CornerRadius="4" Padding="8" MaxHeight="110" Margin="0,0,0,12">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <WrapPanel x:Name="FocusModeGenresPanel"/>
+                                </ScrollViewer>
+                            </Border>
+                            <TextBlock Text="By content tag" Foreground="{DynamicResource TextPrimary}"
+                                       FontWeight="Medium" Margin="0,0,0,4"/>
+                            <TextBlock Text="Games with any selected tag are allowed during focus mode."
+                                       Foreground="{DynamicResource TextSecondary}" FontSize="12" Margin="0,0,0,8"/>
+                            <Border BorderBrush="{DynamicResource BorderColor}" BorderThickness="1"
+                                    CornerRadius="4" Padding="8" MaxHeight="110">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <WrapPanel x:Name="FocusModeTagsPanel"/>
+                                </ScrollViewer>
+                            </Border>
+                        </StackPanel>
+                    </Expander>
                 </StackPanel>
             </Border>
 
@@ -297,8 +568,8 @@
                     <TextBlock Text="Reset" Foreground="{DynamicResource TextPrimary}"
                                FontSize="16" FontWeight="SemiBold" Margin="0,0,0,4"/>
                     <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextSecondary}" FontSize="12"
-                               Margin="0,0,0,16"
-                               Text="Use these options to restore parts of the app to their default state. Each action asks for confirmation before proceeding."/>
+                               Margin="0,0,0,20"
+                               Text="Use these options to restore parts of the app to their default state. Each action asks for confirmation before proceeding. Passwords are never reset to ensure access remains."/>
 
                     <!-- Reset Settings -->
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
@@ -308,7 +579,7 @@
                                 Click="ResetSettings_Click"/>
                         <TextBlock TextWrapping="Wrap" VerticalAlignment="Center" Margin="12,0,0,0"
                                    Foreground="{DynamicResource TextSecondary}" FontSize="12"
-                                   Text="Restores time limits, toggles, theme and App Time to defaults. Keeps your password and all rules."/>
+                                   Text="Reset settings, keeps rules"/>
                     </StackPanel>
 
                     <!-- Reset Data -->
@@ -319,7 +590,7 @@
                                 Click="ResetData_Click"/>
                         <TextBlock TextWrapping="Wrap" VerticalAlignment="Center" Margin="12,0,0,0"
                                    Foreground="{DynamicResource TextSecondary}" FontSize="12"
-                                   Text="Clears all app rules, website rules, screen time schedules and activity logs. Keeps your settings and password."/>
+                                   Text="Reset application rules, keeps settings"/>
                     </StackPanel>
 
                     <!-- Full Reset -->
@@ -330,7 +601,7 @@
                                 Click="FullReset_Click"/>
                         <TextBlock TextWrapping="Wrap" VerticalAlignment="Center" Margin="12,0,0,0"
                                    Foreground="{DynamicResource TextSecondary}" FontSize="12"
-                                   Text="Resets everything — all settings and all data. Your password is kept. Cannot be undone."/>
+                                   Text="Resets everything back to default"/>
                     </StackPanel>
                 </StackPanel>
             </Border>

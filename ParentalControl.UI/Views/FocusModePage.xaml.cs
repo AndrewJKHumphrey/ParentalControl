@@ -13,6 +13,7 @@ public class FocusScheduleRow
 {
     public int Id { get; set; }
     public DayOfWeek DayOfWeek { get; set; }
+    public string DayLabel { get; set; } = "";
     public bool IsEnabled { get; set; }
     public string FocusFromStr  { get; set; } = "15:00";
     public string FocusUntilStr { get; set; } = "21:00";
@@ -73,6 +74,7 @@ public partial class FocusModePage : Page
                 {
                     Id            = s.Id,
                     DayOfWeek     = s.DayOfWeek,
+                    DayLabel      = s.DayOfWeek.ToString(),
                     IsEnabled     = s.IsEnabled,
                     FocusFromStr  = s.FocusFrom.ToString("HH:mm"),
                     FocusUntilStr = s.FocusUntil.ToString("HH:mm"),
@@ -90,6 +92,7 @@ public partial class FocusModePage : Page
                 }
             }
 
+            DayRangeBox.SelectedIndex = 0;
             ScheduleGrid.ItemsSource = _rows;
 
             // Load FocusModeEnabled toggle for the selected profile
@@ -154,6 +157,49 @@ public partial class FocusModePage : Page
         return false;
     }
 
+    private List<DayOfWeek> GetSelectedDays() => DayRangeBox.SelectedIndex switch
+    {
+        1 => new() { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday,
+                     DayOfWeek.Thursday, DayOfWeek.Friday },
+        2 => new() { DayOfWeek.Saturday, DayOfWeek.Sunday },
+        3 => Enum.GetValues<DayOfWeek>().ToList(),
+        _ => new()
+    };
+
+    private void DayRangeBox_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (_rows.Count == 0) return;
+        var range = GetSelectedDays();
+        if (range.Count == 0) { ScheduleGrid.ItemsSource = _rows; return; }
+
+        var label  = (DayRangeBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "";
+        var source = _rows.FirstOrDefault(r => range.Contains(r.DayOfWeek)) ?? _rows[0];
+        var tmpl   = new FocusScheduleRow
+        {
+            Id            = source.Id,
+            DayOfWeek     = source.DayOfWeek,
+            DayLabel      = label,
+            IsEnabled     = source.IsEnabled,
+            FocusFromStr  = source.FocusFromStr,
+            FocusUntilStr = source.FocusUntilStr,
+        };
+        ScheduleGrid.ItemsSource = new List<FocusScheduleRow> { tmpl };
+    }
+
+    private void BroadcastToRange()
+    {
+        var range = GetSelectedDays();
+        if (range.Count == 0) return;
+        if (ScheduleGrid.ItemsSource is not List<FocusScheduleRow> shown || shown.Count != 1) return;
+        var tmpl = shown[0];
+        foreach (var row in _rows.Where(r => range.Contains(r.DayOfWeek)))
+        {
+            row.IsEnabled     = tmpl.IsEnabled;
+            row.FocusFromStr  = tmpl.FocusFromStr;
+            row.FocusUntilStr = tmpl.FocusUntilStr;
+        }
+    }
+
     private void ScheduleGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
     {
         if (e.EditAction != DataGridEditAction.Commit) return;
@@ -207,6 +253,7 @@ public partial class FocusModePage : Page
 
     private async void SaveToAllButton_Click(object sender, RoutedEventArgs e)
     {
+        BroadcastToRange();
         var errors = new List<string>();
         foreach (var row in _rows)
         {
@@ -242,7 +289,10 @@ public partial class FocusModePage : Page
             }
             db.SaveChanges();
             await _ipc.SendAsync(IpcCommand.ReloadRules);
-            StatusText.Text       = "Saved to all profiles.";
+            var rangeLabel = (DayRangeBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "day";
+            StatusText.Text       = DayRangeBox.SelectedIndex == 0
+                ? "Saved to all profiles."
+                : $"Saved to all profiles — applied to all {rangeLabel.ToLower()}.";
             StatusText.Foreground = new SolidColorBrush(Color.FromRgb(166, 227, 161));
             StatusText.Visibility = Visibility.Visible;
         }
@@ -254,6 +304,7 @@ public partial class FocusModePage : Page
 
     private async void SaveButton_Click(object sender, RoutedEventArgs e)
     {
+        BroadcastToRange();
         var errors = new List<string>();
         foreach (var row in _rows)
         {
@@ -293,7 +344,10 @@ public partial class FocusModePage : Page
 
             await _ipc.SendAsync(IpcCommand.ReloadRules);
 
-            StatusText.Text = "Saved successfully.";
+            var rangeLabel = (DayRangeBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "day";
+            StatusText.Text = DayRangeBox.SelectedIndex == 0
+                ? "Saved successfully."
+                : $"Saved — applied to all {rangeLabel.ToLower()}.";
             StatusText.Foreground = new SolidColorBrush(Color.FromRgb(166, 227, 161));
             StatusText.Visibility = Visibility.Visible;
         }

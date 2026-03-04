@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using ParentalControl.Core.Data;
+using ParentalControl.Core.Helpers;
 using ParentalControl.Core.Services;
 
 namespace ParentalControl.UI.Views;
@@ -11,11 +12,26 @@ public partial class SettingsPage : Page
 {
     private bool _loaded = false;
 
+    private static readonly string[] _allGenres =
+    {
+        "Action", "Adventure", "Arcade", "Board Games", "Card", "Casual",
+        "Educational", "Family", "Fighting", "Indie", "Massively Multiplayer",
+        "Platformer", "Puzzle", "Racing", "RPG", "Shooter", "Simulation",
+        "Sports", "Strategy"
+    };
+
+    private static readonly string[] _allTags =
+    {
+        "blood", "dark-themes", "drugs", "gambling", "gore",
+        "horror", "mature", "nudity", "sexual-content", "violence"
+    };
+
     public SettingsPage()
     {
         InitializeComponent();
 #if DEBUG
-        DebugSection.Visibility = System.Windows.Visibility.Visible;
+        DebugSection.Visibility  = System.Windows.Visibility.Visible;
+        DebugThemeItem.Visibility = System.Windows.Visibility.Visible;
 #endif
         Loaded += (_, _) => LoadSettings();
     }
@@ -66,8 +82,45 @@ public partial class SettingsPage : Page
                 NotifyScreenLockToggle.IsChecked = settings.NotifyOnScreenLock;
                 NotifyAppBlockToggle.IsChecked   = settings.NotifyOnAppBlock;
 
+                // Auto-migrate plain-text key to encrypted storage on first load
+                if (!string.IsNullOrEmpty(settings.RawgApiKey) &&
+                    !ApiKeyHelper.IsEncrypted(settings.RawgApiKey))
+                {
+                    settings.RawgApiKey = ApiKeyHelper.EncryptForStorage(settings.RawgApiKey);
+                    db.SaveChanges();
+                }
+                // Always show censored mask — never expose the actual key
+                RawgApiKeyBox.Text = string.IsNullOrEmpty(settings.RawgApiKey)
+                    ? string.Empty : "••••••••••••••••";
+
+                // Scan blocking rules
+                var ratingItems = ScanBlockRatingBox.Items.Cast<ComboBoxItem>()
+                                                    .Select(i => i.Content?.ToString()).ToList();
+                var ratingIdx = ratingItems.IndexOf(settings.ScanBlockRating);
+                ScanBlockRatingBox.SelectedIndex = ratingIdx >= 0 ? ratingIdx : 4; // default M
+                PopulateCheckBoxPanel(GenresPanel, _allGenres, settings.ScanBlockedGenres, ScanGenreTag_Changed);
+                PopulateCheckBoxPanel(TagsPanel,   _allTags,   settings.ScanBlockedTags,   ScanGenreTag_Changed);
+
+                // Scan App Time rules
+                var appTimeIdx = ratingItems.IndexOf(settings.ScanAppTimeRating);
+                ScanAppTimeRatingBox.SelectedIndex = appTimeIdx >= 0 ? appTimeIdx : 0;
+                PopulateCheckBoxPanel(AppTimeGenresPanel, _allGenres, settings.ScanAppTimeGenres, ScanAppTimeTag_Changed);
+                PopulateCheckBoxPanel(AppTimeTagsPanel,   _allTags,   settings.ScanAppTimeTags,   ScanAppTimeTag_Changed);
+
+                // Scan Focus Mode rules
+                var focusIdx = ratingItems.IndexOf(settings.ScanFocusModeRating);
+                ScanFocusModeRatingBox.SelectedIndex = focusIdx >= 0 ? focusIdx : 0;
+                PopulateCheckBoxPanel(FocusModeGenresPanel, _allGenres, settings.ScanFocusModeGenres, ScanFocusModeTag_Changed);
+                PopulateCheckBoxPanel(FocusModeTagsPanel,   _allTags,   settings.ScanFocusModeTags,   ScanFocusModeTag_Changed);
+
                 // Show auto-detect hint if SMTP was already configured
                 ShowSmtpHint(settings.SmtpUsername);
+
+                // UI Scale
+                var scaleItems = UiScaleBox.Items.Cast<ComboBoxItem>()
+                                            .Select(i => i.Content?.ToString()).ToList();
+                var scaleIdx = scaleItems.IndexOf(settings.UiScale);
+                UiScaleBox.SelectedIndex = scaleIdx >= 0 ? scaleIdx : 0;
 
                 var themeName = settings.AppTheme;
                 foreach (ComboBoxItem item in ThemeBox.Items)
@@ -97,6 +150,19 @@ public partial class SettingsPage : Page
             db.SaveChanges();
         }
         catch { }
+    }
+
+    private void UiScale_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_loaded) return;
+        var label = (UiScaleBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "1080p";
+        using var db = new AppDbContext();
+        var settings = db.Settings.FirstOrDefault();
+        if (settings == null) return;
+        settings.UiScale = label;
+        db.SaveChanges();
+        if (Application.Current.MainWindow is MainWindow mw)
+            mw.ApplyScale(label);
     }
 
     private void ThemeBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -191,6 +257,155 @@ public partial class SettingsPage : Page
         PwdStatus.Visibility = Visibility.Visible;
     }
 
+    private void RawgKeyEdit_Click(object sender, RoutedEventArgs e)
+    {
+        RawgApiKeyBox.IsReadOnly = false;
+        RawgApiKeyBox.SetResourceReference(ForegroundProperty, "TextPrimary");
+        RawgApiKeyBox.Text = string.Empty; // clear mask — user types new key
+        RawgKeyEditButton.Visibility  = Visibility.Collapsed;
+        RawgKeySaveButton.Visibility  = Visibility.Visible;
+        RawgKeyCancelButton.Visibility = Visibility.Visible;
+        RawgApiKeyBox.Focus();
+    }
+
+    private void RawgKeySave_Click(object sender, RoutedEventArgs e)
+    {
+        var newKey = RawgApiKeyBox.Text.Trim();
+        if (!string.IsNullOrEmpty(newKey))
+        {
+            try
+            {
+                using var db = new AppDbContext();
+                var settings = db.Settings.FirstOrDefault();
+                if (settings != null)
+                {
+                    settings.RawgApiKey = ApiKeyHelper.EncryptForStorage(newKey);
+                    db.SaveChanges();
+                }
+            }
+            catch { }
+        }
+        RawgKeyLock(string.IsNullOrEmpty(newKey) ? null : "••••••••••••••••");
+    }
+
+    private void RawgKeyCancel_Click(object sender, RoutedEventArgs e)
+    {
+        // Discard typed text — reload mask from DB so display is accurate
+        string mask = string.Empty;
+        try
+        {
+            using var db = new AppDbContext();
+            var stored = db.Settings.FirstOrDefault()?.RawgApiKey ?? string.Empty;
+            mask = string.IsNullOrEmpty(stored) ? string.Empty : "••••••••••••••••";
+        }
+        catch { }
+        RawgKeyLock(mask);
+    }
+
+    private void RawgKeyLock(string? displayText)
+    {
+        RawgApiKeyBox.IsReadOnly = true;
+        RawgApiKeyBox.Text = displayText ?? string.Empty;
+        RawgApiKeyBox.SetResourceReference(ForegroundProperty, "TextSecondary");
+        RawgKeyEditButton.Visibility   = Visibility.Visible;
+        RawgKeySaveButton.Visibility   = Visibility.Collapsed;
+        RawgKeyCancelButton.Visibility = Visibility.Collapsed;
+    }
+
+    // -------------------------------------------------------------------------
+    // Scan blocking rules helpers
+    // -------------------------------------------------------------------------
+
+    private void PopulateCheckBoxPanel(WrapPanel panel, string[] allItems, string stored,
+                                       RoutedEventHandler onChanged)
+    {
+        panel.Children.Clear();
+        var selected = stored.Split(',', StringSplitOptions.RemoveEmptyEntries |
+                                        StringSplitOptions.TrimEntries)
+                             .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var item in allItems)
+        {
+            var cb = new CheckBox
+            {
+                Content   = item,
+                IsChecked = selected.Contains(item),
+                Margin    = new System.Windows.Thickness(0, 0, 12, 6),
+                Foreground = (System.Windows.Media.Brush)FindResource("TextPrimary"),
+            };
+            cb.Checked   += onChanged;
+            cb.Unchecked += onChanged;
+            panel.Children.Add(cb);
+        }
+    }
+
+    private static string GetCheckedValues(WrapPanel panel) =>
+        string.Join(",", panel.Children.OfType<CheckBox>()
+                             .Where(cb => cb.IsChecked == true)
+                             .Select(cb => cb.Content.ToString()!));
+
+    private void ScanBlockRating_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_loaded) return;
+        using var db = new AppDbContext();
+        var settings = db.Settings.FirstOrDefault();
+        if (settings == null) return;
+        settings.ScanBlockRating = (ScanBlockRatingBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "M";
+        db.SaveChanges();
+    }
+
+    private void ScanGenreTag_Changed(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded) return;
+        using var db = new AppDbContext();
+        var settings = db.Settings.FirstOrDefault();
+        if (settings == null) return;
+        settings.ScanBlockedGenres = GetCheckedValues(GenresPanel);
+        settings.ScanBlockedTags   = GetCheckedValues(TagsPanel);
+        db.SaveChanges();
+    }
+
+    private void ScanAppTimeRating_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_loaded) return;
+        using var db = new AppDbContext();
+        var settings = db.Settings.FirstOrDefault();
+        if (settings == null) return;
+        settings.ScanAppTimeRating = (ScanAppTimeRatingBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "None";
+        db.SaveChanges();
+    }
+
+    private void ScanAppTimeTag_Changed(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded) return;
+        using var db = new AppDbContext();
+        var settings = db.Settings.FirstOrDefault();
+        if (settings == null) return;
+        settings.ScanAppTimeGenres = GetCheckedValues(AppTimeGenresPanel);
+        settings.ScanAppTimeTags   = GetCheckedValues(AppTimeTagsPanel);
+        db.SaveChanges();
+    }
+
+    private void ScanFocusModeRating_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_loaded) return;
+        using var db = new AppDbContext();
+        var settings = db.Settings.FirstOrDefault();
+        if (settings == null) return;
+        settings.ScanFocusModeRating = (ScanFocusModeRatingBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "None";
+        db.SaveChanges();
+    }
+
+    private void ScanFocusModeTag_Changed(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded) return;
+        using var db = new AppDbContext();
+        var settings = db.Settings.FirstOrDefault();
+        if (settings == null) return;
+        settings.ScanFocusModeGenres = GetCheckedValues(FocusModeGenresPanel);
+        settings.ScanFocusModeTags   = GetCheckedValues(FocusModeTagsPanel);
+        db.SaveChanges();
+    }
+
     // -------------------------------------------------------------------------
     // Reset handlers
     // -------------------------------------------------------------------------
@@ -210,11 +425,9 @@ public partial class SettingsPage : Page
 
             settings.ScreenTimeEnabled          = true;
             settings.AppControlEnabled          = true;
-            settings.WebFilterEnabled           = true;
             settings.TimeFormat12Hour           = false;
             settings.AppTheme                   = "Default";
             settings.ThemeIsDark                = true;
-            settings.IsAllowMode                = false;
             settings.ChildAccountHasPassword    = false;
             settings.TodayUsedMinutes           = 0;
             settings.TodayBonusMinutes          = 0;
@@ -245,7 +458,6 @@ public partial class SettingsPage : Page
         {
             using var db = new AppDbContext();
             db.Database.ExecuteSqlRaw("DELETE FROM AppRules");
-            db.Database.ExecuteSqlRaw("DELETE FROM WebsiteRules");
             db.Database.ExecuteSqlRaw("DELETE FROM ActivityEntries");
             db.Database.ExecuteSqlRaw("UPDATE ScreenTimeLimits SET IsEnabled = 0, DailyLimitMinutes = 0, AllowedFrom = '00:00:00', AllowedUntil = '23:59:00'");
             App.SeedBrowsers(db);
@@ -276,7 +488,6 @@ public partial class SettingsPage : Page
 
             // Clear all data tables
             db.Database.ExecuteSqlRaw("DELETE FROM AppRules");
-            db.Database.ExecuteSqlRaw("DELETE FROM WebsiteRules");
             db.Database.ExecuteSqlRaw("DELETE FROM ActivityEntries");
             db.Database.ExecuteSqlRaw("UPDATE ScreenTimeLimits SET IsEnabled = 0, DailyLimitMinutes = 0, AllowedFrom = '00:00:00', AllowedUntil = '23:59:00'");
             App.SeedBrowsers(db);
@@ -287,11 +498,9 @@ public partial class SettingsPage : Page
             {
                 settings.ScreenTimeEnabled          = true;
                 settings.AppControlEnabled          = true;
-                settings.WebFilterEnabled           = true;
                 settings.TimeFormat12Hour           = false;
                 settings.AppTheme                   = "Default";
                 settings.ThemeIsDark                = true;
-                settings.IsAllowMode                = false;
                 settings.ChildAccountHasPassword    = false;
                 settings.TodayUsedMinutes           = 0;
                 settings.TodayBonusMinutes          = 0;

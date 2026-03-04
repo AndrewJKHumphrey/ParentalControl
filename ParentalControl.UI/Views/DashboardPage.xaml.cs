@@ -30,8 +30,7 @@ public partial class DashboardPage : Page
         var username = Environment.UserName;
         return db.UserProfiles.AsEnumerable()
             .FirstOrDefault(p => p.IsEnabled &&
-                string.Equals(p.WindowsUsername, username, StringComparison.OrdinalIgnoreCase))
-            ?? db.UserProfiles.FirstOrDefault(p => p.IsEnabled && p.WindowsUsername == "");
+                string.Equals(p.WindowsUsername, username, StringComparison.OrdinalIgnoreCase));
     }
 
     private async Task LoadDataAsync()
@@ -75,7 +74,6 @@ public partial class DashboardPage : Page
                     _enforcementLoaded = false;
                     ScreenTimeToggle.IsChecked = settings.ScreenTimeEnabled;
                     AppControlToggle.IsChecked = settings.AppControlEnabled;
-                    WebFilterToggle.IsChecked  = settings.WebFilterEnabled;
                     _enforcementLoaded = true;
                 }
             }
@@ -161,7 +159,6 @@ public partial class DashboardPage : Page
             {
                 settings.ScreenTimeEnabled = ScreenTimeToggle.IsChecked == true;
                 settings.AppControlEnabled = AppControlToggle.IsChecked == true;
-                settings.WebFilterEnabled  = WebFilterToggle.IsChecked  == true;
             }
             db.SaveChanges();
         }
@@ -183,11 +180,9 @@ public partial class DashboardPage : Page
                 bool flag = !(AdminToggle.IsChecked == true);
                 settings.ScreenTimeEnabled = flag;
                 settings.AppControlEnabled = flag;
-                settings.WebFilterEnabled  = flag;
 
                 ScreenTimeToggle.IsEnabled = flag;
                 AppControlToggle.IsEnabled = flag;
-                WebFilterToggle.IsEnabled  = flag;
                 db.SaveChanges();
             }
         }

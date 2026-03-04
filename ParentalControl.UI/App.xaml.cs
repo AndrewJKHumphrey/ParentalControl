@@ -71,11 +71,29 @@ public partial class App : Application
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN NotifyOnScreenLock INTEGER NOT NULL DEFAULT 1"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN NotifyOnAppBlock INTEGER NOT NULL DEFAULT 1"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN NtfyTopic TEXT NOT NULL DEFAULT ''"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN RawgApiKey TEXT NOT NULL DEFAULT ''"); } catch { }
+            try { db.Database.ExecuteSqlRaw("UPDATE Settings SET RawgApiKey = 'cfe4cb325b754875b944b7dc3f80628d' WHERE RawgApiKey = ''"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ScanBlockRating   TEXT NOT NULL DEFAULT 'M'"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ScanBlockedGenres TEXT NOT NULL DEFAULT ''"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ScanBlockedTags   TEXT NOT NULL DEFAULT ''"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN UiScale           TEXT NOT NULL DEFAULT '1080p'"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ScanAppTimeRating   TEXT NOT NULL DEFAULT 'None'"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ScanAppTimeGenres   TEXT NOT NULL DEFAULT ''"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ScanAppTimeTags     TEXT NOT NULL DEFAULT ''"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ScanFocusModeRating TEXT NOT NULL DEFAULT 'None'"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ScanFocusModeGenres TEXT NOT NULL DEFAULT ''"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ScanFocusModeTags   TEXT NOT NULL DEFAULT ''"); } catch { }
 
             // New columns for access categorisation
             try { db.Database.ExecuteSqlRaw("ALTER TABLE AppRules ADD COLUMN AccessMode INTEGER NOT NULL DEFAULT 0"); }
             catch { /* Column already exists */ }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE AppRules ADD COLUMN TodayPlaytimeSeconds INTEGER NOT NULL DEFAULT 0"); }
+            catch { /* Column already exists */ }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE AppRules ADD COLUMN EsrbRating TEXT NOT NULL DEFAULT ''"); }
+            catch { /* Column already exists */ }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE AppRules ADD COLUMN Genres TEXT NOT NULL DEFAULT ''"); }
+            catch { /* Column already exists */ }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE AppRules ADD COLUMN Tags TEXT NOT NULL DEFAULT ''"); }
             catch { /* Column already exists */ }
 
             // Migrate legacy IsBlocked=1 rows to AccessMode=2 (Blocked)
@@ -152,6 +170,10 @@ public partial class App : Application
             ["Red"]       = (("#1E1010", "#150B0B", "#2E1818", "#3E2222", "#241212", "#882233", "#F5CCCC", "#CC8888"),
                               ("#FFF0F0", "#FFDDE0", "#FFFBFB", "#FFD0D0", "#FFF5F5", "#BB2233", "#3A0A0A", "#882222")),
 
+            // ── Quaternary: Scarlet (Red → Vermilion) ─────────────────────────
+            ["Scarlet"]   = (("#1E0A06", "#160604", "#2C1008", "#3E1A12", "#240C06", "#DD1100", "#F5C4B0", "#CC7E60"),
+                              ("#FFF2EE", "#FFE4DC", "#FFFBFA", "#FFD0C0", "#FFF6F2", "#CC2200", "#3A0800", "#882010")),
+
             // ── Tertiary: Vermilion (Red-Orange) ───────────────────────────────
             ["Vermilion"] = (("#1E1208", "#150D05", "#2E1E0E", "#3E2A18", "#241808", "#993322", "#F5CCB8", "#CC8860"),
                               ("#FFF3EE", "#FFE5D8", "#FFFAF8", "#FFD8C0", "#FFF6F2", "#CC4422", "#3A1005", "#883322")),
@@ -168,6 +190,10 @@ public partial class App : Application
             ["Yellow"]    = (("#1A1A00", "#131300", "#282800", "#363600", "#1E1E00", "#888800", "#F0EE77", "#C8C030"),
                               ("#FEFEE8", "#FAFAD0", "#FEFEFC", "#F8F880", "#FCFCE8", "#888800", "#2A2800", "#666600")),
 
+            // ── Quaternary: Chartreuse (Yellow → Lime) ────────────────────────
+            ["Chartreuse"] = (("#0C1400", "#080E00", "#142000", "#1E2E00", "#101800", "#88CC00", "#DEFF88", "#AACC44"),
+                               ("#F6FFE8", "#EAFFD0", "#FBFFF5", "#D8FF80", "#F0FFE0", "#558800", "#182400", "#3A6600")),
+
             // ── Tertiary: Lime (Yellow-Green) ─────────────────────────────────
             ["Lime"]      = (("#0E1800", "#0A1200", "#182800", "#223800", "#121E00", "#447800", "#BBFF44", "#88CC20"),
                               ("#F4FFEE", "#E8FFD8", "#FBFFFA", "#D0FF99", "#F8FFE8", "#448800", "#1A3A00", "#336600")),
@@ -180,6 +206,10 @@ public partial class App : Application
             ["Teal"]      = (("#081E1C", "#061412", "#102E2A", "#1A3E38", "#0C2422", "#1A7070", "#80FFEE", "#40C0B0"),
                               ("#EDFFFE", "#D8FFFA", "#F5FFFF", "#B0FFF5", "#F0FFFD", "#1A7070", "#003830", "#1A6060")),
 
+            // ── Quaternary: Cyan (Teal → Blue) ────────────────────────────────
+            ["Cyan"]      = (("#001C22", "#001418", "#002C34", "#003A44", "#002028", "#00AACC", "#88EEFF", "#44BBCC"),
+                              ("#EEFFFF", "#D8FFFF", "#F5FFFF", "#B0FFFF", "#E0FFFF", "#007799", "#002830", "#006070")),
+
             // ── Primary: Blue ──────────────────────────────────────────────────
             ["Blue"]      = (("#0C1224", "#080D1A", "#101E38", "#18304C", "#0E162C", "#2255AA", "#88BBFF", "#5588CC"),
                               ("#EEF2FF", "#DCE6FF", "#F8FAFF", "#BCCEFF", "#F2F6FF", "#2244BB", "#080E30", "#1A2E88")),
@@ -187,6 +217,10 @@ public partial class App : Application
             // ── Tertiary: Indigo (Blue-Purple) ────────────────────────────────
             ["Indigo"]    = (("#100C22", "#0C0818", "#1A1234", "#261A46", "#140E28", "#4433AA", "#AAAAFF", "#7766CC"),
                               ("#F0EEFF", "#E4E0FF", "#FAFAFF", "#CCC8FF", "#F5F4FF", "#4433AA", "#100830", "#2A1888")),
+
+            // ── Quaternary: Violet (Indigo → Purple) ──────────────────────────
+            ["Violet"]    = (("#120820", "#0C0418", "#1C1030", "#281840", "#160C28", "#6622CC", "#CCAAFF", "#9966CC"),
+                              ("#F4EEFF", "#EAE0FF", "#FAFAFF", "#D8CCFF", "#F0EAFF", "#5518AA", "#180830", "#3A1888")),
 
             // ── Secondary: Purple ──────────────────────────────────────────────
             ["Purple"]    = (("#160A22", "#100618", "#221034", "#2E1846", "#1A0C28", "#5A2A99", "#D4AAFF", "#A070D0"),
@@ -196,9 +230,13 @@ public partial class App : Application
             ["Magenta"]   = (("#1E0818", "#170512", "#2E1028", "#3E183A", "#240C1E", "#882288", "#FFB0EE", "#CC70CC"),
                               ("#FFF0FA", "#FFE0F5", "#FFFCFE", "#FFC8F0", "#FFF5FB", "#AA2299", "#3A0030", "#880888")),
 
-            // ── Ice Blue — Azure / White ──────────────────────────────────────
-            ["Ice Blue"]      = (("#0A1018", "#060C12", "#10202E", "#182C3E", "#0C1A26", "#0090FF", "#F0F8FF", "#8BBCDC"),
-                                  ("#FAFCFF", "#F2F8FF", "#FFFFFF", "#E8F4FF", "#F5FAFF", "#0078D4", "#0A0E14", "#2A4A6A")),
+            // ── Quaternary: Rose (Magenta → Red, closes wheel) ────────────────
+            ["Rose"]      = (("#1E0810", "#160508", "#2E1020", "#3E1830", "#240C18", "#CC1155", "#F5BBCC", "#CC7788"),
+                              ("#FFF0F5", "#FFE0EC", "#FFFBFD", "#FFD0E0", "#FFF5F8", "#AA1144", "#380010", "#880830")),
+
+            // ── Debug only — vivid cobalt (ComboBoxItem hidden in Release) ──
+            ["Dev Mode"]      = (("#001133", "#000B22", "#001E55", "#002A77", "#001540", "#0088FF", "#E8F4FF", "#88BBFF"),
+                                  ("#EBF4FF", "#DAEEFF", "#F5FAFE", "#C8E0FF", "#E0EEFF", "#0055CC", "#001A55", "#003388")),
 
             // ── Complementary pairs ───────────────────────────────────────────
 
@@ -393,6 +431,129 @@ public partial class App : Application
             // Warm aged-paper brown bg + amber-gold ink accent  (Umber ↔ Amber)
             ["Antique"]         = (("#180E08", "#100804", "#261808", "#342410", "#1E1208", "#C89050", "#EED890", "#B09050"),
                                     ("#FEF8EC", "#F8EED8", "#F0E4C0", "#E8D8A8", "#FAF2DC", "#8B6020", "#2C1808", "#7A5030")),
+
+            // ── Three-colour  (sorted: bg hue → accent hue) ───────────────────
+            //    Each entry: bg-colour family │ accent colour │ text colour
+
+            // Red bg │ Teal accent │ Amber text
+            ["Bloodrite"]      = (("#1A0608", "#120404", "#2C0E10", "#3A1418", "#1E080C", "#009999", "#FFBB44", "#CC8810"),
+                                   ("#FFF0F2", "#FFE4E8", "#FFFBFC", "#FFD0D8", "#FFF5F6", "#006666", "#996600", "#664400")),
+
+            // Red bg │ Blue accent │ Gold text
+            ["Inferno"]        = (("#1E0808", "#140404", "#2E1010", "#3E1818", "#240C0C", "#2255CC", "#FFD966", "#C4A020"),
+                                   ("#FFF4F4", "#FFEAEA", "#FFF9F9", "#FFD8D8", "#FFF0F0", "#1A3DBB", "#7A5500", "#553300")),
+
+            // Vermilion bg │ Indigo accent │ Gold text
+            ["Magma"]          = (("#1E0E06", "#160A04", "#2C1A0A", "#3C2810", "#221404", "#4433AA", "#FFD966", "#C4A020"),
+                                   ("#FFF6EE", "#FFEAD8", "#FFFCF8", "#FFDDBB", "#FFF2E8", "#3322AA", "#664400", "#442200")),
+
+            // Orange bg │ Blue accent │ Lime text
+            ["Citrus Storm"]   = (("#1E1206", "#160E04", "#2C1C0A", "#3C2C14", "#221606", "#2266DD", "#AAFF33", "#77CC11"),
+                                   ("#FFF8EE", "#FFEEDD", "#FFFDF8", "#FFDDAA", "#FFF4E8", "#1144CC", "#334400", "#1A2800")),
+
+            // Amber bg │ Teal accent │ Rose text
+            ["Desert Bloom"]   = (("#1A1200", "#120C00", "#281A00", "#382600", "#1E1600", "#00AAAA", "#FF88BB", "#CC4477"),
+                                   ("#FFF8EE", "#FFF0D8", "#FFFDF8", "#FFE4B8", "#FFF5E8", "#007777", "#662233", "#441122")),
+
+            // Amber bg │ Purple accent │ Cyan text
+            ["Amber Waves"]    = (("#1A1000", "#120A00", "#281A00", "#382600", "#1E1400", "#9933CC", "#44DDEE", "#20AACC"),
+                                   ("#FFF8EE", "#FFF0D8", "#FFFDF8", "#FFE4B8", "#FFF5E8", "#6611AA", "#005566", "#003344")),
+
+            // Yellow bg │ Magenta accent │ Blue text
+            ["Bumblebee"]      = (("#1A1A00", "#121200", "#282800", "#383600", "#1E1C00", "#CC22AA", "#44AAFF", "#2266CC"),
+                                   ("#FEFEE8", "#FAFAD0", "#FEFEFC", "#F8F880", "#FBFBE8", "#AA1188", "#0033AA", "#001188")),
+
+            // Olive bg │ Crimson accent │ Blue text
+            ["Venom"]          = (("#141400", "#0C0C00", "#201E00", "#2E2A00", "#181600", "#CC1122", "#44AAFF", "#2266CC"),
+                                   ("#FFFEE8", "#FAFAD0", "#FEFEFC", "#F8F880", "#FBFBE8", "#AA0011", "#0044AA", "#002277")),
+
+            // Lime bg │ Violet accent │ Orange text
+            ["Acid Wash"]      = (("#0E1800", "#0A1200", "#182800", "#223800", "#121E00", "#8833EE", "#FF9933", "#CC6600"),
+                                   ("#F0FFF0", "#E4FFE0", "#F8FFF6", "#D0FF99", "#EBFFE8", "#6600CC", "#AA4400", "#882200")),
+
+            // Chartreuse bg │ Crimson accent │ Cyan text
+            ["Toxic"]          = (("#0C1400", "#080E00", "#142200", "#1E3000", "#101A00", "#CC1122", "#44DDEE", "#20AACC"),
+                                   ("#F4FFE4", "#EAFFD0", "#F8FFF2", "#D8FF88", "#EEFFE0", "#AA0011", "#003344", "#002233")),
+
+            // Green bg │ Orange accent │ Blue text
+            ["Jungle Fire"]    = (("#0A1A0A", "#061006", "#122814", "#1A3A1C", "#0E200E", "#EE6600", "#66BBFF", "#3388CC"),
+                                   ("#EEFFF0", "#DAFFF5", "#F5FFF8", "#CAFFEA", "#E4FFF4", "#BB4400", "#003388", "#001A55")),
+
+            // Green bg │ Gold accent │ Violet text
+            ["Emerald Crown"]  = (("#081808", "#041004", "#102810", "#183A18", "#0C1E0C", "#DDAA00", "#BB88FF", "#8844DD"),
+                                   ("#EEFFF0", "#DCFFEA", "#F5FFF7", "#C8FFCC", "#E8FFEC", "#AA7700", "#440088", "#330066")),
+
+            // Green bg │ Violet accent │ Gold text
+            ["Poison"]         = (("#081608", "#040C04", "#102410", "#183018", "#0C1C0C", "#9933DD", "#FFCC33", "#CC9900"),
+                                   ("#EEFFF0", "#DCFFEA", "#F5FFF7", "#C8FFCC", "#E8FFEC", "#6600AA", "#775500", "#553300")),
+
+            // Teal bg │ Crimson accent │ Amber text
+            ["Dragon Jade"]    = (("#051E1A", "#031410", "#092E28", "#0F3C34", "#072422", "#DD1122", "#FFCC44", "#DD9900"),
+                                   ("#EDFFFE", "#DAFFF8", "#F5FFFC", "#B0FFEE", "#E0FFFA", "#AA0011", "#664400", "#443300")),
+
+            // Teal bg │ Gold accent │ Rose text
+            ["Mermaid"]        = (("#041C18", "#021210", "#082C26", "#0E3A32", "#062020", "#DDAA00", "#FF88BB", "#DD4488"),
+                                   ("#EDFFFE", "#DAFFF8", "#F5FFFC", "#B0FFEE", "#E0FFFA", "#AA7700", "#881133", "#660022")),
+
+            // Teal bg │ Magenta accent │ Yellow text
+            ["Carnival"]       = (("#041C18", "#021210", "#082C26", "#0E3A32", "#062020", "#EE1188", "#FFEE44", "#DDB820"),
+                                   ("#EDFFFE", "#DAFFF8", "#F5FFFC", "#B0FFEE", "#E8FFFA", "#AA0066", "#886600", "#665500")),
+
+            // Cyan bg │ Purple accent │ Gold text
+            ["Arctic Aurora"]  = (("#001C22", "#001418", "#002C34", "#003A44", "#002028", "#8833DD", "#FFCC33", "#CC9900"),
+                                   ("#EEFFFF", "#D8FFFF", "#F5FFFF", "#B0FFFF", "#E0FFFF", "#6600AA", "#664400", "#442200")),
+
+            // Cyan bg │ Red accent │ Lime text
+            ["Frozen Fire"]    = (("#001C22", "#001418", "#002C34", "#003A44", "#002028", "#EE1122", "#88FF44", "#55CC11"),
+                                   ("#EEFFFF", "#D8FFFF", "#F5FFFF", "#B0FFFF", "#E0FFFF", "#CC0011", "#224400", "#1A3300")),
+
+            // Blue bg │ Gold accent │ Teal text
+            ["Monarch"]        = (("#080E1C", "#050A12", "#0E1830", "#162040", "#0A1224", "#DDAA00", "#33DDCC", "#22AAAA"),
+                                   ("#EEF4FF", "#DDEAFF", "#F5FAFF", "#C8DEFF", "#E8F0FF", "#AA7700", "#005566", "#003344")),
+
+            // Blue bg │ Lime accent │ Orange text
+            ["Circuit"]        = (("#080E20", "#060A16", "#0E1834", "#162244", "#0A1228", "#88DD00", "#FF9944", "#CC6600"),
+                                   ("#EEF2FF", "#DDEAFF", "#F5F8FF", "#C8D8FF", "#E8F0FF", "#447700", "#AA4400", "#882200")),
+
+            // Blue bg │ Orange accent │ Lime text
+            ["Blueprint"]      = (("#080E20", "#060A16", "#0E1834", "#162244", "#0A1228", "#EE6600", "#AAFF33", "#77CC11"),
+                                   ("#EEF2FF", "#DCE6FF", "#F5F8FF", "#C8D8FF", "#E4EEFF", "#CC4400", "#334400", "#223300")),
+
+            // Blue bg │ Red accent │ Amber text
+            ["Sapphire Flame"] = (("#080E1C", "#060A12", "#0E1830", "#162040", "#0A1224", "#EE1122", "#FFD966", "#CC9920"),
+                                   ("#EEF2FF", "#DCE6FF", "#F5F8FF", "#C8D8FF", "#E4EEFF", "#CC0011", "#664400", "#443300")),
+
+            // Indigo bg │ Amber accent │ Cyan text
+            ["Starlight"]      = (("#0C0A20", "#080616", "#141030", "#201840", "#100E28", "#DDAA00", "#44DDEE", "#20AACC"),
+                                   ("#F0EEFF", "#E4E0FF", "#FAFAFF", "#D0C8FF", "#E8E4FF", "#886600", "#003344", "#002233")),
+
+            // Indigo bg │ Lime accent │ Rose text
+            ["Nebula"]         = (("#0C0A20", "#080616", "#141030", "#201840", "#100E28", "#44DD22", "#FF88AA", "#CC4466"),
+                                   ("#F0EEFF", "#E4E0FF", "#FAFAFF", "#D0C8FF", "#E8E4FF", "#22AA00", "#881133", "#660022")),
+
+            // Purple bg │ Gold accent │ Mint text
+            ["Twilight Fire"]  = (("#100818", "#0C0410", "#1C1028", "#281838", "#140C1E", "#DDAA00", "#44FFAA", "#22BB77"),
+                                   ("#F5EEFF", "#EDE0FF", "#FBFAFF", "#E0CCFF", "#F2EAFF", "#886600", "#006644", "#004433")),
+
+            // Purple bg │ Lime accent │ Rose text
+            ["Witchcraft"]     = (("#0E0618", "#08040E", "#180C28", "#221236", "#120820", "#44DD22", "#FF88AA", "#CC4466"),
+                                   ("#F2EEFF", "#E8E0FF", "#FAF8FF", "#DDD0FF", "#F0ECFF", "#228800", "#881133", "#660022")),
+
+            // Violet bg │ Crimson accent │ Lime text
+            ["Hex"]            = (("#100820", "#0C0418", "#1C1030", "#281840", "#140C28", "#DD1122", "#88FF44", "#55CC11"),
+                                   ("#F4EEFF", "#EAE0FF", "#FAFAFF", "#D8CCFF", "#F0EAFF", "#BB0011", "#224400", "#1A3300")),
+
+            // Magenta bg │ Gold accent │ Blue text
+            ["Flamingo"]       = (("#1E0818", "#160510", "#2E1028", "#3E183A", "#240C1E", "#DDAA00", "#44AAFF", "#2266CC"),
+                                   ("#FFF0FA", "#FFE0F5", "#FFFCFE", "#FFC8EE", "#FFF5FB", "#AA7700", "#0033AA", "#001188")),
+
+            // Magenta bg │ Teal accent │ Lime text
+            ["Cherry Bomb"]    = (("#1E0818", "#160510", "#2E1028", "#3E183A", "#240C1E", "#00AAAA", "#AAFF44", "#77CC11"),
+                                   ("#FFF0FA", "#FFE0F5", "#FFFCFE", "#FFC8EE", "#FFF5FB", "#007777", "#334400", "#1A3300")),
+
+            // Dark bg │ Cyan accent │ Pink text
+            ["Neon Trinity"]   = (("#080810", "#050508", "#101018", "#181820", "#0C0C14", "#00CCDD", "#FF66AA", "#CC3377"),
+                                   ("#F0F0FF", "#E8E8F8", "#FAFAFF", "#DCDCE8", "#F5F5FF", "#006677", "#881155", "#660033")),
         };
 
         // Fallback for legacy names

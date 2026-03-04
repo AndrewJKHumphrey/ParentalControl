@@ -17,6 +17,15 @@
                     <ComboBox x:Name="ProfileSelector" Width="200"
                               DisplayMemberPath="DisplayName"
                               SelectionChanged="ProfileSelector_Changed"/>
+                    <TextBlock Text="Apply to:" VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextPrimary}" Margin="24,0,12,0"/>
+                    <ComboBox x:Name="DayRangeBox" Width="140"
+                              SelectionChanged="DayRangeBox_Changed">
+                        <ComboBoxItem Content="Single Day" IsSelected="True"/>
+                        <ComboBoxItem Content="Weekdays"/>
+                        <ComboBoxItem Content="Weekends"/>
+                        <ComboBoxItem Content="Everyday"/>
+                    </ComboBox>
                 </StackPanel>
             </Border>
 
@@ -30,7 +39,7 @@
                           CanUserSortColumns="False"
                           CellEditEnding="LimitsGrid_CellEditEnding">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Day" Binding="{Binding DayOfWeek}" Width="100" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Day" Binding="{Binding DayLabel}" Width="100" IsReadOnly="True"/>
                         <DataGridCheckBoxColumn Header="Enabled" Binding="{Binding IsEnabled}" Width="80"/>
                         <DataGridTextColumn Header="Daily Limit (min, 0=unlimited)"
                                             Binding="{Binding DailyLimitMinutes}" Width="200"/>

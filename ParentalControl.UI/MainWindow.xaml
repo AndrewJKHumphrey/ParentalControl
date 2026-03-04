@@ -3,8 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="ParentGuard - Parental Control" Height="640" Width="960"
         WindowStartupLocation="CenterScreen"
+        ResizeMode="CanMinimize"
         Background="{DynamicResource AppBg}">
-    <Grid>
+    <Grid x:Name="RootGrid">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="200"/>
             <ColumnDefinition Width="*"/>
@@ -26,8 +27,6 @@
                         Tag="FocusMode" Click="NavButton_Click"/>
                 <Button Style="{StaticResource NavButton}" Content="  Profiles"
                         Tag="Profiles" Click="NavButton_Click"/>
-                <Button Style="{StaticResource NavButton}" Content="  Web Filter"
-                        Tag="WebFilter" Click="NavButton_Click" Visibility="Collapsed"/>
                 <Button Style="{StaticResource NavButton}" Content="  Activity Log"
                         Tag="ActivityLog" Click="NavButton_Click"/>
                 <Button Style="{StaticResource NavButton}" Content="  Settings"

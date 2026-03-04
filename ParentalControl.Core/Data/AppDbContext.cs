@@ -6,7 +6,6 @@ namespace ParentalControl.Core.Data;
 public class AppDbContext : DbContext
 {
     public DbSet<AppRule> AppRules { get; set; }
-    public DbSet<WebsiteRule> WebsiteRules { get; set; }
     public DbSet<ScreenTimeLimit> ScreenTimeLimits { get; set; }
     public DbSet<ActivityEntry> ActivityEntries { get; set; }
     public DbSet<AppSettings> Settings { get; set; }

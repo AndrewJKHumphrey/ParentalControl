@@ -9,16 +9,14 @@ public class IpcServer : IDisposable
     private const string PipeName = "ParentalControlPipe";
     private readonly ProcessMonitor _processMonitor;
     private readonly ScreenTimeEnforcer _screenTimeEnforcer;
-    private readonly WebsiteFilter _websiteFilter;
     private readonly ActivityLogger _logger;
     private readonly CancellationTokenSource _cts = new();
     private Task? _listenTask;
 
-    public IpcServer(ProcessMonitor pm, ScreenTimeEnforcer st, WebsiteFilter wf, ActivityLogger logger)
+    public IpcServer(ProcessMonitor pm, ScreenTimeEnforcer st, ActivityLogger logger)
     {
         _processMonitor = pm;
         _screenTimeEnforcer = st;
-        _websiteFilter = wf;
         _logger = logger;
     }
 
@@ -67,11 +65,6 @@ public class IpcServer : IDisposable
                 case IpcCommand.ReloadRules:
                     _processMonitor.LoadRules();
                     _screenTimeEnforcer.LoadRules();
-                    _websiteFilter.LoadRules();
-                    return new IpcResponse { Success = true };
-
-                case IpcCommand.ReloadWebFilter:
-                    _websiteFilter.SyncAndRestartBrowsers();
                     return new IpcResponse { Success = true };
 
                 case IpcCommand.LockNow:
@@ -118,4 +111,3 @@ public class IpcServer : IDisposable
         _cts.Dispose();
     }
 }
-
