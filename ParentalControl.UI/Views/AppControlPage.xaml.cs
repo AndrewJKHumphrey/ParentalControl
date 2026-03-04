@@ -160,11 +160,12 @@ public partial class AppControlPage : Page
             {
                 db.AppRules.Add(new AppRule
                 {
-                    ProcessName     = processName.ToLower(),
-                    DisplayName     = string.IsNullOrEmpty(DisplayNameBox.Text) ? processName : DisplayNameBox.Text.Trim(),
-                    AccessMode      = (int)AppAccessMode.Blocked,
-                    UserProfileId   = _selectedProfileId,
+                    ProcessName        = processName.ToLower(),
+                    DisplayName        = string.IsNullOrEmpty(DisplayNameBox.Text) ? processName : DisplayNameBox.Text.Trim(),
+                    AccessMode         = (int)AppAccessMode.Blocked,
+                    UserProfileId      = _selectedProfileId,
                     AllowedInFocusMode = false,
+                    IsManuallyModified = true,
                 });
                 db.SaveChanges();
             }
@@ -241,8 +242,9 @@ public partial class AppControlPage : Page
                             x => x.UserProfileId == profileId && x.ProcessName == r.ProcessName);
                         if (target != null)
                         {
-                            target.AccessMode         = r.AccessMode;
-                            target.AllowedInFocusMode = r.AllowedInFocusMode;
+                            target.AccessMode          = r.AccessMode;
+                            target.AllowedInFocusMode  = r.AllowedInFocusMode;
+                            target.IsManuallyModified  = r.IsManuallyModified;
                         }
                         else
                         {
@@ -252,6 +254,7 @@ public partial class AppControlPage : Page
                                 DisplayName        = r.DisplayName,
                                 AccessMode         = r.AccessMode,
                                 AllowedInFocusMode = r.AllowedInFocusMode,
+                                IsManuallyModified = r.IsManuallyModified,
                                 UserProfileId      = profileId,
                             });
                         }
@@ -292,16 +295,17 @@ public partial class AppControlPage : Page
         {
             using var db = new AppDbContext();
 
-            // Save app rules
+            // Save app rules — also persist the Lock checkbox and mark as modified
             foreach (var r in rules)
             {
                 var existing = db.AppRules.Find(r.Id);
                 if (existing != null)
                 {
-                    existing.AccessMode         = r.AccessMode;
-                    existing.DisplayName        = r.DisplayName;
-                    existing.ProcessName        = r.ProcessName;
-                    existing.AllowedInFocusMode = r.AllowedInFocusMode;
+                    existing.AccessMode          = r.AccessMode;
+                    existing.DisplayName         = r.DisplayName;
+                    existing.ProcessName         = r.ProcessName;
+                    existing.AllowedInFocusMode  = r.AllowedInFocusMode;
+                    existing.IsManuallyModified  = r.IsManuallyModified;
                 }
             }
 
@@ -405,12 +409,25 @@ public partial class AppControlPage : Page
             }
 
             // Phase 3 — upsert into DB: update existing (rescan), insert new
+            // When a RAWG key is configured AND the API returned data for at least one game,
+            // skip executables that RAWG doesn't recognise. If RAWG is unreachable or
+            // returns nothing, fall back to adding everything found on disk.
+            bool rawgFunctional = !string.IsNullOrWhiteSpace(rawgKey) &&
+                ratings.Values.Any(v => !string.IsNullOrEmpty(v.Rating) ||
+                                        !string.IsNullOrEmpty(v.Genres));
+            bool requireRawgData = rawgFunctional;
+
             int added = 0, updated = 0, autoBlocked = 0;
             using var db = new AppDbContext();
             foreach (var (name, processName) in games)
             {
                 if (!ratings.TryGetValue(processName, out var info))
                     info = ("", "", "");
+
+                // Skip unrecognised executables when we have a RAWG key to validate against.
+                if (requireRawgData && string.IsNullOrEmpty(info.Rating) &&
+                    string.IsNullOrEmpty(info.Genres) && string.IsNullOrEmpty(info.Tags))
+                    continue;
 
                 // Block takes priority over App Time; Focus Mode is independent
                 bool block   = MatchesRule(info.Rating, info.Genres, info.Tags, blockThresholdIdx,   false, blockedGenres,   blockedTags);
@@ -425,11 +442,21 @@ public partial class AppControlPage : Page
                     r => r.ProcessName == processName && r.UserProfileId == _selectedProfileId);
                 if (existing != null)
                 {
-                    existing.EsrbRating        = info.Rating;
-                    existing.Genres            = info.Genres;
-                    existing.Tags              = info.Tags;
-                    existing.IsBlocked         = block;
-                    existing.AccessMode        = accessMode;
+                    // Respect the user's manual changes — only refresh metadata, never overwrite settings.
+                    if (existing.IsManuallyModified)
+                    {
+                        existing.EsrbRating = info.Rating;
+                        existing.Genres     = info.Genres;
+                        existing.Tags       = info.Tags;
+                        updated++;
+                        continue;
+                    }
+
+                    existing.EsrbRating         = info.Rating;
+                    existing.Genres             = info.Genres;
+                    existing.Tags               = info.Tags;
+                    existing.IsBlocked          = block;
+                    existing.AccessMode         = accessMode;
                     existing.AllowedInFocusMode = focus;
                     updated++;
                 }
@@ -837,23 +864,13 @@ public partial class AppControlPage : Page
 
     private static List<string> FindGameExes(string gamePath, string installDir)
     {
-        IEnumerable<string> candidates;
-        try { candidates = Directory.EnumerateFiles(gamePath, "*.exe"); }
-        catch { return []; }
+        // Try top-level first; if nothing passes the filter fall back to a
+        // depth-limited recursive search so exes in bin/, binaries/, x64/, etc. are found.
+        var exes = FilterExes(
+            Directory.EnumerateFiles(gamePath, "*.exe", SearchOption.TopDirectoryOnly));
 
-        var exes = candidates.Where(f =>
-        {
-            var n = Path.GetFileNameWithoutExtension(f).ToLower();
-            return !n.Contains("unins")   &&
-                   !n.Contains("setup")   &&
-                   !n.Contains("redist")  &&
-                   !n.Contains("crash")   &&
-                   !n.Contains("report")  &&
-                   !n.Contains("helper")  &&
-                   !n.Contains("install") &&
-                   !n.StartsWith("vc_")   &&
-                   !n.StartsWith("dotnet");
-        }).ToList();
+        if (exes.Count == 0)
+            exes = FilterExes(EnumerateFilesLimited(gamePath, "*.exe", maxDepth: 3));
 
         if (exes.Count == 0) return [];
 
@@ -863,5 +880,44 @@ public partial class AppControlPage : Page
             var n = Path.GetFileNameWithoutExtension(f).ToLower().Replace(" ", "");
             return n == dirLower || dirLower.Contains(n) || n.Contains(dirLower) ? 1 : 0;
         }).ThenByDescending(f => new FileInfo(f).Length).ToList();
+    }
+
+    // Enumerate .exe files in subdirectories up to maxDepth levels below path.
+    private static IEnumerable<string> EnumerateFilesLimited(string path, string pattern, int maxDepth)
+    {
+        if (maxDepth <= 0) yield break;
+        IEnumerable<string> dirs;
+        try { dirs = Directory.EnumerateDirectories(path); }
+        catch { yield break; }
+
+        foreach (var dir in dirs)
+        {
+            IEnumerable<string> files = [];
+            try { files = Directory.EnumerateFiles(dir, pattern); }
+            catch { }
+            foreach (var f in files) yield return f;
+            foreach (var f in EnumerateFilesLimited(dir, pattern, maxDepth - 1)) yield return f;
+        }
+    }
+
+    private static List<string> FilterExes(IEnumerable<string> candidates)
+    {
+        try
+        {
+            return candidates.Where(f =>
+            {
+                var n = Path.GetFileNameWithoutExtension(f).ToLower();
+                return !n.Contains("unins")   &&
+                       !n.Contains("setup")   &&
+                       !n.Contains("redist")  &&
+                       !n.Contains("crash")   &&
+                       !n.Contains("report")  &&
+                       !n.Contains("helper")  &&
+                       !n.Contains("install") &&
+                       !n.StartsWith("vc_")   &&
+                       !n.StartsWith("dotnet");
+            }).ToList();
+        }
+        catch { return []; }
     }
 }

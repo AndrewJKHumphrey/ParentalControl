@@ -165,6 +165,17 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
+                    <!-- Lock from rescan -->
+                    <DataGridTemplateColumn Header="Lock" Width="60">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox IsChecked="{Binding IsManuallyModified, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          ToolTip="Lock this rule so game scans cannot overwrite it"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
                     <!-- Remove row -->
                     <DataGridTemplateColumn Header="Remove" Width="80">
                         <DataGridTemplateColumn.CellTemplate>

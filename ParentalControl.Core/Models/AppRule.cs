@@ -20,5 +20,7 @@ public class AppRule
     public string EsrbRating          { get; set; } = string.Empty;  // "E","E10+","T","M","AO", or ""
     public string Genres              { get; set; } = string.Empty;  // e.g. "Shooter, Action"
     public string Tags                { get; set; } = string.Empty;  // e.g. "violence, gore"
+    /// <summary>Set when the user manually saves changes; prevents scan from overwriting.</summary>
+    public bool   IsManuallyModified  { get; set; } = false;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

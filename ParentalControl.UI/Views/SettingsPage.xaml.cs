@@ -136,6 +136,7 @@ public partial class SettingsPage : Page
         catch { }
 
         _loaded = true;
+        RefreshScanCascade();
     }
 
     private void TimeFormat_Changed(object sender, RoutedEventArgs e)
@@ -343,6 +344,57 @@ public partial class SettingsPage : Page
                              .Where(cb => cb.IsChecked == true)
                              .Select(cb => cb.Content.ToString()!));
 
+    private static HashSet<string> CheckedSet(WrapPanel panel) =>
+        panel.Children.OfType<CheckBox>()
+             .Where(cb => cb.IsChecked == true)
+             .Select(cb => cb.Content?.ToString() ?? "")
+             .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+    // Grays out controls in lower-priority panels when the same value is already
+    // used in a higher-priority panel.  Priority: Block > App Time > Focus Mode.
+    private void RefreshScanCascade()
+    {
+        // Ratings — disable items at or above the higher-priority threshold.
+        // Index 0 = "None" (no threshold set), so skip cascade when index is 0.
+        int blockIdx   = ScanBlockRatingBox.SelectedIndex;   // 0=None,1=E,2=E10+,3=T,4=M,5=AO
+        int appTimeIdx = ScanAppTimeRatingBox.SelectedIndex;
+
+        for (int i = 0; i < ScanAppTimeRatingBox.Items.Count; i++)
+            ((ComboBoxItem)ScanAppTimeRatingBox.Items[i]).IsEnabled =
+                !(blockIdx > 0 && i >= blockIdx);
+
+        for (int i = 0; i < ScanFocusModeRatingBox.Items.Count; i++)
+            ((ComboBoxItem)ScanFocusModeRatingBox.Items[i]).IsEnabled =
+                !(blockIdx   > 0 && i >= blockIdx) &&
+                !(appTimeIdx > 0 && i >= appTimeIdx);
+
+        // Genres — disable in App Time if checked in Block; in Focus Mode if checked in either
+        var blockGenres   = CheckedSet(GenresPanel);
+        var appTimeGenres = CheckedSet(AppTimeGenresPanel);
+
+        foreach (CheckBox cb in AppTimeGenresPanel.Children.OfType<CheckBox>())
+            cb.IsEnabled = !blockGenres.Contains(cb.Content?.ToString() ?? "");
+
+        foreach (CheckBox cb in FocusModeGenresPanel.Children.OfType<CheckBox>())
+        {
+            var name = cb.Content?.ToString() ?? "";
+            cb.IsEnabled = !blockGenres.Contains(name) && !appTimeGenres.Contains(name);
+        }
+
+        // Tags — same logic as genres
+        var blockTags   = CheckedSet(TagsPanel);
+        var appTimeTags = CheckedSet(AppTimeTagsPanel);
+
+        foreach (CheckBox cb in AppTimeTagsPanel.Children.OfType<CheckBox>())
+            cb.IsEnabled = !blockTags.Contains(cb.Content?.ToString() ?? "");
+
+        foreach (CheckBox cb in FocusModeTagsPanel.Children.OfType<CheckBox>())
+        {
+            var name = cb.Content?.ToString() ?? "";
+            cb.IsEnabled = !blockTags.Contains(name) && !appTimeTags.Contains(name);
+        }
+    }
+
     private void ScanBlockRating_Changed(object sender, SelectionChangedEventArgs e)
     {
         if (!_loaded) return;
@@ -351,6 +403,7 @@ public partial class SettingsPage : Page
         if (settings == null) return;
         settings.ScanBlockRating = (ScanBlockRatingBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "M";
         db.SaveChanges();
+        RefreshScanCascade();
     }
 
     private void ScanGenreTag_Changed(object sender, RoutedEventArgs e)
@@ -362,6 +415,7 @@ public partial class SettingsPage : Page
         settings.ScanBlockedGenres = GetCheckedValues(GenresPanel);
         settings.ScanBlockedTags   = GetCheckedValues(TagsPanel);
         db.SaveChanges();
+        RefreshScanCascade();
     }
 
     private void ScanAppTimeRating_Changed(object sender, SelectionChangedEventArgs e)
@@ -372,6 +426,7 @@ public partial class SettingsPage : Page
         if (settings == null) return;
         settings.ScanAppTimeRating = (ScanAppTimeRatingBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "None";
         db.SaveChanges();
+        RefreshScanCascade();
     }
 
     private void ScanAppTimeTag_Changed(object sender, RoutedEventArgs e)
@@ -383,6 +438,7 @@ public partial class SettingsPage : Page
         settings.ScanAppTimeGenres = GetCheckedValues(AppTimeGenresPanel);
         settings.ScanAppTimeTags   = GetCheckedValues(AppTimeTagsPanel);
         db.SaveChanges();
+        RefreshScanCascade();
     }
 
     private void ScanFocusModeRating_Changed(object sender, SelectionChangedEventArgs e)

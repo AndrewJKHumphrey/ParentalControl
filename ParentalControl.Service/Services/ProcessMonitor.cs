@@ -98,6 +98,11 @@ public class ProcessMonitor
 
     public void EnforceRules(bool screenTimeLocked)
     {
+        // Always advance the clock first so elapsed is never inflated by early returns
+        var now     = DateTime.UtcNow;
+        var elapsed = (now - _lastTickTime).TotalSeconds;
+        _lastTickTime = now;
+
         try
         {
             using var db = new AppDbContext();
@@ -148,10 +153,6 @@ public class ProcessMonitor
             }
             catch { }
         }
-
-        var now     = DateTime.UtcNow;
-        var elapsed = (now - _lastTickTime).TotalSeconds;
-        _lastTickTime = now;
 
         // Read App Time limit and usage from active UserProfile
         int limitMinutes = 0, usedMinutes = 0, bonusMinutes = 0;

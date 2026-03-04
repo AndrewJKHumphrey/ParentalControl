@@ -95,6 +95,8 @@ public partial class App : Application
             catch { /* Column already exists */ }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE AppRules ADD COLUMN Tags TEXT NOT NULL DEFAULT ''"); }
             catch { /* Column already exists */ }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE AppRules ADD COLUMN IsManuallyModified INTEGER NOT NULL DEFAULT 0"); }
+            catch { }
 
             // Migrate legacy IsBlocked=1 rows to AccessMode=2 (Blocked)
             try { db.Database.ExecuteSqlRaw("UPDATE AppRules SET AccessMode = 2 WHERE IsBlocked = 1 AND AccessMode = 0"); }
