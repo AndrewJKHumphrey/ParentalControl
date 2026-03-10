@@ -54,16 +54,21 @@ public partial class DashboardPage : Page
                 int appLimit  = baseLimit > 0 ? baseLimit + profile.TodayAppTimeBonusMinutes : 0;
 
                 AppTimeUsedText.Text = $"{appUsed} min";
-#if DEBUG
-                if (settings?.DebugAppTimeOverride == true && baseLimit != 0)
+                if (appLimit == 0)
                 {
-                    AppTimeLimitText.Text = $"of 6 min limit ({Math.Max(0, 6 - appUsed)} min remaining) [DEBUG OVERRIDE]";
+                    AppTimeRemainingText.Text = "No limit";
+                    AppTimeRemainingText.Foreground = new SolidColorBrush(Color.FromRgb(0xCB, 0xA6, 0xF7));
                 }
                 else
-#endif
-                AppTimeLimitText.Text = appLimit == 0
-                    ? "no daily limit set"
-                    : $"of {appLimit} min limit ({Math.Max(0, appLimit - appUsed)} min remaining)";
+                {
+                    int appRemaining = Math.Max(0, appLimit - appUsed);
+                    AppTimeRemainingText.Text = FormatDuration(appRemaining);
+                    AppTimeRemainingText.Foreground = appRemaining > 30
+                        ? new SolidColorBrush(Color.FromRgb(0xA6, 0xE3, 0xA1))
+                        : appRemaining > 10
+                            ? new SolidColorBrush(Color.FromRgb(0xF9, 0xE2, 0xAF))
+                            : new SolidColorBrush(Color.FromRgb(0xF3, 0x8B, 0xA8));
+                }
             }
 
             if (settings != null)
@@ -74,6 +79,7 @@ public partial class DashboardPage : Page
                     _enforcementLoaded = false;
                     ScreenTimeToggle.IsChecked = settings.ScreenTimeEnabled;
                     AppControlToggle.IsChecked = settings.AppControlEnabled;
+                    FocusModeToggle.IsChecked  = settings.FocusModeEnabled;
                     _enforcementLoaded = true;
                 }
             }
@@ -88,16 +94,57 @@ public partial class DashboardPage : Page
             {
                 bool use12h = settings?.TimeFormat12Hour == true;
                 AllowedRangeText.Text = $"{FormatTime(limit.AllowedFrom, use12h)} – {FormatTime(limit.AllowedUntil, use12h)}";
+                var nowTime = TimeOnly.FromDateTime(DateTime.Now);
+
+                // Time Until Window Begins
+                if (nowTime < limit.AllowedFrom)
+                {
+                    int minsUntilStart = (int)(limit.AllowedFrom - nowTime).TotalMinutes;
+                    AllowedRangeStartText.Text = FormatDuration(minsUntilStart);
+                    AllowedRangeStartText.Foreground = new SolidColorBrush(Color.FromRgb(0xCB, 0xA6, 0xF7));
+                }
+                else if (nowTime < limit.AllowedUntil)
+                {
+                    AllowedRangeStartText.Text = "Window active";
+                    AllowedRangeStartText.Foreground = new SolidColorBrush(Color.FromRgb(0xA6, 0xE3, 0xA1));
+                }
+                else
+                {
+                    AllowedRangeStartText.Text = "Outside Window";
+                    AllowedRangeStartText.Foreground = new SolidColorBrush(Color.FromRgb(0xF3, 0x8B, 0xA8));
+                }
+
+                // Time Until Window Ends
+                if (nowTime < limit.AllowedUntil)
+                {
+                    int minsUntilEnd = (int)(limit.AllowedUntil - nowTime).TotalMinutes;
+                    AllowedRangeRemainingText.Text = FormatDuration(minsUntilEnd);
+                    AllowedRangeRemainingText.Foreground = minsUntilEnd > 30
+                        ? new SolidColorBrush(Color.FromRgb(0xA6, 0xE3, 0xA1))
+                        : minsUntilEnd > 10
+                            ? new SolidColorBrush(Color.FromRgb(0xF9, 0xE2, 0xAF))
+                            : new SolidColorBrush(Color.FromRgb(0xF3, 0x8B, 0xA8));
+                }
+                else
+                {
+                    AllowedRangeRemainingText.Text = "0m";
+                    AllowedRangeRemainingText.Foreground = new SolidColorBrush(Color.FromRgb(0xF3, 0x8B, 0xA8));
+                }
+
                 int todayBonus = profile?.TodayBonusMinutes ?? 0;
                 int effective  = limit.DailyLimitMinutes + todayBonus;
 
                 if (limit.DailyLimitMinutes == 0)
                 {
+                    ScreenTimeLimitText.Text = "Unlimited";
+                    ScreenTimeLimitText.Foreground = new SolidColorBrush(Color.FromRgb(0xCB, 0xA6, 0xF7));
                     TimeRemainingText.Text = "Unlimited";
                     TimeRemainingText.Foreground = new SolidColorBrush(Color.FromRgb(0xCB, 0xA6, 0xF7));
                 }
                 else
                 {
+                    ScreenTimeLimitText.Text = FormatDuration(effective);
+                    ScreenTimeLimitText.Foreground = new SolidColorBrush(Color.FromRgb(0xCB, 0xA6, 0xF7));
                     int remaining = Math.Max(0, effective - (profile?.TodayUsedMinutes ?? 0));
                     TimeRemainingText.Text = FormatDuration(remaining);
                     TimeRemainingText.Foreground = remaining > 30
@@ -110,8 +157,52 @@ public partial class DashboardPage : Page
             else
             {
                 AllowedRangeText.Text = "No limit today";
+                AllowedRangeStartText.Text = "--";
+                AllowedRangeStartText.Foreground = new SolidColorBrush(Color.FromRgb(0xCB, 0xA6, 0xF7));
+                AllowedRangeRemainingText.Text = "--";
+                AllowedRangeRemainingText.Foreground = new SolidColorBrush(Color.FromRgb(0xCB, 0xA6, 0xF7));
+                ScreenTimeLimitText.Text = "No limit";
+                ScreenTimeLimitText.Foreground = new SolidColorBrush(Color.FromRgb(0xCB, 0xA6, 0xF7));
                 TimeRemainingText.Text = "No limit";
                 TimeRemainingText.Foreground = new SolidColorBrush(Color.FromRgb(0xCB, 0xA6, 0xF7));
+            }
+
+            // Focus Mode status
+            {
+                if (settings?.FocusModeEnabled == true)
+                {
+                    int focusProfileId = profile?.Id ?? 1;
+                    var todaySchedule = db.FocusSchedules.FirstOrDefault(
+                        s => s.DayOfWeek == DateTime.Now.DayOfWeek && s.UserProfileId == focusProfileId);
+                    var nowTime = TimeOnly.FromDateTime(DateTime.Now);
+                    if (todaySchedule?.IsEnabled == true &&
+                        nowTime >= todaySchedule.FocusFrom && nowTime <= todaySchedule.FocusUntil)
+                    {
+                        FocusModeStatusText.Text       = "Active";
+                        FocusModeStatusText.Foreground = new SolidColorBrush(Color.FromRgb(0xF9, 0xE2, 0xAF));
+                        bool use12h = settings?.TimeFormat12Hour == true;
+                        FocusModeWindowText.Text = $"{FormatTime(todaySchedule.FocusFrom, use12h)} – {FormatTime(todaySchedule.FocusUntil, use12h)}";
+                    }
+                    else if (todaySchedule?.IsEnabled == true)
+                    {
+                        FocusModeStatusText.Text       = "Enabled";
+                        FocusModeStatusText.Foreground = new SolidColorBrush(Color.FromRgb(0xA6, 0xE3, 0xA1));
+                        bool use12h = settings?.TimeFormat12Hour == true;
+                        FocusModeWindowText.Text = $"Window: {FormatTime(todaySchedule.FocusFrom, use12h)} – {FormatTime(todaySchedule.FocusUntil, use12h)}";
+                    }
+                    else
+                    {
+                        FocusModeStatusText.Text       = "Off";
+                        FocusModeStatusText.Foreground = new SolidColorBrush(Color.FromRgb(0x6C, 0x70, 0x86));
+                        FocusModeWindowText.Text       = "Not scheduled today";
+                    }
+                }
+                else
+                {
+                    FocusModeStatusText.Text       = "Off";
+                    FocusModeStatusText.Foreground = new SolidColorBrush(Color.FromRgb(0x6C, 0x70, 0x86));
+                    FocusModeWindowText.Text       = "";
+                }
             }
 
             var appsBlocked = db.ActivityEntries
@@ -159,6 +250,7 @@ public partial class DashboardPage : Page
             {
                 settings.ScreenTimeEnabled = ScreenTimeToggle.IsChecked == true;
                 settings.AppControlEnabled = AppControlToggle.IsChecked == true;
+                settings.FocusModeEnabled  = FocusModeToggle.IsChecked  == true;
             }
             db.SaveChanges();
         }
@@ -180,9 +272,11 @@ public partial class DashboardPage : Page
                 bool flag = !(AdminToggle.IsChecked == true);
                 settings.ScreenTimeEnabled = flag;
                 settings.AppControlEnabled = flag;
+                settings.FocusModeEnabled  = flag;
 
                 ScreenTimeToggle.IsEnabled = flag;
                 AppControlToggle.IsEnabled = flag;
+                FocusModeToggle.IsEnabled  = flag;
                 db.SaveChanges();
             }
         }
@@ -193,7 +287,7 @@ public partial class DashboardPage : Page
 
     private async void ExtendAppTime_Click(object sender, System.Windows.RoutedEventArgs e)
     {
-        int minutes = 15;
+        int minutes = 0;
         if (ExtendAppTimeBox.SelectedItem is ComboBoxItem item &&
             int.TryParse(item.Content?.ToString(), out int parsed))
             minutes = parsed;
@@ -218,9 +312,39 @@ public partial class DashboardPage : Page
         }
     }
 
+    private async void ExtendRange_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        int minutes = 0;
+        if (ExtendRangeBox.SelectedItem is ComboBoxItem item &&
+            int.TryParse(item.Content?.ToString(), out int parsed))
+            minutes = parsed;
+
+        ExtendRangeButton.IsEnabled = false;
+        try
+        {
+            await Task.Run(() =>
+            {
+                using var db = new AppDbContext();
+                var profile = ResolveActiveProfile(db);
+                int profileId = profile?.Id ?? 1;
+                var limit = db.ScreenTimeLimits.FirstOrDefault(
+                    l => l.DayOfWeek == DateTime.Now.DayOfWeek && l.UserProfileId == profileId);
+                if (limit == null) return;
+                limit.AllowedUntil = limit.AllowedUntil.AddMinutes(minutes);
+                db.SaveChanges();
+            });
+            await LoadDataAsync();
+        }
+        catch { }
+        finally
+        {
+            ExtendRangeButton.IsEnabled = true;
+        }
+    }
+
     private async void ResetScreenTime_Click(object sender, System.Windows.RoutedEventArgs e)
     {
-        int minutes = 15;
+        int minutes = 0;
         if (ExtendMinutesBox.SelectedItem is ComboBoxItem item &&
             int.TryParse(item.Content?.ToString(), out int parsed))
             minutes = parsed;

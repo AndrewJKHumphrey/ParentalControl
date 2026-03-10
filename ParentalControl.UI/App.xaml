@@ -255,9 +255,8 @@
         <Style x:Key="StatCard" TargetType="Border">
             <Setter Property="Background" Value="{DynamicResource CardBg}"/>
             <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="Padding" Value="20,16"/>
-            <Setter Property="Margin" Value="0,0,16,16"/>
-            <Setter Property="MinWidth" Value="160"/>
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="Margin" Value="0,0,4,0"/>
         </Style>
 
     </Application.Resources>

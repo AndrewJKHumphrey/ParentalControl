@@ -25,14 +25,24 @@ public class ScreenTimeEnforcer
         string pMessage, int messageLength,
         uint style, int timeout, out int pResponse, bool bWait);
 
+    [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    private static extern bool LogonUser(string lpszUsername, string lpszDomain,
+        string lpszPassword, int dwLogonType, int dwLogonProvider, out IntPtr phToken);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool CloseHandle(IntPtr hObject);
+
     private readonly ActivityLogger _logger;
     private readonly NotificationService _notifier;
     private DateTime _lastTickTime  = DateTime.UtcNow;
     private DateTime _nextDebugDump = DateTime.MinValue;
     private double _pendingMinutes  = 0;
 
-    private bool _lockedDueToTimeWindow = false;
-    private bool _lockedDueToDailyLimit = false;
+    private bool _lockedDueToTimeWindow  = false;
+    private bool _lockedDueToDailyLimit  = false;
+    private bool _lockStateRestored      = false;   // true after first tick
+    private bool _activeAccountHasPassword = false; // auto-detected; cached per user
+    private bool _lastSessionWasActive   = false;   // tracks session active→inactive transition
 
     private int    _activeProfileId = 0;
     private string _activeUsername  = string.Empty;
@@ -87,22 +97,28 @@ public class ScreenTimeEnforcer
             var activeUsername = GetActiveWindowsUsername();
             if (!string.Equals(activeUsername, _activeUsername, StringComparison.OrdinalIgnoreCase))
             {
-                _activeUsername  = activeUsername;
-                _activeProfileId = ResolveProfileId(activeUsername, db);
-                _pendingMinutes  = 0;
-                _lockedDueToTimeWindow = false;
-                _lockedDueToDailyLimit = false;
-                if (debug) WriteDebug($"User changed → '{activeUsername}', profileId={_activeProfileId}");
+                _activeUsername          = activeUsername;
+                _activeProfileId         = ResolveProfileId(activeUsername, db);
+                _pendingMinutes          = 0;
+                _lockedDueToTimeWindow   = false;
+                _lockedDueToDailyLimit   = false;
+                _activeAccountHasPassword = AccountHasPassword(activeUsername);
+                _lastSessionWasActive    = false;
+                if (debug) WriteDebug($"User changed → '{activeUsername}', profileId={_activeProfileId}, hasPassword={_activeAccountHasPassword}");
             }
             if (_activeProfileId == 0)
                 _activeProfileId = ResolveProfileId(activeUsername, db);
+
+            // Detect password on first tick
+            if (!_lockStateRestored && string.IsNullOrEmpty(_activeUsername) == false)
+                _activeAccountHasPassword = AccountHasPassword(activeUsername);
 
             // Periodic debug dump (once per minute when debug flag is on)
             if (debug && DateTime.UtcNow >= _nextDebugDump)
             {
                 _nextDebugDump = DateTime.UtcNow.AddMinutes(1);
                 WriteDebug($"TICK user='{activeUsername}' profileId={_activeProfileId} " +
-                           $"ScreenTimeEnabled={settings.ScreenTimeEnabled}");
+                           $"ScreenTimeEnabled={settings.ScreenTimeEnabled} hasPassword={_activeAccountHasPassword}");
             }
 
             var profile = db.UserProfiles.Find(_activeProfileId);
@@ -115,16 +131,46 @@ public class ScreenTimeEnforcer
             // Reset daily counter if date changed
             if (profile.UsageDate.Date != DateTime.Now.Date)
             {
-                profile.UsageDate         = DateTime.Now.Date;
-                profile.TodayUsedMinutes  = 0;
-                profile.TodayBonusMinutes = 0;
-                _pendingMinutes = 0;
+                profile.UsageDate           = DateTime.Now.Date;
+                profile.TodayUsedMinutes    = 0;
+                profile.TodayBonusMinutes   = 0;
+                profile.IsScreenTimeLocked  = false;
+                _pendingMinutes            = 0;
+                _lockedDueToTimeWindow     = false;
+                _lockedDueToDailyLimit     = false;
+            }
+
+            // ONE-TIME startup restore: if the service restarted while the screen was locked,
+            // pre-arm the in-memory lock flags. IsUserActive() prevents double-locking on
+            // an already-locked screen; session-transition detection below handles re-locking
+            // when the user logs back in (no-password accounts only).
+            if (!_lockStateRestored)
+            {
+                _lockStateRestored = true;
+                if (profile.IsScreenTimeLocked)
+                {
+                    _lockedDueToTimeWindow = true;
+                    _lockedDueToDailyLimit = true;
+                }
+            }
+
+            // For no-password accounts: when the session transitions from inactive (locked)
+            // to active (user logged back in), clear the lock flags so the enforcement checks
+            // below will immediately re-lock.
+            bool sessionActive = IsUserActive();
+            bool shouldRelock  = !_activeAccountHasPassword || profile.AlwaysRelock;
+            if (shouldRelock
+                && (_lockedDueToTimeWindow || _lockedDueToDailyLimit)
+                && !_lastSessionWasActive && sessionActive)
+            {
+                if (debug) WriteDebug($"SESSION TRANSITION: account logged back in — re-arming lock checks (hasPassword={_activeAccountHasPassword}, alwaysRelock={profile.AlwaysRelock})");
                 _lockedDueToTimeWindow = false;
                 _lockedDueToDailyLimit = false;
             }
+            _lastSessionWasActive = sessionActive;
 
             // Accumulate fractional minutes
-            if (IsUserActive())
+            if (sessionActive)
                 _pendingMinutes += elapsed;
 
             var wholeMinutes = (int)_pendingMinutes;
@@ -154,14 +200,16 @@ public class ScreenTimeEnforcer
 
             if (debug) WriteDebug($"TIME CHECK: current={currentTime} allowedFrom={limit.AllowedFrom} allowedUntil={limit.AllowedUntil} " +
                                    $"outside={currentTime < limit.AllowedFrom || currentTime > limit.AllowedUntil} " +
-                                   $"loggedIn={IsUserLoggedIn()} alreadyLocked={_lockedDueToTimeWindow}");
+                                   $"sessionActive={sessionActive} alreadyLocked={_lockedDueToTimeWindow}");
 
             // --- Enforce allowed time window ---
             if (currentTime < limit.AllowedFrom || currentTime > limit.AllowedUntil)
             {
-                if (IsUserLoggedIn() && !_lockedDueToTimeWindow)
+                if (sessionActive && !_lockedDueToTimeWindow)
                 {
-                    _lockedDueToTimeWindow = true;
+                    _lockedDueToTimeWindow     = true;
+                    profile.IsScreenTimeLocked = true;
+                    db.SaveChanges();
                     if (debug) WriteDebug("LOCKING: outside allowed time window");
                     if (settings.DebugStopServiceAfterLock) TriggeredDebugStop = true;
                     SendWarning(
@@ -170,6 +218,7 @@ public class ScreenTimeEnforcer
                         $"The screen will lock in 30 seconds.");
                     Thread.Sleep(30000);
                     SessionLock.LockActive();
+                    _lastSessionWasActive = false;   // screen is now locked
                     _logger.Log(ActivityType.ScreenLocked,
                         $"Outside allowed hours ({limit.AllowedFrom}-{limit.AllowedUntil})");
                     _notifier.SendScreenLockNotification(
@@ -184,9 +233,11 @@ public class ScreenTimeEnforcer
             if (limit.DailyLimitMinutes > 0 &&
                 profile.TodayUsedMinutes >= limit.DailyLimitMinutes + profile.TodayBonusMinutes)
             {
-                if (IsUserLoggedIn() && !_lockedDueToDailyLimit)
+                if (sessionActive && !_lockedDueToDailyLimit)
                 {
-                    _lockedDueToDailyLimit = true;
+                    _lockedDueToDailyLimit     = true;
+                    profile.IsScreenTimeLocked = true;
+                    db.SaveChanges();
                     if (debug) WriteDebug($"LOCKING: daily limit {limit.DailyLimitMinutes} min reached");
                     if (settings.DebugStopServiceAfterLock) TriggeredDebugStop = true;
                     SendWarning(
@@ -194,6 +245,7 @@ public class ScreenTimeEnforcer
                         $"The screen will lock in 30 seconds.");
                     Thread.Sleep(30000);
                     SessionLock.LockActive();
+                    _lastSessionWasActive = false;   // screen is now locked
                     _logger.Log(ActivityType.ScreenTimeLimitReached,
                         $"Daily limit of {limit.DailyLimitMinutes} min reached");
                     _notifier.SendScreenLockNotification(
@@ -203,6 +255,11 @@ public class ScreenTimeEnforcer
             else
             {
                 _lockedDueToDailyLimit = false;
+                if (profile.IsScreenTimeLocked)
+                {
+                    profile.IsScreenTimeLocked = false;
+                    db.SaveChanges();
+                }
             }
         }
         catch (Exception ex)
@@ -267,6 +324,18 @@ public class ScreenTimeEnforcer
         return true;
     }
 
-    private static bool IsUserLoggedIn()
-        => !string.IsNullOrWhiteSpace(GetActiveWindowsUsername());
+    private static bool AccountHasPassword(string username)
+    {
+        if (string.IsNullOrWhiteSpace(username)) return false;
+        try
+        {
+            // LOGON32_LOGON_NETWORK (3), LOGON32_PROVIDER_DEFAULT (0)
+            // If we can log on with an empty password the account has none.
+            bool noPassword = LogonUser(username, Environment.MachineName, "",
+                                        3, 0, out var token);
+            if (noPassword) CloseHandle(token);
+            return !noPassword;   // true → account requires a password
+        }
+        catch { return false; }
+    }
 }

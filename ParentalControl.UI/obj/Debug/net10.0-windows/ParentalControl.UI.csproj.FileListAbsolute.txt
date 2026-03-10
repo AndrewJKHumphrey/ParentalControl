@@ -87,3 +87,5 @@ C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Debug\net10.0-windows\View
 C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Debug\net10.0-windows\Views\ProfilesPage.baml
 C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Debug\net10.0-windows\Views\FocusModePage.g.cs
 C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Debug\net10.0-windows\Views\ProfilesPage.g.cs
+C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Debug\net10.0-windows\Views\WebFilterPage.baml
+C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Debug\net10.0-windows\Views\WebFilterPage.g.cs

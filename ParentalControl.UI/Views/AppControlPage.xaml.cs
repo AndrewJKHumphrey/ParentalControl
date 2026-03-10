@@ -65,6 +65,11 @@ public partial class AppControlPage : Page
     {
         try
         {
+            // Ensure every AppRule has a ScanCache baseline, then flag any that differ.
+            EnsureScanCache(_selectedProfileId);
+            using (var dbFlags = new AppDbContext())
+                UpdateModifiedFlags(dbFlags, _selectedProfileId);
+
             using var db = new AppDbContext();
             AppRulesGrid.ItemsSource = db.AppRules
                 .Where(r => r.UserProfileId == _selectedProfileId)
@@ -100,6 +105,15 @@ public partial class AppControlPage : Page
                 .ToList();
             DayRangeBox.SelectedIndex = 0;
             AppTimeScheduleGrid.ItemsSource = _scheduleRows;
+
+            // Auto-size the content columns once the grid has measured the new rows.
+            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Render, () =>
+            {
+                // Columns 0-3 are the text/content columns (Display Name, Process, Rating, Genres).
+                // Columns 4+ are fixed-width template columns (Access, Focus Mode, Lock, Remove).
+                for (int i = 0; i < 4 && i < AppRulesGrid.Columns.Count; i++)
+                    AppRulesGrid.Columns[i].Width = DataGridLength.Auto;
+            });
         }
         catch (Exception ex)
         {
@@ -244,7 +258,6 @@ public partial class AppControlPage : Page
                         {
                             target.AccessMode          = r.AccessMode;
                             target.AllowedInFocusMode  = r.AllowedInFocusMode;
-                            target.IsManuallyModified  = r.IsManuallyModified;
                         }
                         else
                         {
@@ -254,7 +267,6 @@ public partial class AppControlPage : Page
                                 DisplayName        = r.DisplayName,
                                 AccessMode         = r.AccessMode,
                                 AllowedInFocusMode = r.AllowedInFocusMode,
-                                IsManuallyModified = r.IsManuallyModified,
                                 UserProfileId      = profileId,
                             });
                         }
@@ -305,7 +317,6 @@ public partial class AppControlPage : Page
                     existing.DisplayName         = r.DisplayName;
                     existing.ProcessName         = r.ProcessName;
                     existing.AllowedInFocusMode  = r.AllowedInFocusMode;
-                    existing.IsManuallyModified  = r.IsManuallyModified;
                 }
             }
 
@@ -371,42 +382,9 @@ public partial class AppControlPage : Page
             }
 
             // Load configurable scan rules from settings
-            string[] ratingOrder = { "E", "E10+", "T", "M", "AO" };
-            int blockThresholdIdx, appTimeThresholdIdx, focusModeThresholdIdx;
-            HashSet<string> blockedGenres, blockedTags;
-            HashSet<string> appTimeGenres, appTimeTags;
-            HashSet<string> focusModeGenres, focusModeTags;
-            using (var dbSettings = new AppDbContext())
-            {
-                var s = dbSettings.Settings.FirstOrDefault();
-                static HashSet<string> ParseSet(string? v) =>
-                    (v ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                             .ToHashSet(StringComparer.OrdinalIgnoreCase);
-                blockThresholdIdx    = Array.IndexOf(ratingOrder, s?.ScanBlockRating    ?? "M");
-                appTimeThresholdIdx  = Array.IndexOf(ratingOrder, s?.ScanAppTimeRating  ?? "None");
-                focusModeThresholdIdx = Array.IndexOf(ratingOrder, s?.ScanFocusModeRating ?? "None");
-                blockedGenres    = ParseSet(s?.ScanBlockedGenres);
-                blockedTags      = ParseSet(s?.ScanBlockedTags);
-                appTimeGenres    = ParseSet(s?.ScanAppTimeGenres);
-                appTimeTags      = ParseSet(s?.ScanAppTimeTags);
-                focusModeGenres  = ParseSet(s?.ScanFocusModeGenres);
-                focusModeTags    = ParseSet(s?.ScanFocusModeTags);
-            }
-
-            // Returns true when rating/genre/tag matches the given rule threshold + sets
-            bool MatchesRule(string rating, string genres, string tags,
-                             int thresholdIdx, bool atOrBelow,
-                             HashSet<string> ruleGenres, HashSet<string> ruleTags)
-            {
-                int ri = Array.IndexOf(ratingOrder, rating);
-                if (thresholdIdx >= 0 && ri >= 0 &&
-                    (atOrBelow ? ri <= thresholdIdx : ri >= thresholdIdx)) return true;
-                var gs = genres.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                if (ruleGenres.Count > 0 && gs.Any(g => ruleGenres.Contains(g))) return true;
-                var ts = tags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                if (ruleTags.Count > 0 && ts.Any(t => ruleTags.Contains(t))) return true;
-                return false;
-            }
+            var (ratingOrder, blockThresholdIdx, appTimeThresholdIdx, focusModeThresholdIdx,
+                 blockedGenres, blockedTags, appTimeGenres, appTimeTags,
+                 focusModeGenres, focusModeTags, ratedDefault, unratedDefault) = LoadScanSettings();
 
             // Phase 3 — upsert into DB: update existing (rescan), insert new
             // When a RAWG key is configured AND the API returned data for at least one game,
@@ -415,9 +393,10 @@ public partial class AppControlPage : Page
             bool rawgFunctional = !string.IsNullOrWhiteSpace(rawgKey) &&
                 ratings.Values.Any(v => !string.IsNullOrEmpty(v.Rating) ||
                                         !string.IsNullOrEmpty(v.Genres));
-            bool requireRawgData = rawgFunctional;
+            bool requireRawgData = rawgFunctional &&
+                unratedDefault == (int)AppAccessMode.Unrestricted;
 
-            int added = 0, updated = 0, autoBlocked = 0;
+            int added = 0, updated = 0, autoBlocked = 0, autoReview = 0;
             using var db = new AppDbContext();
             foreach (var (name, processName) in games)
             {
@@ -430,16 +409,21 @@ public partial class AppControlPage : Page
                     continue;
 
                 // Block takes priority over App Time; Focus Mode is independent
-                bool block   = MatchesRule(info.Rating, info.Genres, info.Tags, blockThresholdIdx,   false, blockedGenres,   blockedTags);
-                bool appTime = !block && MatchesRule(info.Rating, info.Genres, info.Tags, appTimeThresholdIdx,  false, appTimeGenres,   appTimeTags);
-                bool focus   = MatchesRule(info.Rating, info.Genres, info.Tags, focusModeThresholdIdx, true,  focusModeGenres, focusModeTags);
+                bool block   = MatchesRule(ratingOrder, info.Rating, info.Genres, info.Tags, blockThresholdIdx,    false, blockedGenres,   blockedTags);
+                bool appTime = !block && MatchesRule(ratingOrder, info.Rating, info.Genres, info.Tags, appTimeThresholdIdx,   false, appTimeGenres,   appTimeTags);
+                bool focus   = MatchesRule(ratingOrder, info.Rating, info.Genres, info.Tags, focusModeThresholdIdx, true,  focusModeGenres, focusModeTags);
 
-                int accessMode = block   ? (int)AppAccessMode.Blocked
-                               : appTime ? (int)AppAccessMode.ScreenTimeOnly
-                               :           (int)AppAccessMode.Unrestricted;
+                int scanDefault = !string.IsNullOrEmpty(info.Rating) ? ratedDefault : unratedDefault;
+                int accessMode  = block   ? (int)AppAccessMode.Blocked
+                                : appTime ? (int)AppAccessMode.ScreenTimeOnly
+                                :           scanDefault;
 
                 var existing = db.AppRules.FirstOrDefault(
                     r => r.ProcessName == processName && r.UserProfileId == _selectedProfileId);
+
+                // Always update ScanCache with what this scan computed.
+                UpsertScanCache(db, processName, _selectedProfileId, accessMode, focus);
+
                 if (existing != null)
                 {
                     // Respect the user's manual changes — only refresh metadata, never overwrite settings.
@@ -477,13 +461,16 @@ public partial class AppControlPage : Page
                     added++;
                 }
                 if (block) autoBlocked++;
+                else if (accessMode == (int)AppAccessMode.NeedsReview) autoReview++;
             }
             db.SaveChanges();
+            UpdateModifiedFlags(db, _selectedProfileId);
 
             var msg = games.Count == 0
                 ? "No games found."
                 : $"Found {games.Count}: {added} added, {updated} updated" +
-                  (autoBlocked > 0 ? $", {autoBlocked} blocked by scan rules" : "") + ".";
+                  (autoBlocked > 0 ? $", {autoBlocked} blocked by scan rules" : "") +
+                  (autoReview  > 0 ? $", {autoReview} flagged for review" : "") + ".";
             ScanStatusText.Text = msg;
             LoadData();
         }
@@ -919,5 +906,124 @@ public partial class AppControlPage : Page
             }).ToList();
         }
         catch { return []; }
+    }
+
+    // -------------------------------------------------------------------------
+    // Scan-settings helpers and passive IsManuallyModified detection
+    // -------------------------------------------------------------------------
+
+    private static bool MatchesRule(
+        string[] ratingOrder, string rating, string genres, string tags,
+        int thresholdIdx, bool atOrBelow,
+        HashSet<string> ruleGenres, HashSet<string> ruleTags)
+    {
+        int ri = Array.IndexOf(ratingOrder, rating);
+        if (thresholdIdx >= 0 && ri >= 0 &&
+            (atOrBelow ? ri <= thresholdIdx : ri >= thresholdIdx)) return true;
+        var gs = genres.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (ruleGenres.Count > 0 && gs.Any(g => ruleGenres.Contains(g))) return true;
+        var ts = tags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (ruleTags.Count > 0 && ts.Any(t => ruleTags.Contains(t))) return true;
+        return false;
+    }
+
+    private static (string[] RatingOrder,
+                    int BlockIdx, int AppTimeIdx, int FocusModeIdx,
+                    HashSet<string> BlockedGenres, HashSet<string> BlockedTags,
+                    HashSet<string> AppTimeGenres, HashSet<string> AppTimeTags,
+                    HashSet<string> FocusModeGenres, HashSet<string> FocusModeTags,
+                    int RatedDefault, int UnratedDefault)
+        LoadScanSettings()
+    {
+        using var db = new AppDbContext();
+        var s = db.Settings.FirstOrDefault();
+        string[] ratingOrder = { "E", "E10+", "T", "M", "AO" };
+        static HashSet<string> ParseSet(string? v) =>
+            (v ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                     .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return (
+            ratingOrder,
+            Array.IndexOf(ratingOrder, s?.ScanBlockRating     ?? "M"),
+            Array.IndexOf(ratingOrder, s?.ScanAppTimeRating   ?? "None"),
+            Array.IndexOf(ratingOrder, s?.ScanFocusModeRating ?? "None"),
+            ParseSet(s?.ScanBlockedGenres),  ParseSet(s?.ScanBlockedTags),
+            ParseSet(s?.ScanAppTimeGenres),  ParseSet(s?.ScanAppTimeTags),
+            ParseSet(s?.ScanFocusModeGenres), ParseSet(s?.ScanFocusModeTags),
+            s?.ScanRatedDefault   ?? 0,
+            s?.ScanUnratedDefault ?? 0
+        );
+    }
+
+    private static void UpsertScanCache(AppDbContext db, string processName,
+                                        int profileId, int accessMode, bool focus)
+    {
+        var entry = db.ScanCache.FirstOrDefault(
+            c => c.ProcessName == processName && c.UserProfileId == profileId);
+        if (entry != null)
+        {
+            entry.AccessMode         = accessMode;
+            entry.AllowedInFocusMode = focus;
+        }
+        else
+        {
+            db.ScanCache.Add(new ScanCacheEntry
+            {
+                ProcessName        = processName,
+                UserProfileId      = profileId,
+                AccessMode         = accessMode,
+                AllowedInFocusMode = focus,
+            });
+        }
+    }
+
+    private static void UpdateModifiedFlags(AppDbContext db, int profileId)
+    {
+        var rules = db.AppRules.Where(r => r.UserProfileId == profileId).ToList();
+        var cache = db.ScanCache.Where(c => c.UserProfileId == profileId)
+                                .ToDictionary(c => c.ProcessName, c => c,
+                                              StringComparer.OrdinalIgnoreCase);
+        bool any = false;
+        foreach (var rule in rules)
+        {
+            if (!cache.TryGetValue(rule.ProcessName, out var cached)) continue;
+            bool modified = rule.AccessMode         != cached.AccessMode ||
+                            rule.AllowedInFocusMode != cached.AllowedInFocusMode;
+            if (rule.IsManuallyModified != modified)
+            {
+                rule.IsManuallyModified = modified;
+                any = true;
+            }
+        }
+        if (any) db.SaveChanges();
+    }
+
+    private static void EnsureScanCache(int profileId)
+    {
+        var (ratingOrder, blockIdx, appTimeIdx, focusIdx,
+             blockedGenres, blockedTags, appTimeGenres, appTimeTags,
+             focusModeGenres, focusModeTags, ratedDefault, unratedDefault) = LoadScanSettings();
+
+        using var db = new AppDbContext();
+        var rules = db.AppRules.Where(r => r.UserProfileId == profileId).ToList();
+        var cachedNames = db.ScanCache.Where(c => c.UserProfileId == profileId)
+                                      .Select(c => c.ProcessName)
+                                      .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        bool any = false;
+        foreach (var rule in rules.Where(r => !cachedNames.Contains(r.ProcessName)))
+        {
+            bool block   = MatchesRule(ratingOrder, rule.EsrbRating, rule.Genres, rule.Tags,
+                                       blockIdx, false, blockedGenres, blockedTags);
+            bool appTime = !block && MatchesRule(ratingOrder, rule.EsrbRating, rule.Genres, rule.Tags,
+                                                 appTimeIdx, false, appTimeGenres, appTimeTags);
+            bool focus   = MatchesRule(ratingOrder, rule.EsrbRating, rule.Genres, rule.Tags,
+                                       focusIdx, true, focusModeGenres, focusModeTags);
+            int scanDefault = !string.IsNullOrEmpty(rule.EsrbRating) ? ratedDefault : unratedDefault;
+            int access      = block   ? (int)AppAccessMode.Blocked
+                            : appTime ? (int)AppAccessMode.ScreenTimeOnly
+                            :           scanDefault;
+            UpsertScanCache(db, rule.ProcessName, profileId, access, focus);
+            any = true;
+        }
+        if (any) db.SaveChanges();
     }
 }

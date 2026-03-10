@@ -41,6 +41,10 @@ public class ProcessMonitor
     // Warning state: maps process name → when the 5-min warning was issued
     private readonly Dictionary<string, DateTime> _warningIssuedAt = new(StringComparer.OrdinalIgnoreCase);
 
+    // Dedup log: maps process name → last time an AppBlocked entry was written
+    private readonly Dictionary<string, DateTime> _lastLoggedAt = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly TimeSpan LogCooldown = TimeSpan.FromMinutes(1);
+
     // Processes running before the limit was hit (eligible for grace period)
     private readonly HashSet<string> _ranBeforeStop = new(StringComparer.OrdinalIgnoreCase);
 
@@ -79,7 +83,8 @@ public class ProcessMonitor
                 foreach (var r in rules)
                 {
                     var name = StripExe(r.ProcessName);
-                    if (r.AccessMode == (int)AppAccessMode.Blocked)
+                    if (r.AccessMode == (int)AppAccessMode.Blocked ||
+                        r.AccessMode == (int)AppAccessMode.NeedsReview)
                         _blockedProcesses.Add(name);
                     else if (r.AccessMode == (int)AppAccessMode.ScreenTimeOnly)
                         _screenTimeOnlyProcesses.Add(name);
@@ -123,6 +128,7 @@ public class ProcessMonitor
                 _appTimePendingSeconds = 0;
                 _warningIssuedAt.Clear();
                 _ranBeforeStop.Clear();
+                _lastLoggedAt.Clear();
                 LoadRulesForProfile(_activeProfileId);
             }
         }
@@ -140,6 +146,7 @@ public class ProcessMonitor
             _appTimePendingSeconds = 0;
             _warningIssuedAt.Clear();
             _ranBeforeStop.Clear();
+            _lastLoggedAt.Clear();
             try
             {
                 using var db = new AppDbContext();
@@ -169,7 +176,7 @@ public class ProcessMonitor
                 limitMinutes     = (todaySchedule?.IsEnabled == true) ? todaySchedule.DailyLimitMinutes : 0;
                 usedMinutes      = profile.TodayAppTimeUsedMinutes;
                 bonusMinutes     = profile.TodayAppTimeBonusMinutes;
-                focusModeEnabled = profile.FocusModeEnabled;
+                focusModeEnabled = settings?.FocusModeEnabled ?? true;
             }
             if (settings?.DebugAppTimeOverride == true && limitMinutes != 0)
             {
@@ -207,8 +214,8 @@ public class ProcessMonitor
                     if (blocked.Contains(pName))
                     {
                         process.Kill(entireProcessTree: true);
-                        _logger.Log(ActivityType.AppBlocked, pName);
-                        _notifier.SendAppBlockNotification(pName, "App is on the blocked list.");
+                        if (TryLogBlocked(pName, now))
+                            _notifier.SendAppBlockNotification(pName, "App is on the blocked list.");
                     }
                     else if (screenTimeOnly.Contains(pName))
                     {
@@ -224,8 +231,8 @@ public class ProcessMonitor
                                 if ((now - warnedAt).TotalMinutes >= gracePeriodMinutes)
                                 {
                                     process.Kill(entireProcessTree: true);
-                                    _logger.Log(ActivityType.AppBlocked, pName);
-                                    _notifier.SendAppBlockNotification(pName, "App time limit reached — grace period expired.");
+                                    if (TryLogBlocked(pName, now))
+                                        _notifier.SendAppBlockNotification(pName, "App time limit reached — grace period expired.");
                                     _warningIssuedAt.Remove(pName);
                                     _ranBeforeStop.Remove(pName);
                                 }
@@ -238,8 +245,8 @@ public class ProcessMonitor
                             else
                             {
                                 process.Kill(entireProcessTree: true);
-                                _logger.Log(ActivityType.AppBlocked, pName);
-                                _notifier.SendAppBlockNotification(pName, "App time limit already reached.");
+                                if (TryLogBlocked(pName, now))
+                                    _notifier.SendAppBlockNotification(pName, "App time limit already reached.");
                             }
                         }
                         else
@@ -251,8 +258,8 @@ public class ProcessMonitor
                     else if (focusModeActive && focusRestricted.Contains(pName))
                     {
                         process.Kill(entireProcessTree: true);
-                        _logger.Log(ActivityType.AppBlocked, pName);
-                        _notifier.SendAppBlockNotification(pName, "Focus mode is active.");
+                        if (TryLogBlocked(pName, now))
+                            _notifier.SendAppBlockNotification(pName, "Focus mode is active.");
                     }
                 }
                 catch { }
@@ -331,6 +338,16 @@ public class ProcessMonitor
         catch { }
 
         _logger.Log(ActivityType.AppBlocked, $"Warning sent for '{processName}' ({timeStr} grace)");
+    }
+
+    // Returns true and records the timestamp if this process hasn't been logged within the cooldown window.
+    private bool TryLogBlocked(string processName, DateTime now)
+    {
+        if (_lastLoggedAt.TryGetValue(processName, out var last) && (now - last) < LogCooldown)
+            return false;
+        _lastLoggedAt[processName] = now;
+        _logger.Log(ActivityType.AppBlocked, processName);
+        return true;
     }
 
     private static string StripExe(string name) =>

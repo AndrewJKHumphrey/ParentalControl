@@ -13,6 +13,7 @@ public class AppSettings
     public bool ThemeIsDark { get; set; } = true;
     public bool ScreenTimeEnabled { get; set; } = true;
     public bool AppControlEnabled { get; set; } = true;
+    public bool FocusModeEnabled  { get; set; } = true;
     public int TodayBonusMinutes { get; set; } = 0;
     public bool DebugStopServiceAfterLock { get; set; } = false;
     public bool DebugAppTimeOverride { get; set; } = false;
@@ -53,6 +54,16 @@ public class AppSettings
     public string ScanFocusModeGenres  { get; set; } = string.Empty;
     public string ScanFocusModeTags    { get; set; } = string.Empty;
 
+    // Custom theme colors (hex strings, used when AppTheme == "Custom")
+    public string CustomPrimaryColor   { get; set; } = "#1E1E2E";
+    public string CustomSecondaryColor { get; set; } = "#585B70";
+    public string CustomTertiaryColor  { get; set; } = "#CDD6F4";
+
     // UI scale / target resolution
     public string UiScale { get; set; } = "1080p"; // "1080p","1440p","2160p"
+
+    // Default access for games not matched by any scan rule
+    // 0 = Unrestricted, 1 = ScreenTimeOnly, 2 = Blocked
+    public int ScanRatedDefault   { get; set; } = 0;
+    public int ScanUnratedDefault { get; set; } = 0;
 }

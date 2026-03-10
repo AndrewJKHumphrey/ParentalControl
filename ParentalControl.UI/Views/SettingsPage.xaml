@@ -208,12 +208,12 @@
 
                     <TextBlock Text="Theme:" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,8"/>
                     <ComboBox x:Name="ThemeBox" Width="200" Height="32" HorizontalAlignment="Left"
-                              SelectionChanged="ThemeBox_SelectionChanged" Margin="0,0,0,16">
+                              SelectionChanged="ThemeBox_SelectionChanged" Margin="0,0,0,8">
 
+                        <!-- DEBUG only — hidden in Release builds via code-behind -->
+                        <ComboBoxItem x:Name="CustomThemeItem" Content="Custom" Visibility="Collapsed"/>
                         <!-- ── Single-colour ─────────────────────────────────────────── -->
                         <ComboBoxItem Content="Default"/>
-                        <!-- DEBUG only — hidden in Release builds via code-behind -->
-                        <ComboBoxItem x:Name="DebugThemeItem" Content="Dev Mode" Visibility="Collapsed"/>
                         <!-- Red → Rose spectrum -->
                         <ComboBoxItem Content="Red"/>
                         <ComboBoxItem Content="Scarlet"/>
@@ -239,9 +239,14 @@
                         <ComboBoxItem Content="Gothic"/>
                         <ComboBoxItem Content="Midnight Rose"/>
                         <ComboBoxItem Content="Rosewood"/>
-                        <!-- Red-Orange bg -->
+                        <ComboBoxItem Content="Blood Moon"/>
+                        <ComboBoxItem Content="Garnet"/>
+                        <ComboBoxItem Content="Crimson"/>
+                        <ComboBoxItem Content="Dusk"/>
+                        <!-- Red-Orange / Scorched bg -->
                         <ComboBoxItem Content="Autumn"/>
                         <ComboBoxItem Content="Wildfire"/>
+                        <ComboBoxItem Content="Ember"/>
                         <!-- Orange / Brown bg -->
                         <ComboBoxItem Content="Copper Patina"/>
                         <ComboBoxItem Content="Desert"/>
@@ -250,21 +255,36 @@
                         <ComboBoxItem Content="Steampunk"/>
                         <ComboBoxItem Content="Parchment"/>
                         <ComboBoxItem Content="Antique"/>
+                        <ComboBoxItem Content="Cinder"/>
+                        <ComboBoxItem Content="Harvest"/>
                         <!-- Amber / Yellow-Orange bg -->
                         <ComboBoxItem Content="CRT Amber"/>
                         <ComboBoxItem Content="Solstice"/>
                         <ComboBoxItem Content="Gruvbox"/>
+                        <!-- Yellow bg -->
+                        <ComboBoxItem Content="Canary"/>
+                        <ComboBoxItem Content="Sunflower"/>
                         <!-- Yellow-Green bg -->
                         <ComboBoxItem Content="Cherry Grove"/>
+                        <!-- Chartreuse bg -->
+                        <ComboBoxItem Content="Acid"/>
+                        <ComboBoxItem Content="Neon Moss"/>
+                        <!-- Lime bg -->
+                        <ComboBoxItem Content="Slime"/>
+                        <ComboBoxItem Content="Kiwi"/>
                         <!-- Green bg -->
                         <ComboBoxItem Content="Forest Fire"/>
                         <ComboBoxItem Content="Rainforest"/>
                         <ComboBoxItem Content="CRT Green"/>
                         <ComboBoxItem Content="Lagoon"/>
                         <ComboBoxItem Content="Spring"/>
+                        <ComboBoxItem Content="Fern"/>
+                        <ComboBoxItem Content="Canopy"/>
                         <!-- Teal / Cyan bg -->
                         <ComboBoxItem Content="Coral Reef"/>
                         <ComboBoxItem Content="Aurora"/>
+                        <ComboBoxItem Content="Seafoam"/>
+                        <ComboBoxItem Content="Abyss"/>
                         <!-- Blue bg -->
                         <ComboBoxItem Content="Deep Ocean"/>
                         <ComboBoxItem Content="Arctic Night"/>
@@ -275,15 +295,31 @@
                         <ComboBoxItem Content="Midnight Gold"/>
                         <ComboBoxItem Content="Solarized"/>
                         <ComboBoxItem Content="Nord"/>
+                        <ComboBoxItem Content="Neptune"/>
+                        <ComboBoxItem Content="Frostbite"/>
                         <!-- Blue-Purple bg -->
                         <ComboBoxItem Content="Tokyo Night"/>
                         <ComboBoxItem Content="Eclipse"/>
                         <ComboBoxItem Content="Dracula"/>
                         <ComboBoxItem Content="Twilight"/>
                         <ComboBoxItem Content="Synthwave"/>
-                        <!-- Magenta / Dark Purple bg -->
+                        <ComboBoxItem Content="Slate"/>
+                        <!-- Indigo bg -->
+                        <ComboBoxItem Content="Smoke"/>
+                        <ComboBoxItem Content="Phantom"/>
+                        <!-- Violet bg -->
+                        <ComboBoxItem Content="Iris"/>
+                        <ComboBoxItem Content="Plum"/>
+                        <ComboBoxItem Content="Ultraviolet"/>
+                        <!-- Purple bg -->
+                        <ComboBoxItem Content="Amethyst"/>
+                        <ComboBoxItem Content="Velvet"/>
+                        <ComboBoxItem Content="Reverie"/>
+                        <!-- Magenta bg -->
                         <ComboBoxItem Content="Retrowave"/>
                         <ComboBoxItem Content="Galaxy"/>
+                        <ComboBoxItem Content="Orchid"/>
+                        <ComboBoxItem Content="Fuchsia"/>
                         <!-- Neutral / Black bg -->
                         <ComboBoxItem Content="Noir"/>
                         <ComboBoxItem Content="Cyberpunk"/>
@@ -294,52 +330,145 @@
                         <!-- Red bg -->
                         <ComboBoxItem Content="Bloodrite"/>
                         <ComboBoxItem Content="Inferno"/>
-                        <!-- Vermilion bg -->
+                        <ComboBoxItem Content="Sanguine"/>
+                        <ComboBoxItem Content="Tempest"/>
+                        <!-- Scarlet / Vermilion bg -->
                         <ComboBoxItem Content="Magma"/>
                         <!-- Orange bg -->
                         <ComboBoxItem Content="Citrus Storm"/>
-                        <!-- Amber bg -->
+                        <ComboBoxItem Content="Sundial"/>
+                        <ComboBoxItem Content="Bonfire"/>
+                        <!-- Amber / Yellow-Orange bg -->
                         <ComboBoxItem Content="Desert Bloom"/>
                         <ComboBoxItem Content="Amber Waves"/>
+                        <ComboBoxItem Content="Prairie"/>
+                        <ComboBoxItem Content="Gilded"/>
                         <!-- Yellow bg -->
                         <ComboBoxItem Content="Bumblebee"/>
-                        <!-- Olive bg -->
+                        <!-- Olive / Yellow-Green bg -->
                         <ComboBoxItem Content="Venom"/>
+                        <ComboBoxItem Content="Swamp Gas"/>
                         <!-- Lime bg -->
                         <ComboBoxItem Content="Acid Wash"/>
+                        <ComboBoxItem Content="Wildgrass"/>
                         <!-- Chartreuse bg -->
                         <ComboBoxItem Content="Toxic"/>
                         <!-- Green bg -->
                         <ComboBoxItem Content="Jungle Fire"/>
                         <ComboBoxItem Content="Emerald Crown"/>
                         <ComboBoxItem Content="Poison"/>
+                        <ComboBoxItem Content="Bayou"/>
                         <!-- Teal bg -->
                         <ComboBoxItem Content="Dragon Jade"/>
                         <ComboBoxItem Content="Mermaid"/>
                         <ComboBoxItem Content="Carnival"/>
+                        <ComboBoxItem Content="Gale"/>
                         <!-- Cyan bg -->
                         <ComboBoxItem Content="Arctic Aurora"/>
                         <ComboBoxItem Content="Frozen Fire"/>
+                        <ComboBoxItem Content="Prismatic"/>
                         <!-- Blue bg -->
                         <ComboBoxItem Content="Monarch"/>
                         <ComboBoxItem Content="Circuit"/>
                         <ComboBoxItem Content="Blueprint"/>
                         <ComboBoxItem Content="Sapphire Flame"/>
+                        <ComboBoxItem Content="Opal"/>
+                        <ComboBoxItem Content="Cascade"/>
+                        <ComboBoxItem Content="Horizon"/>
+                        <!-- Blue-Purple bg -->
+                        <ComboBoxItem Content="Deep Space"/>
+                        <ComboBoxItem Content="Cosmos"/>
                         <!-- Indigo bg -->
                         <ComboBoxItem Content="Starlight"/>
                         <ComboBoxItem Content="Nebula"/>
+                        <ComboBoxItem Content="Vortex"/>
+                        <ComboBoxItem Content="Phantasm"/>
+                        <!-- Violet bg -->
+                        <ComboBoxItem Content="Hex"/>
+                        <ComboBoxItem Content="Wraith"/>
+                        <ComboBoxItem Content="Seraph"/>
+                        <ComboBoxItem Content="Cryptic"/>
                         <!-- Purple bg -->
                         <ComboBoxItem Content="Twilight Fire"/>
                         <ComboBoxItem Content="Witchcraft"/>
-                        <!-- Violet bg -->
-                        <ComboBoxItem Content="Hex"/>
+                        <ComboBoxItem Content="Sorcerer"/>
+                        <ComboBoxItem Content="Specter"/>
+                        <ComboBoxItem Content="Coven"/>
                         <!-- Magenta bg -->
                         <ComboBoxItem Content="Flamingo"/>
                         <ComboBoxItem Content="Cherry Bomb"/>
+                        <ComboBoxItem Content="Vivid"/>
+                        <ComboBoxItem Content="Candy"/>
+                        <ComboBoxItem Content="Disco"/>
                         <!-- Dark bg -->
                         <ComboBoxItem Content="Neon Trinity"/>
+                        <ComboBoxItem Content="Midnight Purple"/>
+                        <ComboBoxItem Content="Void"/>
+                        <ComboBoxItem Content="Forge"/>
 
                     </ComboBox>
+
+                    <!-- Custom theme color pickers — visible only when Custom is selected -->
+                    <Border x:Name="CustomThemePanel" Visibility="Collapsed"
+                            Background="{DynamicResource SidebarBg}" CornerRadius="6"
+                            Padding="12,10" Margin="0,8,0,12">
+                        <StackPanel>
+                            <TextBlock Text="Custom theme colors" Foreground="{DynamicResource TextSecondary}"
+                                       FontSize="12" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                            <!-- Primary: Background -->
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="34"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="Background" Foreground="{DynamicResource TextSecondary}"
+                                           VerticalAlignment="Center" FontSize="12"/>
+                                <Border Grid.Column="1" x:Name="PrimaryPreview" Width="26" Height="26"
+                                        CornerRadius="4" Background="#1E1E2E" Margin="0,0,8,0"/>
+                                <TextBox Grid.Column="2" x:Name="PrimaryColorBox" Height="28" Text="#1E1E2E"
+                                         Background="{DynamicResource CardHover}" Foreground="{DynamicResource TextPrimary}"
+                                         BorderBrush="{DynamicResource BorderColor}" BorderThickness="1" Padding="6,0"
+                                         VerticalContentAlignment="Center" FontFamily="Consolas" FontSize="13"
+                                         LostFocus="CustomColor_LostFocus" TextChanged="CustomColor_TextChanged"/>
+                            </Grid>
+                            <!-- Secondary: Accent -->
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="34"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="Accent" Foreground="{DynamicResource TextSecondary}"
+                                           VerticalAlignment="Center" FontSize="12"/>
+                                <Border Grid.Column="1" x:Name="SecondaryPreview" Width="26" Height="26"
+                                        CornerRadius="4" Background="#585B70" Margin="0,0,8,0"/>
+                                <TextBox Grid.Column="2" x:Name="SecondaryColorBox" Height="28" Text="#585B70"
+                                         Background="{DynamicResource CardHover}" Foreground="{DynamicResource TextPrimary}"
+                                         BorderBrush="{DynamicResource BorderColor}" BorderThickness="1" Padding="6,0"
+                                         VerticalContentAlignment="Center" FontFamily="Consolas" FontSize="13"
+                                         LostFocus="CustomColor_LostFocus" TextChanged="CustomColor_TextChanged"/>
+                            </Grid>
+                            <!-- Tertiary: Text -->
+                            <Grid Margin="0,0,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="34"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="Text" Foreground="{DynamicResource TextSecondary}"
+                                           VerticalAlignment="Center" FontSize="12"/>
+                                <Border Grid.Column="1" x:Name="TertiaryPreview" Width="26" Height="26"
+                                        CornerRadius="4" Background="#CDD6F4" Margin="0,0,8,0"/>
+                                <TextBox Grid.Column="2" x:Name="TertiaryColorBox" Height="28" Text="#CDD6F4"
+                                         Background="{DynamicResource CardHover}" Foreground="{DynamicResource TextPrimary}"
+                                         BorderBrush="{DynamicResource BorderColor}" BorderThickness="1" Padding="6,0"
+                                         VerticalContentAlignment="Center" FontFamily="Consolas" FontSize="13"
+                                         LostFocus="CustomColor_LostFocus" TextChanged="CustomColor_TextChanged"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,16">
                         <TextBlock Text="Light Mode" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13"/>
                         <CheckBox x:Name="DarkModeToggle" Style="{StaticResource ToggleSwitch}"
@@ -399,7 +528,7 @@
                     </Grid>
                     <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextSecondary}" FontSize="12"
                                Margin="0,6,0,0"
-                               Text="Used to look up ESRB ratings during game scans. Mature and Adults Only games are automatically blocked when added. Click Edit to change the key."/>
+                               Text="This key is used to look up game info such as ESRB ratings or genre tags.&#13;It should not need to be changed, but in the event it needs to be updated an edit function is provided."/>
                 </StackPanel>
             </Border>
 
@@ -411,6 +540,45 @@
                     <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextSecondary}" FontSize="12"
                                Margin="0,0,0,16"
                                Text="Configure how games are automatically categorized when scanned. Expand a section to filter by genre or content tag."/>
+
+                    <!-- ── Defaults ── -->
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Default for rated games" Foreground="{DynamicResource TextPrimary}" FontWeight="Medium"/>
+                            <TextBlock Text="Fallback access for games with an ESRB rating that don't match a blocking or app-time rule."
+                                       Foreground="{DynamicResource TextSecondary}" FontSize="12" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <ComboBox x:Name="ScanRatedDefaultBox" Grid.Column="1" Width="130" VerticalAlignment="Center"
+                                  SelectionChanged="ScanDefault_Changed">
+                            <ComboBoxItem Content="Unrestricted"/>
+                            <ComboBoxItem Content="App Time"/>
+                            <ComboBoxItem Content="Blocked"/>
+                            <ComboBoxItem Content="Review"/>
+                        </ComboBox>
+                    </Grid>
+                    <Grid Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Default for unrated games" Foreground="{DynamicResource TextPrimary}" FontWeight="Medium"/>
+                            <TextBlock Text="Fallback access for games with no ESRB rating from RAWG."
+                                       Foreground="{DynamicResource TextSecondary}" FontSize="12" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <ComboBox x:Name="ScanUnratedDefaultBox" Grid.Column="1" Width="130" VerticalAlignment="Center"
+                                  SelectionChanged="ScanDefault_Changed">
+                            <ComboBoxItem Content="Unrestricted"/>
+                            <ComboBoxItem Content="App Time"/>
+                            <ComboBoxItem Content="Blocked"/>
+                            <ComboBoxItem Content="Review"/>
+                        </ComboBox>
+                    </Grid>
+                    <Separator Margin="0,0,0,16" Background="{DynamicResource BorderColor}"/>
 
                     <!-- ── Blocking ── -->
                     <Grid Margin="0,0,0,8">
@@ -568,8 +736,39 @@
                     <TextBlock Text="Reset" Foreground="{DynamicResource TextPrimary}"
                                FontSize="16" FontWeight="SemiBold" Margin="0,0,0,4"/>
                     <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextSecondary}" FontSize="12"
-                               Margin="0,0,0,20"
+                               Margin="0,0,0,16"
                                Text="Use these options to restore parts of the app to their default state. Each action asks for confirmation before proceeding. Passwords are never reset to ensure access remains."/>
+
+                    <!-- Reset Today — profile selector -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12" VerticalAlignment="Center">
+                        <TextBlock Text="Profile:" Foreground="{DynamicResource TextSecondary}"
+                                   VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13"/>
+                        <ComboBox x:Name="ResetProfileBox" Width="180" VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- Reset Screen Time for Today -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <Button Content="Reset Screen Time" Width="160" Height="36"
+                                Background="#89B4FA" Foreground="#1E1E2E" FontWeight="Bold"
+                                BorderThickness="0" Cursor="Hand"
+                                Click="ResetScreenTimeToday_Click"/>
+                        <TextBlock TextWrapping="Wrap" VerticalAlignment="Center" Margin="12,0,0,0"
+                                   Foreground="{DynamicResource TextSecondary}" FontSize="12"
+                                   Text="Clear today's screen time usage for the selected profile"/>
+                    </StackPanel>
+
+                    <!-- Reset App Time for Today -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                        <Button Content="Reset App Time" Width="160" Height="36"
+                                Background="#89B4FA" Foreground="#1E1E2E" FontWeight="Bold"
+                                BorderThickness="0" Cursor="Hand"
+                                Click="ResetAppTimeToday_Click"/>
+                        <TextBlock TextWrapping="Wrap" VerticalAlignment="Center" Margin="12,0,0,0"
+                                   Foreground="{DynamicResource TextSecondary}" FontSize="12"
+                                   Text="Clear today's app time usage for the selected profile"/>
+                    </StackPanel>
+
+                    <Separator Margin="0,0,0,16" Background="{DynamicResource BorderColor}"/>
 
                     <!-- Reset Settings -->
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,12">

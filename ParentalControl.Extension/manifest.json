@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "ParentGuard Web Filter",
+  "version": "1.0.0",
+  "description": "Enforces parental web filter rules set by ParentGuard.",
+
+  "permissions": [
+    "declarativeNetRequest",
+    "declarativeNetRequestFeedback",
+    "declarativeNetRequestWithHostAccess",
+    "nativeMessaging",
+    "storage"
+  ],
+  "host_permissions": ["<all_urls>"],
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "declarative_net_request": {
+    "rule_resources": []
+  },
+
+  "web_accessible_resources": [
+    {
+      "resources": ["blocked.html", "blocked.css"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+
+  "icons": {
+    "16":  "icons/icon16.png",
+    "48":  "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "parentguard@parentalcontrol",
+      "strict_min_version": "109.0"
+    }
+  }
+}

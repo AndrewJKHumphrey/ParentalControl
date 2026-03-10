@@ -13,7 +13,8 @@ namespace ParentalControl.UI;
 
 public partial class MainWindow : Window
 {
-    private const string ServiceName = "ParentalControlService";
+    private const string ServiceName        = "ParentalControlService";
+    private const string WatchdogServiceName = "ParentalControlWatchdog";
     private readonly IpcClient _ipc = new();
 
     // Base design dimensions at 1080p (1.0 scale)
@@ -44,6 +45,7 @@ public partial class MainWindow : Window
     {
         double scale = label switch
         {
+            "1600" => 1.5,
             "1440p" => 1.333,
             "2160p" => 2.0,
             _       => 1.0,
@@ -69,6 +71,7 @@ public partial class MainWindow : Window
             "FocusMode"   => new FocusModePage(),
             "Profiles"    => new ProfilesPage(),
             "ActivityLog" => new ActivityLogPage(),
+            "WebFilter"   => new WebFilterPage(),
             "Settings"    => new SettingsPage(),
             _ => null
         };
@@ -108,16 +111,47 @@ public partial class MainWindow : Window
 
             await Task.Run(() =>
             {
-                using var sc = new ServiceController(ServiceName);
                 if (wasRunning)
                 {
+                    // Stop watchdog first so it doesn't restart the main service
+                    try
+                    {
+                        using var wdog = new ServiceController(WatchdogServiceName);
+                        if (wdog.Status == ServiceControllerStatus.Running ||
+                            wdog.Status == ServiceControllerStatus.StartPending)
+                        {
+                            wdog.Stop();
+                            wdog.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(15));
+                        }
+                    }
+                    catch { /* Watchdog not installed — continue to stop main service */ }
+
+                    using var sc = new ServiceController(ServiceName);
                     sc.Stop();
                     sc.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(15));
                 }
                 else
                 {
-                    sc.Start();
-                    sc.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(15));
+                    // Start watchdog first — it will start the main service
+                    try
+                    {
+                        using var wdog = new ServiceController(WatchdogServiceName);
+                        if (wdog.Status != ServiceControllerStatus.Running &&
+                            wdog.Status != ServiceControllerStatus.StartPending)
+                        {
+                            wdog.Start();
+                            wdog.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(15));
+                        }
+                    }
+                    catch { /* Watchdog not installed — start main service directly */ }
+
+                    using var sc = new ServiceController(ServiceName);
+                    if (sc.Status != ServiceControllerStatus.Running &&
+                        sc.Status != ServiceControllerStatus.StartPending)
+                    {
+                        sc.Start();
+                        sc.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(15));
+                    }
                 }
             });
 

@@ -5,6 +5,7 @@ public enum AppAccessMode
     Unrestricted   = 0,
     ScreenTimeOnly = 1,
     Blocked        = 2,
+    NeedsReview    = 3,
 }
 
 public class AppRule

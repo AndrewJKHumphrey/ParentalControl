@@ -53,7 +53,19 @@ public class Worker : BackgroundService
 
                 if (_screenTimeEnforcer.TriggeredDebugStop)
                 {
-                    _log.LogInformation("Debug stop flag triggered — stopping service.");
+                    _log.LogInformation("Debug stop flag triggered — stopping watchdog then service.");
+                    try
+                    {
+                        using var wdog = new System.ServiceProcess.ServiceController("ParentalControlWatchdog");
+                        if (wdog.Status == System.ServiceProcess.ServiceControllerStatus.Running)
+                        {
+                            wdog.Stop();
+                            wdog.WaitForStatus(System.ServiceProcess.ServiceControllerStatus.Stopped,
+                                               TimeSpan.FromSeconds(10));
+                        }
+                    }
+                    catch { /* Watchdog not installed or already stopped */ }
+
                     _lifetime.StopApplication();
                     return;
                 }
@@ -85,11 +97,11 @@ public class Worker : BackgroundService
             db.Database.EnsureCreated();
 
             // Add columns introduced after initial release (safe on existing DBs)
-            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ChildAccountHasPassword INTEGER NOT NULL DEFAULT 0"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN TimeFormat12Hour INTEGER NOT NULL DEFAULT 0"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN AppTheme TEXT NOT NULL DEFAULT 'Default'"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ScreenTimeEnabled INTEGER NOT NULL DEFAULT 1"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN AppControlEnabled INTEGER NOT NULL DEFAULT 1"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN FocusModeEnabled  INTEGER NOT NULL DEFAULT 1"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ThemeIsDark INTEGER NOT NULL DEFAULT 1"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN TodayBonusMinutes INTEGER NOT NULL DEFAULT 0"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN DebugStopServiceAfterLock INTEGER NOT NULL DEFAULT 0"); } catch { }
@@ -117,6 +129,8 @@ public class Worker : BackgroundService
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ScanBlockedGenres TEXT NOT NULL DEFAULT ''"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ScanBlockedTags   TEXT NOT NULL DEFAULT ''"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN UiScale           TEXT NOT NULL DEFAULT '1080p'"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ScanRatedDefault   INTEGER NOT NULL DEFAULT 0"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ScanUnratedDefault INTEGER NOT NULL DEFAULT 0"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ScanAppTimeRating   TEXT NOT NULL DEFAULT 'None'"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ScanAppTimeGenres   TEXT NOT NULL DEFAULT ''"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ScanAppTimeTags     TEXT NOT NULL DEFAULT ''"); } catch { }
@@ -135,7 +149,8 @@ public class Worker : BackgroundService
             try { db.Database.ExecuteSqlRaw("ALTER TABLE AppRules ADD COLUMN IsManuallyModified INTEGER NOT NULL DEFAULT 0"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE ScreenTimeLimits ADD COLUMN UserProfileId INTEGER NOT NULL DEFAULT 1"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE FocusSchedules ADD COLUMN UserProfileId INTEGER NOT NULL DEFAULT 1"); } catch { }
-            try { db.Database.ExecuteSqlRaw("ALTER TABLE UserProfiles ADD COLUMN ChildAccountHasPassword INTEGER NOT NULL DEFAULT 0"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE UserProfiles ADD COLUMN AlwaysRelock INTEGER NOT NULL DEFAULT 0"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE UserProfiles ADD COLUMN IsScreenTimeLocked INTEGER NOT NULL DEFAULT 0"); } catch { }
 
             // FocusSchedules table
             try
@@ -182,6 +197,33 @@ public class Worker : BackgroundService
                         TodayAppTimeBonusMinutes INTEGER NOT NULL DEFAULT 0,
                         AppTimeLimitMinutes      INTEGER NOT NULL DEFAULT 60,
                         FocusModeEnabled         INTEGER NOT NULL DEFAULT 0
+                    )");
+            }
+            catch { }
+
+            // ScanCache table
+            try
+            {
+                db.Database.ExecuteSqlRaw(@"
+                    CREATE TABLE IF NOT EXISTS ScanCache (
+                        Id                 INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                        ProcessName        TEXT    NOT NULL DEFAULT '',
+                        UserProfileId      INTEGER NOT NULL DEFAULT 1,
+                        AccessMode         INTEGER NOT NULL DEFAULT 0,
+                        AllowedInFocusMode INTEGER NOT NULL DEFAULT 0
+                    )");
+            }
+            catch { }
+
+            // WebsiteRules table
+            try
+            {
+                db.Database.ExecuteSqlRaw(@"
+                    CREATE TABLE IF NOT EXISTS WebsiteRules (
+                        Id            INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                        Pattern       TEXT    NOT NULL DEFAULT '',
+                        IsBlocked     INTEGER NOT NULL DEFAULT 1,
+                        UserProfileId INTEGER NOT NULL DEFAULT 1
                     )");
             }
             catch { }

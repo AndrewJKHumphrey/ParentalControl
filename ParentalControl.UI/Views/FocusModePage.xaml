@@ -27,14 +27,6 @@
                         <ComboBoxItem Content="Weekends"/>
                         <ComboBoxItem Content="Everyday"/>
                     </ComboBox>
-                    <TextBlock Text="Focus Mode Enabled:" VerticalAlignment="Center"
-                               Foreground="{DynamicResource TextPrimary}" Margin="24,0,12,0"/>
-                    <TextBlock Text="Off" VerticalAlignment="Center"
-                               Foreground="{DynamicResource TextSecondary}" Margin="0,0,8,0" FontSize="13"/>
-                    <CheckBox x:Name="FocusModeToggle" Style="{StaticResource ToggleSwitch}"
-                              Checked="FocusModeToggle_Changed" Unchecked="FocusModeToggle_Changed"/>
-                    <TextBlock Text="On" VerticalAlignment="Center"
-                               Foreground="{DynamicResource TextSecondary}" Margin="8,0,0,0" FontSize="13"/>
                 </StackPanel>
             </Border>
 

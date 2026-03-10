@@ -14,7 +14,14 @@ public class UserProfile
     public int      TodayAppTimeBonusMinutes { get; set; } = 0;
     public int      AppTimeLimitMinutes      { get; set; } = 60;
     public bool     FocusModeEnabled         { get; set; } = false;
-    public bool     ChildAccountHasPassword  { get; set; } = false;
+    /// <summary>When true, re-locks on login even if the account has a password.</summary>
+    public bool     AlwaysRelock             { get; set; } = false;
+    /// <summary>Persisted across service restarts to prevent double-locking on the same day.</summary>
+    public bool     IsScreenTimeLocked       { get; set; } = false;
+
+    /// <summary>Runtime-only: true when the Windows account requires a password to log in.</summary>
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public bool     AccountIsPasswordProtected { get; set; }
 
     public override string ToString() => DisplayName;
 }

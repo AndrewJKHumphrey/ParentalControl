@@ -25,7 +25,7 @@ public partial class FocusModePage : Page
     private List<FocusScheduleRow> _rows = new();
     private bool _use12h = false;
     private int _selectedProfileId = 1;
-    private bool _profileLoaded = false;
+
 
     public FocusModePage()
     {
@@ -95,32 +95,11 @@ public partial class FocusModePage : Page
             DayRangeBox.SelectedIndex = 0;
             ScheduleGrid.ItemsSource = _rows;
 
-            // Load FocusModeEnabled toggle for the selected profile
-            _profileLoaded = false;
-            var profile = db.UserProfiles.Find(_selectedProfileId);
-            FocusModeToggle.IsChecked = profile?.FocusModeEnabled ?? false;
-            _profileLoaded = true;
         }
         catch (Exception ex)
         {
             MessageBox.Show($"Failed to load: {ex.Message}");
         }
-    }
-
-    private void FocusModeToggle_Changed(object sender, RoutedEventArgs e)
-    {
-        if (!_profileLoaded) return;
-        try
-        {
-            using var db = new AppDbContext();
-            var profile = db.UserProfiles.Find(_selectedProfileId);
-            if (profile != null)
-            {
-                profile.FocusModeEnabled = FocusModeToggle.IsChecked == true;
-                db.SaveChanges();
-            }
-        }
-        catch { }
     }
 
     private string FormatTime(TimeOnly t)

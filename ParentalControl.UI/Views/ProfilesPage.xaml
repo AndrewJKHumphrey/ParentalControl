@@ -7,7 +7,7 @@
             <TextBlock Text="Profiles" FontSize="24" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"/>
             <TextBlock Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,24" TextWrapping="Wrap"
-                       Text="Profiles are automatically created for each Windows user account found on this machine when the service starts. Edit the Display Name, toggle Enabled, or mark whether the child's account is protected by a Windows password (when enabled, the service only locks once per violation since the password prevents re-entry without a parent)."/>
+                       Text="Profiles are automatically created for each Windows user account found on this machine when the service starts. Edit the Display Name or toggle Enabled to control which accounts are monitored. 'Con. violation checks' keeps re-locking the screen each time the user logs back in after a violation. Accounts without a Windows password always have this enabled and cannot disable it."/>
 
             <!-- Profiles list -->
             <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="20">
@@ -19,21 +19,26 @@
                           CanUserAddRows="False" CanUserDeleteRows="False"
                           CanUserSortColumns="False">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Display Name" Binding="{Binding DisplayName}" Width="200"/>
+                        <DataGridTextColumn Header="Display Name" Binding="{Binding DisplayName}" Width="Auto"/>
                         <DataGridTextColumn Header="Windows Username" Binding="{Binding WindowsUsername}"
-                                            Width="200" IsReadOnly="True"/>
+                                            Width="Auto" IsReadOnly="True"/>
                         <DataGridCheckBoxColumn Header="Enabled" Binding="{Binding IsEnabled}" Width="80"/>
-                        <DataGridCheckBoxColumn Header="Has Password" Binding="{Binding ChildAccountHasPassword}"
-                                                Width="110"
-                                                ToolTipService.ToolTip="Enable if this child account has a Windows password — the service will only lock once per violation since the password prevents unsupervised re-entry."/>
-                        <DataGridTemplateColumn Header="Remove" Width="90">
+                        <DataGridTemplateColumn Header="Con. violation checks" Width="140">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <Button Content="Remove" Tag="{Binding Id}"
-                                            Background="#F38BA8" Foreground="#1E1E2E"
-                                            FontSize="11" FontWeight="Bold" BorderThickness="0"
-                                            Cursor="Hand" Padding="6,3"
-                                            Click="DeleteProfile_Click"/>
+                                    <CheckBox HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              IsChecked="{Binding AlwaysRelock, UpdateSourceTrigger=PropertyChanged}"
+                                              IsEnabled="{Binding AccountIsPasswordProtected}">
+                                        <CheckBox.Style>
+                                            <Style TargetType="CheckBox">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding AccountIsPasswordProtected}" Value="False">
+                                                        <Setter Property="IsChecked" Value="True"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </CheckBox.Style>
+                                    </CheckBox>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>

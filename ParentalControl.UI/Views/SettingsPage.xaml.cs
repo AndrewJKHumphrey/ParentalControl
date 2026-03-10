@@ -30,8 +30,8 @@ public partial class SettingsPage : Page
     {
         InitializeComponent();
 #if DEBUG
-        DebugSection.Visibility  = System.Windows.Visibility.Visible;
-        DebugThemeItem.Visibility = System.Windows.Visibility.Visible;
+        DebugSection.Visibility   = System.Windows.Visibility.Visible;
+        CustomThemeItem.Visibility = System.Windows.Visibility.Visible;
 #endif
         Loaded += (_, _) => LoadSettings();
     }
@@ -107,6 +107,10 @@ public partial class SettingsPage : Page
                 PopulateCheckBoxPanel(AppTimeGenresPanel, _allGenres, settings.ScanAppTimeGenres, ScanAppTimeTag_Changed);
                 PopulateCheckBoxPanel(AppTimeTagsPanel,   _allTags,   settings.ScanAppTimeTags,   ScanAppTimeTag_Changed);
 
+                // Scan defaults for unmatched games
+                ScanRatedDefaultBox.SelectedIndex   = Math.Clamp(settings.ScanRatedDefault,   0, 3);
+                ScanUnratedDefaultBox.SelectedIndex = Math.Clamp(settings.ScanUnratedDefault, 0, 3);
+
                 // Scan Focus Mode rules
                 var focusIdx = ratingItems.IndexOf(settings.ScanFocusModeRating);
                 ScanFocusModeRatingBox.SelectedIndex = focusIdx >= 0 ? focusIdx : 0;
@@ -131,7 +135,28 @@ public partial class SettingsPage : Page
                         break;
                     }
                 }
+
+                // Custom color pickers
+                PrimaryColorBox.Text   = settings.CustomPrimaryColor;
+                SecondaryColorBox.Text = settings.CustomSecondaryColor;
+                TertiaryColorBox.Text  = settings.CustomTertiaryColor;
+                UpdateColorPreview(PrimaryPreview,   settings.CustomPrimaryColor);
+                UpdateColorPreview(SecondaryPreview, settings.CustomSecondaryColor);
+                UpdateColorPreview(TertiaryPreview,  settings.CustomTertiaryColor);
+                CustomThemePanel.Visibility = themeName == "Custom"
+                    ? System.Windows.Visibility.Visible
+                    : System.Windows.Visibility.Collapsed;
             }
+        }
+        catch { }
+
+        // Populate profile selector for today-reset buttons
+        try
+        {
+            using var dbP = new AppDbContext();
+            var profiles = dbP.UserProfiles.OrderBy(p => p.Id).ToList();
+            ResetProfileBox.ItemsSource   = profiles;
+            ResetProfileBox.SelectedIndex = 0;
         }
         catch { }
 
@@ -169,6 +194,10 @@ public partial class SettingsPage : Page
     private void ThemeBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (!_loaded) return;
+        var isCustom = (ThemeBox.SelectedItem as ComboBoxItem)?.Content?.ToString() == "Custom";
+        CustomThemePanel.Visibility = isCustom
+            ? System.Windows.Visibility.Visible
+            : System.Windows.Visibility.Collapsed;
         ApplyAndSaveTheme();
     }
 
@@ -181,21 +210,67 @@ public partial class SettingsPage : Page
     private void ApplyAndSaveTheme()
     {
         if (ThemeBox.SelectedItem is not ComboBoxItem item) return;
-        var name = item.Content?.ToString() ?? "Default";
+        var name   = item.Content?.ToString() ?? "Default";
         bool isDark = DarkModeToggle.IsChecked == true;
+        var primary   = PrimaryColorBox.Text.Trim();
+        var secondary = SecondaryColorBox.Text.Trim();
+        var tertiary  = TertiaryColorBox.Text.Trim();
 
-        App.ApplyTheme(name, isDark);
+        App.ApplyTheme(name, isDark, primary, secondary, tertiary);
 
         try
         {
             using var db = new AppDbContext();
             var settings = db.Settings.FirstOrDefault();
             if (settings == null) return;
-            settings.AppTheme = name;
-            settings.ThemeIsDark = isDark;
+            settings.AppTheme            = name;
+            settings.ThemeIsDark         = isDark;
+            settings.CustomPrimaryColor   = primary;
+            settings.CustomSecondaryColor = secondary;
+            settings.CustomTertiaryColor  = tertiary;
             db.SaveChanges();
         }
         catch { }
+    }
+
+    private void CustomColor_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded) return;
+        // Normalise: ensure hex starts with #
+        if (sender is TextBox tb)
+        {
+            var text = tb.Text.Trim();
+            if (!text.StartsWith('#')) text = "#" + text;
+            tb.Text = text;
+        }
+        ApplyAndSaveTheme();
+    }
+
+    private void CustomColor_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (!_loaded) return;
+        if (sender is not TextBox tb) return;
+        // Update the colour preview rectangle live as the user types a valid hex
+        Border? preview = tb.Name switch
+        {
+            "PrimaryColorBox"   => PrimaryPreview,
+            "SecondaryColorBox" => SecondaryPreview,
+            "TertiaryColorBox"  => TertiaryPreview,
+            _ => null
+        };
+        if (preview != null)
+            UpdateColorPreview(preview, tb.Text.Trim());
+    }
+
+    private static void UpdateColorPreview(Border preview, string hex)
+    {
+        try
+        {
+            var color = (System.Windows.Media.Color)
+                System.Windows.Media.ColorConverter.ConvertFromString(hex);
+            preview.Background = new SolidColorBrush(color);
+        }
+        catch { /* leave previous color if hex is invalid */ }
     }
 
     private void ChangePassword_Click(object sender, RoutedEventArgs e)
@@ -395,6 +470,17 @@ public partial class SettingsPage : Page
         }
     }
 
+    private void ScanDefault_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_loaded) return;
+        using var db = new AppDbContext();
+        var settings = db.Settings.FirstOrDefault();
+        if (settings == null) return;
+        settings.ScanRatedDefault   = ScanRatedDefaultBox.SelectedIndex;
+        settings.ScanUnratedDefault = ScanUnratedDefaultBox.SelectedIndex;
+        db.SaveChanges();
+    }
+
     private void ScanBlockRating_Changed(object sender, SelectionChangedEventArgs e)
     {
         if (!_loaded) return;
@@ -465,6 +551,57 @@ public partial class SettingsPage : Page
     // -------------------------------------------------------------------------
     // Reset handlers
     // -------------------------------------------------------------------------
+
+    private void ResetScreenTimeToday_Click(object sender, RoutedEventArgs e)
+    {
+        if (ResetProfileBox.SelectedItem is not ParentalControl.Core.Models.UserProfile profile) return;
+
+        var result = MessageBox.Show(
+            $"Clear today's screen time usage for '{profile.DisplayName}'?\n\nThis will zero out time used and bonus time for today. Use 'Extend Time' on the Dashboard for day-to-day adjustments.",
+            "Reset Screen Time", MessageBoxButton.YesNo, MessageBoxImage.Question);
+        if (result != MessageBoxResult.Yes) return;
+
+        try
+        {
+            using var db = new AppDbContext();
+            var p = db.UserProfiles.Find(profile.Id);
+            if (p == null) return;
+            p.TodayUsedMinutes    = 0;
+            p.TodayBonusMinutes   = 0;
+            p.IsScreenTimeLocked  = false;
+            db.SaveChanges();
+            MessageBox.Show("Screen time reset.", "Done", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Reset failed: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void ResetAppTimeToday_Click(object sender, RoutedEventArgs e)
+    {
+        if (ResetProfileBox.SelectedItem is not ParentalControl.Core.Models.UserProfile profile) return;
+
+        var result = MessageBox.Show(
+            $"Clear today's app time usage for '{profile.DisplayName}'?\n\nThis will zero out app time used and bonus time for today. Use 'Extend Time' on the Dashboard for day-to-day adjustments.",
+            "Reset App Time", MessageBoxButton.YesNo, MessageBoxImage.Question);
+        if (result != MessageBoxResult.Yes) return;
+
+        try
+        {
+            using var db = new AppDbContext();
+            var p = db.UserProfiles.Find(profile.Id);
+            if (p == null) return;
+            p.TodayAppTimeUsedMinutes  = 0;
+            p.TodayAppTimeBonusMinutes = 0;
+            db.SaveChanges();
+            MessageBox.Show("App time reset.", "Done", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Reset failed: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
 
     private void ResetSettings_Click(object sender, RoutedEventArgs e)
     {

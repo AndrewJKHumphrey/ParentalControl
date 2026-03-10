@@ -12,6 +12,8 @@ public class AppDbContext : DbContext
     public DbSet<FocusSchedule> FocusSchedules { get; set; }
     public DbSet<UserProfile> UserProfiles { get; set; }
     public DbSet<AppTimeSchedule> AppTimeSchedules { get; set; }
+    public DbSet<ScanCacheEntry>  ScanCache         { get; set; }
+    public DbSet<WebsiteRule>     WebsiteRules      { get; set; }
 
     public static string DbPath
     {

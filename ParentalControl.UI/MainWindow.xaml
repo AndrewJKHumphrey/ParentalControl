@@ -29,6 +29,8 @@
                         Tag="Profiles" Click="NavButton_Click"/>
                 <Button Style="{StaticResource NavButton}" Content="  Activity Log"
                         Tag="ActivityLog" Click="NavButton_Click"/>
+                <Button Style="{StaticResource NavButton}" Content="  Web Filter"
+                        Tag="WebFilter" Click="NavButton_Click"/>
                 <Button Style="{StaticResource NavButton}" Content="  Settings"
                         Tag="Settings" Click="NavButton_Click"/>
                 

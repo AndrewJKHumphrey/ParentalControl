@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -10,6 +11,23 @@ namespace ParentalControl.UI.Views;
 
 public partial class ProfilesPage : Page
 {
+    [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    private static extern bool LogonUser(string u, string d, string p, int t, int prov, out IntPtr tok);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool CloseHandle(IntPtr h);
+
+    private static bool AccountHasPassword(string username)
+    {
+        if (string.IsNullOrWhiteSpace(username)) return false;
+        try
+        {
+            bool noPassword = LogonUser(username, Environment.MachineName, "", 3, 0, out var tok);
+            if (noPassword) CloseHandle(tok);
+            return !noPassword;
+        }
+        catch { return false; }
+    }
+
     private readonly IpcClient _ipc = new();
 
     public ProfilesPage()
@@ -23,46 +41,14 @@ public partial class ProfilesPage : Page
         try
         {
             using var db = new AppDbContext();
-            ProfilesGrid.ItemsSource = db.UserProfiles.OrderBy(p => p.Id).ToList();
+            var profiles = db.UserProfiles.OrderBy(p => p.Id).ToList();
+            foreach (var p in profiles)
+                p.AccountIsPasswordProtected = AccountHasPassword(p.WindowsUsername);
+            ProfilesGrid.ItemsSource = profiles;
         }
         catch (Exception ex)
         {
             MessageBox.Show($"Failed to load profiles: {ex.Message}");
-        }
-    }
-
-    private async void DeleteProfile_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is Button btn && btn.Tag is int id)
-        {
-            var result = MessageBox.Show(
-                "This will delete the profile and all its rules. Continue?",
-                "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Question);
-            if (result != MessageBoxResult.Yes) return;
-
-            try
-            {
-                using var db = new AppDbContext();
-                var rules     = db.AppRules.Where(r => r.UserProfileId == id).ToList();
-                db.AppRules.RemoveRange(rules);
-
-                var limits    = db.ScreenTimeLimits.Where(l => l.UserProfileId == id).ToList();
-                db.ScreenTimeLimits.RemoveRange(limits);
-
-                var schedules = db.FocusSchedules.Where(s => s.UserProfileId == id).ToList();
-                db.FocusSchedules.RemoveRange(schedules);
-
-                var profile = db.UserProfiles.Find(id);
-                if (profile != null) db.UserProfiles.Remove(profile);
-
-                db.SaveChanges();
-                await _ipc.SendAsync(IpcCommand.ReloadRules);
-                LoadData();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to delete profile: {ex.Message}");
-            }
         }
     }
 
@@ -77,9 +63,9 @@ public partial class ProfilesPage : Page
             {
                 var existing = db.UserProfiles.Find(p.Id);
                 if (existing == null) continue;
-                existing.DisplayName              = p.DisplayName;
-                existing.IsEnabled               = p.IsEnabled;
-                existing.ChildAccountHasPassword = p.ChildAccountHasPassword;
+                existing.DisplayName  = p.DisplayName;
+                existing.IsEnabled   = p.IsEnabled;
+                existing.AlwaysRelock = p.AlwaysRelock;
             }
             db.SaveChanges();
             await _ipc.SendAsync(IpcCommand.ReloadRules);

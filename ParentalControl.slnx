@@ -2,4 +2,6 @@
   <Project Path="ParentalControl.Core/ParentalControl.Core.csproj" />
   <Project Path="ParentalControl.Service/ParentalControl.Service.csproj" />
   <Project Path="ParentalControl.UI/ParentalControl.UI.csproj" />
+  <Project Path="ParentalControl.Watchdog/ParentalControl.Watchdog.csproj" />
+  <Project Path="ParentalControl.NativeHost/ParentalControl.NativeHost.csproj" />
 </Solution>
