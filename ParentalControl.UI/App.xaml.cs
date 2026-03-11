@@ -233,6 +233,10 @@ public partial class App : Application
             (string, string, string, string, string, string, string, string) dark,
             (string, string, string, string, string, string, string, string) light)>
         {
+            // Near-black bg + electric blue accent (saved from Custom theme)
+            ["Raven"]     = (("#0F0F0F", "#0D0D0D", "#2B2B2B", "#434343", "#1B1B1B", "#60AFFF", "#FFFFFF", "#ABABAB"),
+                              ("#F4F4F4", "#EEEEEE", "#FFFFFF", "#E4E4E4", "#F9F9F9", "#2A7FDD", "#0F0F0F", "#606060")),
+
             // Default — Catppuccin-inspired blue-purple base
             ["Default"]   = (("#1E1E2E", "#181825", "#313244", "#45475A", "#2A2A3E", "#585B70", "#CDD6F4", "#A6ADC8"),
                               ("#EFF1F5", "#E6E9EF", "#DCE0E8", "#BCC0CC", "#CCD0DA", "#9CA0B0", "#4C4F69", "#6C6F85")),
