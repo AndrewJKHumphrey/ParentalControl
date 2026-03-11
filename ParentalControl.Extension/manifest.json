@@ -9,7 +9,8 @@
     "declarativeNetRequestFeedback",
     "declarativeNetRequestWithHostAccess",
     "nativeMessaging",
-    "storage"
+    "storage",
+    "alarms"
   ],
   "host_permissions": ["<all_urls>"],
 
@@ -33,6 +34,8 @@
     "48":  "icons/icon48.png",
     "128": "icons/icon128.png"
   },
+
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAv4t1o9HbhCivEfj9U0l5IhVE4njWwX7Jjonp4jRe3l61tjZuQYIGVNfr8UihEy1TBVHsCtA7LUwH08oFaT9u2gd4tRHOJmldUW8+UYpWSK0chsDhoJ0xPIerNCS0pYPx3Em4+w95DMBagktvt1sX5g6N2eaw5UrL7L2Z6SbA7Fx28IUKTVMfObjD9O/ZwM/ovsw0soqWgOLThAF9pszmQagndzDRinuxBcgMe1DUbHTHKLr+vqNdebN7GPlKjW+h3maW8nerXZmfC6ZMgETJusaOwbxo/lIrAAdTKBYEp9/q0FzuxT+otbVSYBoZ/OG6+m+gfJl8gi37R3K3idlUyQIDAQAB",
 
   "browser_specific_settings": {
     "gecko": {

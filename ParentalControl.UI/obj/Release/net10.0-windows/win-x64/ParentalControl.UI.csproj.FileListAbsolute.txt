@@ -459,3 +459,7 @@ C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Release\net10.0-windows\wi
 C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Release\net10.0-windows\win-x64\Views\ProfilesPage.baml
 C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Release\net10.0-windows\win-x64\Views\FocusModePage.g.cs
 C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Release\net10.0-windows\win-x64\Views\ProfilesPage.g.cs
+C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Release\net10.0-windows\win-x64\Views\WebFilterPage.baml
+C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Release\net10.0-windows\win-x64\Views\WebFilterPage.g.cs
+C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Release\net10.0-windows\win-x64\Views\TagDomainViewerWindow.baml
+C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Release\net10.0-windows\win-x64\Views\TagDomainViewerWindow.g.cs

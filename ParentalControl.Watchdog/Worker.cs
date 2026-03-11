@@ -10,6 +10,7 @@ public class Worker(ILogger<Worker> logger) : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        ProcessProtection.HardenCurrentProcess();
         logger.LogInformation("Watchdog started — monitoring {Service}", MainServiceName);
 
         // Ensure main service is running at watchdog startup

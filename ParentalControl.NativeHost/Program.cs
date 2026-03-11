@@ -5,8 +5,18 @@ using ParentalControl.Core.Data;
 using ParentalControl.Core.Models;
 
 // Native Messaging protocol: 4-byte LE uint32 length prefix + UTF-8 JSON payload.
-// The browser launches this process, sends one message, reads the response, and may keep the
-// pipe open for further messages. We loop until stdin closes.
+// The browser connects via chrome.runtime.connectNative (persistent port).
+// A background thread polls the web_rules_version.txt file and pushes {type:"reload"}
+// to the extension whenever the UI saves new rules.
+//
+// Message types (extension → host):
+//   get_rules        → returns manual block/allow rules + tagBlockedCount (NO tag domains inline)
+//   get_tag_domains  → returns a paginated chunk of tag domains (offset, limit params)
+//   blocked          → logs a blocked navigation to the activity log
+//
+// Tag domains are served via get_tag_domains in chunks of ≤40,000 to stay under the
+// Chrome/Edge 1 MB native messaging message size limit (174k adult-content domains
+// would produce a ~4 MB JSON blob which Chrome silently rejects).
 
 static byte[] ReadMessage(Stream stdin)
 {
@@ -41,9 +51,51 @@ static void WriteMessage(Stream stdout, string json)
     stdout.Flush();
 }
 
-var stdin  = Console.OpenStandardInput();
-var stdout = Console.OpenStandardOutput();
+var stdin      = Console.OpenStandardInput();
+var stdout     = Console.OpenStandardOutput();
+var stdoutLock = new object();
 
+// Version file: UI writes a new timestamp here whenever web rules change.
+// This process polls it every second and pushes a reload notification to the extension.
+var versionFile = Path.Combine(
+    Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+    "ParentalControl", "web_rules_version.txt");
+
+var cts = new CancellationTokenSource();
+
+// Background thread: watch version file, push reload message when it changes
+var pollThread = new Thread(() =>
+{
+    string lastVersion = File.Exists(versionFile) ? File.ReadAllText(versionFile) : "";
+    while (!cts.Token.IsCancellationRequested)
+    {
+        Thread.Sleep(1000);
+        try
+        {
+            string current = File.Exists(versionFile) ? File.ReadAllText(versionFile) : "";
+            if (current != lastVersion)
+            {
+                lastVersion = current;
+                lock (stdoutLock)
+                    WriteMessage(stdout, "{\"type\":\"reload\"}");
+            }
+        }
+        catch { }
+    }
+}) { IsBackground = true };
+pollThread.Start();
+
+// Resolve the active profile for the current Windows user.
+static UserProfile ResolveProfile(AppDbContext db)
+{
+    var username = Environment.UserName;
+    return db.UserProfiles.AsNoTracking()
+               .FirstOrDefault(p => p.WindowsUsername.ToLower() == username.ToLower())
+        ?? db.UserProfiles.AsNoTracking().FirstOrDefault(p => p.WindowsUsername == "")
+        ?? new UserProfile { Id = 1 };
+}
+
+// Main thread: handle request messages from the extension
 while (true)
 {
     var msgBytes = ReadMessage(stdin);
@@ -59,29 +111,99 @@ while (true)
 
         if (msgType == "get_rules")
         {
-            // Determine which profile is active: match current Windows username
-            var username = Environment.UserName;
-            var profile  = db.UserProfiles
-                             .AsNoTracking()
-                             .FirstOrDefault(p => p.WindowsUsername.ToLower() == username.ToLower())
-                          ?? db.UserProfiles.AsNoTracking().FirstOrDefault(p => p.WindowsUsername == "")
-                          ?? new UserProfile { Id = 1 };
+            var profile  = ResolveProfile(db);
+            var settings = db.Settings.AsNoTracking().FirstOrDefault();
 
-            var rules = db.WebsiteRules
-                          .AsNoTracking()
-                          .Where(r => r.UserProfileId == profile.Id)
-                          .ToList();
-
-            // Determine effective mode: if any rule is IsBlocked=false it signals allow-list mode
-            bool allowMode = rules.Any(r => !r.IsBlocked);
-            var  domains   = rules.Select(r => r.Pattern).ToArray();
-
-            response = JsonSerializer.Serialize(new
+            if (settings?.WebFilterEnabled == false)
             {
-                mode      = allowMode ? "allow" : "block",
-                domains,
-                profileId = profile.Id
-            });
+                // Web filter disabled — tell extension to clear all rules.
+                response = JsonSerializer.Serialize(new
+                {
+                    type            = "rules",
+                    allowMode       = false,
+                    blocked         = Array.Empty<string>(),
+                    allowed         = Array.Empty<string>(),
+                    tagBlockedCount = 0,
+                    profileId       = profile.Id
+                });
+            }
+            else
+            {
+                var rules = db.WebsiteRules
+                              .AsNoTracking()
+                              .Where(r => r.UserProfileId == profile.Id)
+                              .ToList();
+
+                // Count how many tag domains are enabled — they are NOT inlined here
+                // to avoid exceeding the 1 MB native messaging message size limit.
+                // The extension fetches them separately via get_tag_domains.
+                var enabledTagIds = db.ProfileWebFilterTags
+                    .AsNoTracking()
+                    .Where(pt => pt.UserProfileId == profile.Id)
+                    .Select(pt => pt.TagId)
+                    .ToHashSet();
+
+                int tagBlockedCount = enabledTagIds.Count > 0
+                    ? db.WebFilterTagDomains.Count(d => enabledTagIds.Contains(d.TagId))
+                    : 0;
+
+                var blocked   = rules.Where(r =>  r.IsBlocked).Select(r => r.Pattern).ToArray();
+                var allowed   = rules.Where(r => !r.IsBlocked).Select(r => r.Pattern).ToArray();
+                bool allowMode = profile.WebFilterAllowMode;
+
+                response = JsonSerializer.Serialize(new
+                {
+                    type = "rules",
+                    allowMode,
+                    blocked,         // manual block entries only (small)
+                    allowed,
+                    tagBlockedCount, // extension fetches tag domains separately
+                    profileId = profile.Id
+                });
+            }
+        }
+        else if (msgType == "get_tag_domains")
+        {
+            // Paginated tag domain fetch — keeps each response well under 1 MB.
+            int offset = doc.RootElement.TryGetProperty("offset", out var offsetProp)
+                ? offsetProp.GetInt32() : 0;
+            int limit = doc.RootElement.TryGetProperty("limit", out var limitProp)
+                ? limitProp.GetInt32() : 40_000;
+
+            var profile = ResolveProfile(db);
+
+            var enabledTagIds = db.ProfileWebFilterTags
+                .AsNoTracking()
+                .Where(pt => pt.UserProfileId == profile.Id)
+                .Select(pt => pt.TagId)
+                .ToHashSet();
+
+            if (enabledTagIds.Count == 0)
+            {
+                response = JsonSerializer.Serialize(new
+                {
+                    type    = "tag_domains",
+                    offset,
+                    total   = 0,
+                    domains = Array.Empty<string>()
+                });
+            }
+            else
+            {
+                int total = db.WebFilterTagDomains
+                              .Count(d => enabledTagIds.Contains(d.TagId));
+
+                var domains = db.WebFilterTagDomains
+                                .AsNoTracking()
+                                .Where(d => enabledTagIds.Contains(d.TagId))
+                                .OrderBy(d => d.Id)  // stable order for consistent pagination
+                                .Skip(offset)
+                                .Take(limit)
+                                .Select(d => d.Domain)
+                                .ToArray();
+
+                response = JsonSerializer.Serialize(new { type = "tag_domains", offset, total, domains });
+            }
         }
         else if (msgType == "blocked")
         {
@@ -97,17 +219,20 @@ while (true)
             });
             db.SaveChanges();
 
-            response = "{\"ok\":true}";
+            response = "{\"type\":\"ok\"}";
         }
         else
         {
-            response = "{\"error\":\"unknown type\"}";
+            response = "{\"type\":\"error\",\"error\":\"unknown type\"}";
         }
     }
     catch (Exception ex)
     {
-        response = JsonSerializer.Serialize(new { error = ex.Message });
+        response = JsonSerializer.Serialize(new { type = "error", error = ex.Message });
     }
 
-    WriteMessage(stdout, response);
+    lock (stdoutLock)
+        WriteMessage(stdout, response);
 }
+
+cts.Cancel();

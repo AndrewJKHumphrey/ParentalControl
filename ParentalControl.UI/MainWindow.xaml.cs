@@ -43,12 +43,15 @@ public partial class MainWindow : Window
 
     public void ApplyScale(string label)
     {
+        // Scale factors = target vertical res / 1080 base
         double scale = label switch
         {
-            "1600" => 1.5,
-            "1440p" => 1.333,
-            "2160p" => 2.0,
-            _       => 1.0,
+            "1200p" => 1200.0 / 1080.0,   // ≈ 1.111  WUXGA
+            "1440p" => 1440.0 / 1080.0,   // ≈ 1.333  QHD
+            "1600p" => 1600.0 / 1080.0,   // ≈ 1.481  WQXGA
+            "1800p" => 1800.0 / 1080.0,   // ≈ 1.667  QHD+
+            "2160p" => 2160.0 / 1080.0,   //   2.000  4K UHD
+            _       => 1.0,                //   1.000  1080p FHD (default)
         };
         RootGrid.LayoutTransform = new ScaleTransform(scale, scale);
         Width  = Math.Round(BaseWidth  * scale);

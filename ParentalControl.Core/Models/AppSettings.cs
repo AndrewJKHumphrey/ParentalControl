@@ -14,6 +14,7 @@ public class AppSettings
     public bool ScreenTimeEnabled { get; set; } = true;
     public bool AppControlEnabled { get; set; } = true;
     public bool FocusModeEnabled  { get; set; } = true;
+    public bool WebFilterEnabled  { get; set; } = true;
     public int TodayBonusMinutes { get; set; } = 0;
     public bool DebugStopServiceAfterLock { get; set; } = false;
     public bool DebugAppTimeOverride { get; set; } = false;

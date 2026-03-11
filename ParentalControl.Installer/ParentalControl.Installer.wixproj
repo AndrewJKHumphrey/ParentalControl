@@ -1,0 +1,17 @@
+<Project Sdk="WixToolset.Sdk/4.0.5">
+  <PropertyGroup>
+    <OutputName>ParentGuard-Setup</OutputName>
+    <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
+    <Platforms>x64</Platforms>
+    <InstallerPlatform>x64</InstallerPlatform>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="WixToolset.UI.wixext"   Version="4.0.5" />
+    <PackageReference Include="WixToolset.Util.wixext" Version="4.0.5" />
+  </ItemGroup>
+  <!--
+    AppFiles.generated.wxs and ExtFiles.generated.wxs are created by build-installer.ps1.
+    The WiX SDK auto-includes all *.wxs files in this directory, so no explicit reference needed.
+    Run build-installer.ps1 before building this project.
+  -->
+</Project>

@@ -19,6 +19,8 @@ public class Worker : BackgroundService
     private ScreenTimeEnforcer? _screenTimeEnforcer;
     private IpcServer? _ipcServer;
 
+    private DateTime _lastWatchdogCheck = DateTime.UtcNow;
+
     public Worker(ILogger<Worker> log, IHostApplicationLifetime lifetime)
     {
         _log      = log;
@@ -27,6 +29,7 @@ public class Worker : BackgroundService
 
     public override async Task StartAsync(CancellationToken ct)
     {
+        ProcessProtection.HardenCurrentProcess();
         EnsureDatabase();
 
         _activityLogger = new ActivityLogger();
@@ -69,6 +72,29 @@ public class Worker : BackgroundService
                     _lifetime.StopApplication();
                     return;
                 }
+
+                // ── Mutual watchdog: ensure ParentalControlWatchdog is still running ───
+                if ((DateTime.UtcNow - _lastWatchdogCheck).TotalMinutes >= 5)
+                {
+                    _lastWatchdogCheck = DateTime.UtcNow;
+                    try
+                    {
+                        using var wdog = new System.ServiceProcess.ServiceController("ParentalControlWatchdog");
+                        if (wdog.Status == System.ServiceProcess.ServiceControllerStatus.Stopped)
+                        {
+                            _log.LogWarning("Watchdog service stopped unexpectedly — restarting.");
+                            wdog.Start();
+                            wdog.WaitForStatus(
+                                System.ServiceProcess.ServiceControllerStatus.Running,
+                                TimeSpan.FromSeconds(30));
+                            _log.LogInformation("Watchdog service restarted by main service.");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _log.LogWarning(ex, "Could not check/restart watchdog service");
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -102,6 +128,7 @@ public class Worker : BackgroundService
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ScreenTimeEnabled INTEGER NOT NULL DEFAULT 1"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN AppControlEnabled INTEGER NOT NULL DEFAULT 1"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN FocusModeEnabled  INTEGER NOT NULL DEFAULT 1"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN WebFilterEnabled  INTEGER NOT NULL DEFAULT 1"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ThemeIsDark INTEGER NOT NULL DEFAULT 1"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN TodayBonusMinutes INTEGER NOT NULL DEFAULT 0"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN DebugStopServiceAfterLock INTEGER NOT NULL DEFAULT 0"); } catch { }
@@ -151,6 +178,25 @@ public class Worker : BackgroundService
             try { db.Database.ExecuteSqlRaw("ALTER TABLE FocusSchedules ADD COLUMN UserProfileId INTEGER NOT NULL DEFAULT 1"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE UserProfiles ADD COLUMN AlwaysRelock INTEGER NOT NULL DEFAULT 0"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE UserProfiles ADD COLUMN IsScreenTimeLocked INTEGER NOT NULL DEFAULT 0"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE UserProfiles ADD COLUMN WebFilterAllowMode INTEGER NOT NULL DEFAULT 0"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE WebFilterTags ADD COLUMN SourceUrl TEXT NOT NULL DEFAULT ''"); } catch { }
+
+            // Backfill SourceUrl for tags seeded before this column existed (idempotent — only fires when blank).
+            db.Database.ExecuteSqlRaw("""
+                UPDATE WebFilterTags
+                SET    SourceUrl = 'https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/porn/hosts'
+                WHERE  Name = 'Adult Content' AND (SourceUrl IS NULL OR SourceUrl = '')
+                """);
+            db.Database.ExecuteSqlRaw("""
+                UPDATE WebFilterTags
+                SET    SourceUrl = 'https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/gambling/hosts'
+                WHERE  Name = 'Gambling' AND (SourceUrl IS NULL OR SourceUrl = '')
+                """);
+            db.Database.ExecuteSqlRaw("""
+                UPDATE WebFilterTags
+                SET    SourceUrl = 'https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/social/hosts'
+                WHERE  Name = 'Social Media' AND (SourceUrl IS NULL OR SourceUrl = '')
+                """);
 
             // FocusSchedules table
             try
@@ -225,6 +271,94 @@ public class Worker : BackgroundService
                         IsBlocked     INTEGER NOT NULL DEFAULT 1,
                         UserProfileId INTEGER NOT NULL DEFAULT 1
                     )");
+            }
+            catch { }
+
+            // WebFilterTags table
+            try
+            {
+                db.Database.ExecuteSqlRaw(@"
+                    CREATE TABLE IF NOT EXISTS WebFilterTags (
+                        Id          INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                        Name        TEXT    NOT NULL DEFAULT '',
+                        Description TEXT    NOT NULL DEFAULT ''
+                    )");
+            }
+            catch { }
+
+            // WebFilterTagDomains table
+            try
+            {
+                db.Database.ExecuteSqlRaw(@"
+                    CREATE TABLE IF NOT EXISTS WebFilterTagDomains (
+                        Id     INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                        TagId  INTEGER NOT NULL,
+                        Domain TEXT    NOT NULL DEFAULT ''
+                    )");
+            }
+            catch { }
+
+            // ProfileWebFilterTags table
+            try
+            {
+                db.Database.ExecuteSqlRaw(@"
+                    CREATE TABLE IF NOT EXISTS ProfileWebFilterTags (
+                        Id            INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                        TagId         INTEGER NOT NULL,
+                        UserProfileId INTEGER NOT NULL
+                    )");
+            }
+            catch { }
+
+            // Seed default web filter tags (only if table is empty)
+            try
+            {
+                if (!db.WebFilterTags.Any())
+                {
+                    var defaultTags = new[]
+                    {
+                        new {
+                            Name      = "Adult Content",
+                            Desc      = "Explicit adult content websites",
+                            SourceUrl = "https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/porn/hosts",
+                            Domains   = Array.Empty<string>()  // populated via Sync
+                        },
+                        new {
+                            Name      = "Gambling",
+                            Desc      = "Online gambling and betting sites",
+                            SourceUrl = "https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/gambling/hosts",
+                            Domains   = Array.Empty<string>()  // populated via Sync
+                        },
+                        new {
+                            Name      = "Social Media",
+                            Desc      = "Social networking platforms",
+                            SourceUrl = "https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/social/hosts",
+                            Domains   = Array.Empty<string>()  // populated via Sync
+                        },
+                        new {
+                            Name      = "Streaming",
+                            Desc      = "Video streaming services",
+                            SourceUrl = "",
+                            Domains   = new[]{ "youtube.com","netflix.com","twitch.tv","hulu.com","disneyplus.com","primevideo.com","peacocktv.com","crunchyroll.com","max.com","paramountplus.com" }
+                        },
+                        new {
+                            Name      = "Gaming Sites",
+                            Desc      = "Online gaming platforms and stores",
+                            SourceUrl = "",
+                            Domains   = new[]{ "steampowered.com","epicgames.com","roblox.com","minecraft.net","itch.io","gog.com","origin.com","ea.com","ubisoft.com","battlenet.com" }
+                        },
+                    };
+
+                    foreach (var t in defaultTags)
+                    {
+                        var tag = new WebFilterTag { Name = t.Name, Description = t.Desc, SourceUrl = t.SourceUrl };
+                        db.WebFilterTags.Add(tag);
+                        db.SaveChanges();
+                        foreach (var domain in t.Domains)
+                            db.WebFilterTagDomains.Add(new WebFilterTagDomain { TagId = tag.Id, Domain = domain });
+                    }
+                    db.SaveChanges();
+                }
             }
             catch { }
 

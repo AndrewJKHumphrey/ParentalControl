@@ -247,17 +247,44 @@
             <!-- ── Focus Mode ─────────────────────────────────────────────── -->
             <TextBlock Text="Focus Mode" FontSize="15" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,6"/>
-            <WrapPanel Margin="0,0,0,8">
-                <Border Style="{StaticResource StatCard}">
-                    <StackPanel>
-                        <TextBlock Text="Focus Mode Status" Foreground="{DynamicResource TextSecondary}" FontSize="12"/>
-                        <TextBlock x:Name="FocusModeStatusText" Text="--"
-                                   FontSize="18" FontWeight="Bold" Margin="0,4,0,0"/>
-                        <TextBlock x:Name="FocusModeWindowText" Text="" Foreground="{DynamicResource TextSecondary}"
-                                   FontSize="11" Margin="0,2,0,0"/>
-                    </StackPanel>
-                </Border>
-            </WrapPanel>
+            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="8,4" Margin="0,0,0,8">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0" Style="{StaticResource StatCard}">
+                        <StackPanel>
+                            <TextBlock Text="Focus Mode Status" Foreground="{DynamicResource TextSecondary}" FontSize="12"/>
+                            <TextBlock x:Name="FocusModeStatusText" Text="--"
+                                       FontSize="18" FontWeight="Bold" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="1" Style="{StaticResource StatCard}">
+                        <StackPanel>
+                            <TextBlock Text="Focus Window" Foreground="{DynamicResource TextSecondary}" FontSize="12"/>
+                            <TextBlock x:Name="FocusModeRangeText" Text="--:-- – --:--" Foreground="#A6E3A1"
+                                       FontSize="18" FontWeight="Bold" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="2" Style="{StaticResource StatCard}">
+                        <StackPanel>
+                            <TextBlock Text="Time Until Window Begins" Foreground="{DynamicResource TextSecondary}" FontSize="12"/>
+                            <TextBlock x:Name="FocusModeStartText" Text="--"
+                                       FontSize="18" FontWeight="Bold" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="3" Style="{StaticResource StatCard}">
+                        <StackPanel>
+                            <TextBlock Text="Time Until Window Ends" Foreground="{DynamicResource TextSecondary}" FontSize="12"/>
+                            <TextBlock x:Name="FocusModeEndText" Text="--"
+                                       FontSize="18" FontWeight="Bold" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
 
             <!-- ── Web Filter ─────────────────────────────────────────────── -->
             <TextBlock Text="Web Filter" FontSize="15" FontWeight="SemiBold"

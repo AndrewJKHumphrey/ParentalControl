@@ -80,6 +80,7 @@ public partial class DashboardPage : Page
                     ScreenTimeToggle.IsChecked = settings.ScreenTimeEnabled;
                     AppControlToggle.IsChecked = settings.AppControlEnabled;
                     FocusModeToggle.IsChecked  = settings.FocusModeEnabled;
+                    WebFilterToggle.IsChecked  = settings.WebFilterEnabled;
                     _enforcementLoaded = true;
                 }
             }
@@ -175,33 +176,80 @@ public partial class DashboardPage : Page
                     var todaySchedule = db.FocusSchedules.FirstOrDefault(
                         s => s.DayOfWeek == DateTime.Now.DayOfWeek && s.UserProfileId == focusProfileId);
                     var nowTime = TimeOnly.FromDateTime(DateTime.Now);
-                    if (todaySchedule?.IsEnabled == true &&
-                        nowTime >= todaySchedule.FocusFrom && nowTime <= todaySchedule.FocusUntil)
+                    bool use12h = settings?.TimeFormat12Hour == true;
+
+                    if (todaySchedule?.IsEnabled == true)
                     {
-                        FocusModeStatusText.Text       = "Active";
-                        FocusModeStatusText.Foreground = new SolidColorBrush(Color.FromRgb(0xF9, 0xE2, 0xAF));
-                        bool use12h = settings?.TimeFormat12Hour == true;
-                        FocusModeWindowText.Text = $"{FormatTime(todaySchedule.FocusFrom, use12h)} – {FormatTime(todaySchedule.FocusUntil, use12h)}";
-                    }
-                    else if (todaySchedule?.IsEnabled == true)
-                    {
-                        FocusModeStatusText.Text       = "Enabled";
-                        FocusModeStatusText.Foreground = new SolidColorBrush(Color.FromRgb(0xA6, 0xE3, 0xA1));
-                        bool use12h = settings?.TimeFormat12Hour == true;
-                        FocusModeWindowText.Text = $"Window: {FormatTime(todaySchedule.FocusFrom, use12h)} – {FormatTime(todaySchedule.FocusUntil, use12h)}";
+                        FocusModeRangeText.Text = $"{FormatTime(todaySchedule.FocusFrom, use12h)} – {FormatTime(todaySchedule.FocusUntil, use12h)}";
+
+                        // Time Until Window Begins
+                        if (nowTime < todaySchedule.FocusFrom)
+                        {
+                            int minsUntilStart = (int)(todaySchedule.FocusFrom - nowTime).TotalMinutes;
+                            FocusModeStartText.Text       = FormatDuration(minsUntilStart);
+                            FocusModeStartText.Foreground = new SolidColorBrush(Color.FromRgb(0xCB, 0xA6, 0xF7));
+                        }
+                        else if (nowTime <= todaySchedule.FocusUntil)
+                        {
+                            FocusModeStartText.Text       = "Window active";
+                            FocusModeStartText.Foreground = new SolidColorBrush(Color.FromRgb(0xA6, 0xE3, 0xA1));
+                        }
+                        else
+                        {
+                            FocusModeStartText.Text       = "Window ended";
+                            FocusModeStartText.Foreground = new SolidColorBrush(Color.FromRgb(0xF3, 0x8B, 0xA8));
+                        }
+
+                        // Time Until Window Ends
+                        if (nowTime < todaySchedule.FocusUntil)
+                        {
+                            int minsUntilEnd = (int)(todaySchedule.FocusUntil - nowTime).TotalMinutes;
+                            FocusModeEndText.Text       = FormatDuration(minsUntilEnd);
+                            FocusModeEndText.Foreground = minsUntilEnd > 30
+                                ? new SolidColorBrush(Color.FromRgb(0xA6, 0xE3, 0xA1))
+                                : minsUntilEnd > 10
+                                    ? new SolidColorBrush(Color.FromRgb(0xF9, 0xE2, 0xAF))
+                                    : new SolidColorBrush(Color.FromRgb(0xF3, 0x8B, 0xA8));
+                        }
+                        else
+                        {
+                            FocusModeEndText.Text       = "0m";
+                            FocusModeEndText.Foreground = new SolidColorBrush(Color.FromRgb(0xF3, 0x8B, 0xA8));
+                        }
+
+                        if (nowTime >= todaySchedule.FocusFrom && nowTime <= todaySchedule.FocusUntil)
+                        {
+                            FocusModeStatusText.Text       = "Active";
+                            FocusModeStatusText.Foreground = new SolidColorBrush(Color.FromRgb(0xF9, 0xE2, 0xAF));
+                        }
+                        else
+                        {
+                            FocusModeStatusText.Text       = "Enabled";
+                            FocusModeStatusText.Foreground = new SolidColorBrush(Color.FromRgb(0xA6, 0xE3, 0xA1));
+                        }
                     }
                     else
                     {
                         FocusModeStatusText.Text       = "Off";
                         FocusModeStatusText.Foreground = new SolidColorBrush(Color.FromRgb(0x6C, 0x70, 0x86));
-                        FocusModeWindowText.Text       = "Not scheduled today";
+                        FocusModeRangeText.Text        = "Not scheduled";
+                        FocusModeRangeText.Foreground  = new SolidColorBrush(Color.FromRgb(0x6C, 0x70, 0x86));
+                        FocusModeStartText.Text        = "--";
+                        FocusModeStartText.Foreground  = new SolidColorBrush(Color.FromRgb(0xCB, 0xA6, 0xF7));
+                        FocusModeEndText.Text          = "--";
+                        FocusModeEndText.Foreground    = new SolidColorBrush(Color.FromRgb(0xCB, 0xA6, 0xF7));
                     }
                 }
                 else
                 {
                     FocusModeStatusText.Text       = "Off";
                     FocusModeStatusText.Foreground = new SolidColorBrush(Color.FromRgb(0x6C, 0x70, 0x86));
-                    FocusModeWindowText.Text       = "";
+                    FocusModeRangeText.Text        = "--:-- – --:--";
+                    FocusModeRangeText.Foreground  = new SolidColorBrush(Color.FromRgb(0x6C, 0x70, 0x86));
+                    FocusModeStartText.Text        = "--";
+                    FocusModeStartText.Foreground  = new SolidColorBrush(Color.FromRgb(0xCB, 0xA6, 0xF7));
+                    FocusModeEndText.Text          = "--";
+                    FocusModeEndText.Foreground    = new SolidColorBrush(Color.FromRgb(0xCB, 0xA6, 0xF7));
                 }
             }
 
@@ -251,6 +299,7 @@ public partial class DashboardPage : Page
                 settings.ScreenTimeEnabled = ScreenTimeToggle.IsChecked == true;
                 settings.AppControlEnabled = AppControlToggle.IsChecked == true;
                 settings.FocusModeEnabled  = FocusModeToggle.IsChecked  == true;
+                settings.WebFilterEnabled  = WebFilterToggle.IsChecked  == true;
             }
             db.SaveChanges();
         }
@@ -273,10 +322,12 @@ public partial class DashboardPage : Page
                 settings.ScreenTimeEnabled = flag;
                 settings.AppControlEnabled = flag;
                 settings.FocusModeEnabled  = flag;
+                settings.WebFilterEnabled  = flag;
 
                 ScreenTimeToggle.IsEnabled = flag;
                 AppControlToggle.IsEnabled = flag;
                 FocusModeToggle.IsEnabled  = flag;
+                WebFilterToggle.IsEnabled  = flag;
                 db.SaveChanges();
             }
         }

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ParentalControl.UI")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+fe8b8d1e030f1bb12dd4aea12ceb322cfcfd843a")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ba76a24617359936ddbed0892daebed254e82ba8")]
 [assembly: System.Reflection.AssemblyProductAttribute("ParentalControl.UI")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ParentalControl.UI")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

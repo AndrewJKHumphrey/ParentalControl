@@ -1,121 +1,210 @@
 // ParentGuard Web Filter — background service worker
-// Communicates with the native host to get per-profile rules, then applies them
-// via declarativeNetRequest dynamic rules.
+// Uses a persistent connectNative port so the native host can push rule-change
+// notifications instantly without waiting for the 5-minute alarm.
 
 const NATIVE_HOST = "com.parentalcontrol.host";
 
-// ── Rule ID allocation ──────────────────────────────────────────────────────
-// IDs 1–29000 are used for block-list entries.
-// ID 30000 is used for the catch-all redirect rule in allow-list mode.
-const REDIRECT_RULE_ID  = 30000;
-const MAX_BLOCK_RULE_ID = 29000;
+// ── Rule IDs ─────────────────────────────────────────────────────────────────
+// Using requestDomains arrays instead of one-rule-per-domain so we stay well
+// under Chrome's 5,000 dynamic rule limit regardless of blocklist size.
+const RULE_BLOCK_NAV         = 1;  // main_frame redirect for blocked domains
+const RULE_BLOCK_SUBRESOURCE = 2;  // sub_frame/script/etc block for blocked domains
+const RULE_ALLOW_CATCHALL    = 3;  // allow-mode: block every navigation (priority 1)
+const RULE_ALLOW_DOMAINS     = 4;  // allow-mode: allow explicitly-allowed domains (priority 2)
 
-// ── Helpers ─────────────────────────────────────────────────────────────────
+// Tag domains are fetched in chunks to stay under the Chrome/Edge 1 MB native
+// messaging message size limit.  174k adult-content domains ≈ 4 MB of JSON —
+// exceeds the limit and causes Chrome to silently drop the port connection.
+const TAG_DOMAIN_CHUNK = 40_000;
+
+// ── Persistent native port ───────────────────────────────────────────────────
+
+let _port          = null;
+let _pendingResolve = null;
+let _pendingReject  = null;
+let _pendingTimer   = null;
+
+function ensurePort() {
+  if (_port) return _port;
+
+  _port = chrome.runtime.connectNative(NATIVE_HOST);
+
+  _port.onMessage.addListener(msg => {
+    // Push notification from the native host: rules changed in the UI
+    if (msg?.type === "reload") {
+      syncRules();
+      return;
+    }
+    // Response to a pending request
+    if (_pendingResolve) {
+      clearTimeout(_pendingTimer);
+      const resolve = _pendingResolve;
+      _pendingResolve = null;
+      _pendingReject  = null;
+      _pendingTimer   = null;
+      resolve(msg);
+    }
+  });
+
+  _port.onDisconnect.addListener(() => {
+    _port = null;
+    if (_pendingReject) {
+      clearTimeout(_pendingTimer);
+      const reject = _pendingReject;
+      _pendingResolve = null;
+      _pendingReject  = null;
+      _pendingTimer   = null;
+      reject(new Error(chrome.runtime.lastError?.message || "port disconnected"));
+    }
+    // Reconnect after a short delay so enforcement resumes if the host restarts
+    setTimeout(ensurePort, 10_000);
+  });
+
+  return _port;
+}
+
+async function sendNativeRequest(message) {
+  return new Promise((resolve, reject) => {
+    const port = ensurePort();
+    _pendingResolve = resolve;
+    _pendingReject  = reject;
+    _pendingTimer   = setTimeout(() => {
+      if (_pendingReject) {
+        const rej = _pendingReject;
+        _pendingResolve = null;
+        _pendingReject  = null;
+        _pendingTimer   = null;
+        rej(new Error("native host timeout"));
+      }
+    }, 30_000); // 30 s — large tag fetches can take a moment
+    port.postMessage(message);
+  });
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
 function blockedPageUrl() {
   return chrome.runtime.getURL("blocked.html");
 }
 
-/** Build a declarativeNetRequest rule that redirects main_frame to the blocked page. */
-function makeRedirectRule(id, urlFilter) {
-  return {
-    id,
-    priority: 1,
-    action: {
-      type: "redirect",
-      redirect: { url: blockedPageUrl() }
-    },
-    condition: {
-      urlFilter,
-      resourceTypes: ["main_frame"]
-    }
-  };
-}
-
-/** Build a declarativeNetRequest rule that blocks sub-resources (images, scripts, etc.). */
-function makeSubResourceBlockRule(id, urlFilter) {
-  return {
-    id: id + 15000, // offset to avoid collision with main_frame rules
-    priority: 1,
-    action: { type: "block" },
-    condition: {
-      urlFilter,
-      resourceTypes: [
-        "sub_frame", "script", "stylesheet", "image",
-        "font", "xmlhttprequest", "other"
-      ]
-    }
-  };
-}
-
-/**
- * Convert a domain pattern like "example.com" or "*.example.com"
- * into a declarativeNetRequest urlFilter string "||example.com^".
- */
-function domainToFilter(domain) {
-  const d = domain.replace(/^\*\./, "");
-  return `||${d}^`;
-}
-
 // ── Rule sync ────────────────────────────────────────────────────────────────
 
 async function syncRules() {
+  // 1. Fetch manual rules and tag domain count (small message, always under 1 MB).
   let data;
   try {
-    data = await chrome.runtime.sendNativeMessage(NATIVE_HOST, { type: "get_rules" });
+    data = await sendNativeRequest({ type: "get_rules" });
   } catch (err) {
     console.warn("ParentGuard: native host unavailable —", err.message);
     return;
   }
 
-  const { mode, domains } = data;
+  const { allowMode, blocked: manualBlocked = [], allowed = [], tagBlockedCount = 0 } = data;
+
+  // 2. Fetch tag domains in chunks to stay under the 1 MB native messaging limit.
+  //    Each chunk is ≤40,000 domains (~920 KB JSON), safely under the cap.
+  let tagBlocked = [];
+  if (tagBlockedCount > 0) {
+    let offset = 0;
+    while (offset < tagBlockedCount) {
+      let chunk;
+      try {
+        chunk = await sendNativeRequest({ type: "get_tag_domains", offset, limit: TAG_DOMAIN_CHUNK });
+      } catch (err) {
+        console.warn("ParentGuard: failed fetching tag domains at offset", offset, "—", err.message);
+        break;
+      }
+      if (!chunk.domains || chunk.domains.length === 0) break;
+      tagBlocked = tagBlocked.concat(chunk.domains);
+      offset += chunk.domains.length;
+      if (offset >= (chunk.total ?? tagBlockedCount)) break;
+    }
+  }
+
+  // 3. Merge manual + tag domains (deduplicated).
+  const blocked = manualBlocked.length > 0 || tagBlocked.length > 0
+    ? [...new Set([...manualBlocked, ...tagBlocked])]
+    : [];
+
   const addRules = [];
 
   // Remove all existing dynamic rules first
   const existing = await chrome.declarativeNetRequest.getDynamicRules();
   const removeRuleIds = existing.map(r => r.id);
 
-  if (mode === "block") {
-    // Block each listed domain
-    domains.slice(0, MAX_BLOCK_RULE_ID).forEach((domain, i) => {
-      const filter = domainToFilter(domain);
-      addRules.push(makeRedirectRule(i + 1, filter));
-      addRules.push(makeSubResourceBlockRule(i + 1, filter));
-    });
-  } else {
-    // Allow-list mode: block everything EXCEPT listed domains.
-    // Add a catch-all block rule, then per-domain allow rules take higher priority.
+  // Blocked domains — single rule per resource type using requestDomains array.
+  // requestDomains matches the exact domain AND all its subdomains automatically.
+  if (blocked.length > 0) {
+    const blockPriority = allowMode ? 3 : 1;
+
     addRules.push({
-      id: REDIRECT_RULE_ID,
-      priority: 1,
-      action: { type: "redirect", redirect: { url: blockedPageUrl() } },
-      condition: { urlFilter: "||^", resourceTypes: ["main_frame"] }
+      id: RULE_BLOCK_NAV,
+      priority: blockPriority,
+      action: {
+        type: "redirect",
+        redirect: { url: blockedPageUrl() }
+      },
+      condition: {
+        requestDomains: blocked,
+        resourceTypes: ["main_frame"]
+      }
     });
 
-    // Allow rules for each whitelisted domain (higher priority overrides the catch-all)
-    domains.slice(0, MAX_BLOCK_RULE_ID).forEach((domain, i) => {
-      addRules.push({
-        id: i + 1,
-        priority: 2,
-        action: { type: "allow" },
-        condition: {
-          urlFilter: domainToFilter(domain),
-          resourceTypes: ["main_frame", "sub_frame", "script", "stylesheet",
-                          "image", "font", "xmlhttprequest", "other"]
-        }
-      });
+    addRules.push({
+      id: RULE_BLOCK_SUBRESOURCE,
+      priority: blockPriority,
+      action: { type: "block" },
+      condition: {
+        requestDomains: blocked,
+        resourceTypes: [
+          "sub_frame", "script", "stylesheet", "image",
+          "font", "xmlhttprequest", "other"
+        ]
+      }
     });
   }
 
-  await chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds, addRules });
-  console.log(`ParentGuard: synced ${addRules.length} rules (mode=${mode})`);
+  if (allowMode) {
+    addRules.push({
+      id: RULE_ALLOW_CATCHALL,
+      priority: 1,
+      action: { type: "redirect", redirect: { url: blockedPageUrl() } },
+      condition: { urlFilter: "*", resourceTypes: ["main_frame"] }
+    });
+
+    if (allowed.length > 0) {
+      addRules.push({
+        id: RULE_ALLOW_DOMAINS,
+        priority: 2,
+        action: { type: "allow" },
+        condition: {
+          requestDomains: allowed,
+          resourceTypes: [
+            "main_frame", "sub_frame", "script", "stylesheet",
+            "image", "font", "xmlhttprequest", "other"
+          ]
+        }
+      });
+    }
+  }
+
+  // 4. Apply rules — wrapped in try/catch so failures are visible in the console.
+  try {
+    await chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds, addRules });
+    console.log(`ParentGuard: synced ${addRules.length} rules (${blocked.length} blocked [${manualBlocked.length} manual + ${tagBlocked.length} tag], ${allowed.length} allowed, allowMode=${allowMode})`);
+  } catch (err) {
+    console.error("ParentGuard: updateDynamicRules failed —", err.message, err);
+  }
 }
 
 // ── Event listeners ──────────────────────────────────────────────────────────
 
+// Open the persistent port immediately on service worker start
+ensurePort();
+
 chrome.runtime.onInstalled.addListener(() => syncRules());
 
-// Re-sync every 5 minutes to pick up rule changes made in the UI
+// Re-sync every 5 minutes as a fallback (in case the port disconnects)
 chrome.alarms.create("syncRules", { periodInMinutes: 5 });
 chrome.alarms.onAlarm.addListener(alarm => {
   if (alarm.name === "syncRules") syncRules();
@@ -124,7 +213,7 @@ chrome.alarms.onAlarm.addListener(alarm => {
 // Also sync on browser startup
 chrome.runtime.onStartup.addListener(() => syncRules());
 
-// Allow the UI or NativeHost to trigger an immediate sync via chrome.runtime.sendMessage
+// Allow other extension pages to trigger an immediate sync
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg?.type === "reload_rules") syncRules();
 });
@@ -132,9 +221,6 @@ chrome.runtime.onMessage.addListener((msg) => {
 // Log blocked main_frame navigations back to the native host for the Activity Log
 chrome.declarativeNetRequest.onRuleMatchedDebug?.addListener((info) => {
   if (info.request.type === "main_frame") {
-    chrome.runtime.sendNativeMessage(NATIVE_HOST, {
-      type: "blocked",
-      url: info.request.url
-    }).catch(() => {});
+    ensurePort().postMessage({ type: "blocked", url: info.request.url });
   }
 });

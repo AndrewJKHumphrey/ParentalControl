@@ -13,7 +13,10 @@ public class AppDbContext : DbContext
     public DbSet<UserProfile> UserProfiles { get; set; }
     public DbSet<AppTimeSchedule> AppTimeSchedules { get; set; }
     public DbSet<ScanCacheEntry>  ScanCache         { get; set; }
-    public DbSet<WebsiteRule>     WebsiteRules      { get; set; }
+    public DbSet<WebsiteRule>          WebsiteRules         { get; set; }
+    public DbSet<WebFilterTag>         WebFilterTags        { get; set; }
+    public DbSet<WebFilterTagDomain>   WebFilterTagDomains  { get; set; }
+    public DbSet<ProfileWebFilterTag>  ProfileWebFilterTags { get; set; }
 
     public static string DbPath
     {

@@ -5,19 +5,20 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto">
     <Grid Margin="32">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>  <!-- 0: heading -->
+            <RowDefinition Height="Auto"/>  <!-- 1: description -->
+            <RowDefinition Height="Auto"/>  <!-- 2: profile selector -->
+            <RowDefinition Height="Auto"/>  <!-- 3: allow mode toggle -->
+            <RowDefinition Height="Auto"/>  <!-- 4: add domain row -->
+            <RowDefinition Height="Auto"/>  <!-- 5: save row -->
+            <RowDefinition Height="*"/>     <!-- 6: individual domain list -->
+            <RowDefinition Height="Auto"/>  <!-- 7: content tags section -->
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0" Text="Web Filter" FontSize="24" FontWeight="Bold"
                    Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"/>
         <TextBlock Grid.Row="1" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,20" TextWrapping="Wrap"
-                   Text="Block or allow websites per profile. In Block mode, listed domains are blocked. In Allow mode, only listed domains are allowed. Requires the ParentGuard browser extension to be installed."/>
+                   Text="Each domain entry is marked Blocked or Allowed. With Allow Mode off, only Blocked entries are blocked and everything else is accessible. With Allow Mode on, everything is blocked except Allowed entries (Blocked entries remain blocked in both modes). Content Tags let you block entire categories at once. Requires the ParentGuard browser extension."/>
 
         <!-- Profile selector -->
         <Border Grid.Row="2" Background="{DynamicResource CardBg}" CornerRadius="8"
@@ -31,20 +32,17 @@
             </StackPanel>
         </Border>
 
-        <!-- Mode toggle -->
+        <!-- Allow Mode toggle -->
         <Border Grid.Row="3" Background="{DynamicResource CardBg}" CornerRadius="8"
                 Padding="12,10" Margin="0,0,0,12">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="Filter mode:" VerticalAlignment="Center"
+                <TextBlock Text="Allow Mode:" VerticalAlignment="Center"
                            Foreground="{DynamicResource TextPrimary}" Margin="0,0,12,0" FontWeight="SemiBold"/>
-                <RadioButton x:Name="BlockModeRadio" Content="Block list" GroupName="FilterMode"
-                             Foreground="{DynamicResource TextPrimary}" IsChecked="True"
-                             VerticalAlignment="Center" Margin="0,0,16,0"
-                             Checked="Mode_Changed"/>
-                <RadioButton x:Name="AllowModeRadio" Content="Allow list (block everything else)" GroupName="FilterMode"
-                             Foreground="{DynamicResource TextPrimary}"
-                             VerticalAlignment="Center"
-                             Checked="Mode_Changed"/>
+                <CheckBox x:Name="AllowModeToggle" VerticalAlignment="Center"
+                          Checked="AllowModeToggle_Changed" Unchecked="AllowModeToggle_Changed"/>
+                <TextBlock x:Name="AllowModeLabel" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextSecondary}" Margin="8,0,0,0"
+                           Text="Off — only Blocked entries are blocked; everything else is accessible"/>
             </StackPanel>
         </Border>
 
@@ -52,6 +50,7 @@
         <Grid Grid.Row="4" Margin="0,0,0,12">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
@@ -63,48 +62,142 @@
                      Tag="Domain (e.g. example.com)"
                      GotFocus="DomainBox_GotFocus" LostFocus="DomainBox_LostFocus"
                      KeyDown="DomainBox_KeyDown"/>
-            <Button Grid.Column="1" Content="Add Domain" Height="36" Padding="16,0"
+            <ComboBox x:Name="EntryTypeBox" Grid.Column="1" Width="110" Height="36"
+                      Background="{DynamicResource CardBg}" Foreground="{DynamicResource TextPrimary}"
+                      BorderBrush="{DynamicResource BorderColor}" Margin="0,0,8,0"
+                      VerticalContentAlignment="Center">
+                <ComboBoxItem Content="Blocked" IsSelected="True"/>
+                <ComboBoxItem Content="Allowed"/>
+            </ComboBox>
+            <Button Grid.Column="2" Content="Add Domain" Height="36" Padding="16,0"
                     Background="#A6E3A1" Foreground="#1E1E2E" FontWeight="Bold"
                     BorderThickness="0" Cursor="Hand" Click="AddDomain_Click" Margin="0,0,8,0"/>
-            <Button Grid.Column="2" Content="Remove Selected" Height="36" Padding="16,0"
+            <Button Grid.Column="3" Content="Remove Selected" Height="36" Padding="16,0"
                     Background="#F38BA8" Foreground="#1E1E2E" FontWeight="Bold"
                     BorderThickness="0" Cursor="Hand" Click="RemoveDomain_Click"/>
         </Grid>
 
-        <!-- Save + sync row -->
-        <StackPanel Grid.Row="5" Orientation="Horizontal" Margin="0,0,0,12">
-            <Button Content="Save Rules" Height="36" Padding="20,0"
+        <!-- Save row -->
+        <WrapPanel Grid.Row="5" Orientation="Horizontal" Margin="0,0,0,12">
+            <Button Content="Save for Current Profile" Height="36" Padding="20,0"
                     Background="#89B4FA" Foreground="#1E1E2E" FontWeight="Bold"
-                    BorderThickness="0" Cursor="Hand" Click="Save_Click" Margin="0,0,8,0"/>
+                    BorderThickness="0" Cursor="Hand" Click="SaveButton_Click" Margin="0,0,8,8"/>
+            <Button Content="Save to All Profiles" Height="36" Padding="20,0"
+                    Background="#A6E3A1" Foreground="#1E1E2E" FontWeight="Bold"
+                    BorderThickness="0" Cursor="Hand" Click="SaveToAllButton_Click" Margin="0,0,8,8"/>
             <TextBlock x:Name="StatusText" VerticalAlignment="Center"
                        Foreground="{DynamicResource TextSecondary}" FontSize="12"/>
-        </StackPanel>
+        </WrapPanel>
 
-        <!-- Domain list -->
+        <!-- Individual domain list -->
         <Border Grid.Row="6" Background="{DynamicResource CardBg}" CornerRadius="8"
-                Padding="0" Margin="0,0,0,0">
-            <DataGrid x:Name="DomainsGrid"
-                      AutoGenerateColumns="False"
-                      CanUserAddRows="False" CanUserDeleteRows="False"
-                      CanUserResizeRows="False" HeadersVisibility="Column"
-                      GridLinesVisibility="Horizontal"
-                      Background="Transparent"
-                      RowBackground="{DynamicResource CardBg}"
-                      AlternatingRowBackground="{DynamicResource AltRowBg}"
-                      Foreground="{DynamicResource TextPrimary}"
-                      BorderThickness="0"
-                      HorizontalGridLinesBrush="{DynamicResource BorderColor}"
-                      ColumnHeaderStyle="{StaticResource DataGridColumnHeaderStyle}"
-                      RowStyle="{StaticResource DataGridRowStyle}"
-                      CellStyle="{StaticResource DataGridCellStyle}"
-                      SelectionMode="Extended">
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="Domain / Pattern" Binding="{Binding Pattern}"
-                                       Width="*" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="Type" Binding="{Binding ModeLabel}"
-                                       Width="120" IsReadOnly="True"/>
-                </DataGrid.Columns>
-            </DataGrid>
+                Padding="0" Margin="0,0,0,12">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="Individual Domain Rules"
+                           FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"
+                           Margin="12,10,12,6"/>
+                <DataGrid x:Name="DomainsGrid"
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False" CanUserDeleteRows="False"
+                          CanUserResizeRows="False" HeadersVisibility="Column"
+                          GridLinesVisibility="Horizontal"
+                          Background="Transparent"
+                          RowBackground="{DynamicResource CardBg}"
+                          AlternatingRowBackground="{DynamicResource AltRowBg}"
+                          Foreground="{DynamicResource TextPrimary}"
+                          BorderThickness="0"
+                          HorizontalGridLinesBrush="{DynamicResource BorderColor}"
+                          SelectionMode="Extended">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Domain / Pattern" Binding="{Binding Pattern}"
+                                           Width="*" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Type" Binding="{Binding ModeLabel}"
+                                           Width="120" IsReadOnly="True"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
+        </Border>
+
+        <!-- Content Tags section -->
+        <Border Grid.Row="7" Background="{DynamicResource CardBg}" CornerRadius="8"
+                Padding="12" Margin="0,0,0,0">
+            <DockPanel>
+
+                <!-- Header row: title + Sync All button -->
+                <Grid DockPanel.Dock="Top" Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="Content Tags" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
+                    <Button x:Name="SyncAllBtn" Grid.Column="1" Content="Sync All" Height="28" Padding="12,0"
+                            Background="#CBA6F7" Foreground="#1E1E2E" FontWeight="Bold"
+                            BorderThickness="0" Cursor="Hand" Click="SyncAll_Click"/>
+                </Grid>
+
+                <!-- Sync progress (hidden when idle) -->
+                <StackPanel x:Name="SyncProgressPanel" DockPanel.Dock="Top"
+                            Margin="0,0,0,8" Visibility="Collapsed">
+                    <TextBlock x:Name="SyncProgressLabel"
+                               Foreground="{DynamicResource TextSecondary}" FontSize="12"
+                               Margin="0,0,0,4"/>
+                    <ProgressBar x:Name="SyncProgressBar" Height="6"
+                                 Minimum="0" Maximum="100" Value="0"
+                                 Foreground="#CBA6F7" BorderThickness="0"
+                                 Background="{DynamicResource BorderColor}"/>
+                </StackPanel>
+
+                <!-- Copy button pinned to bottom -->
+                <Button DockPanel.Dock="Bottom" Content="Copy to All Profiles" Height="30" Padding="12,0"
+                        Background="#A6E3A1" Foreground="#1E1E2E" FontWeight="Bold"
+                        BorderThickness="0" Cursor="Hand" Click="CopyTagsToAllProfiles_Click"
+                        Margin="0,8,0,0" HorizontalAlignment="Left"/>
+
+                <!-- Tags list -->
+                <ListBox x:Name="TagsListBox"
+                         Background="Transparent" BorderThickness="0"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="Padding" Value="0,3"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <CheckBox Grid.Column="0"
+                                          IsChecked="{Binding IsEnabled, Mode=TwoWay}"
+                                          Checked="TagEnabled_Changed" Unchecked="TagEnabled_Changed"
+                                          VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Name}"
+                                                   Foreground="{DynamicResource TextPrimary}"/>
+                                        <TextBlock Text="{Binding CountLabel}"
+                                                   Foreground="{DynamicResource TextSecondary}"
+                                                   FontSize="11" Margin="6,1,0,0"
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </CheckBox>
+                                <Button Grid.Column="1" Content="View ▸" Height="26" Padding="10,0"
+                                        Background="Transparent"
+                                        Foreground="{DynamicResource TextSecondary}"
+                                        FontSize="11" BorderThickness="1"
+                                        BorderBrush="{DynamicResource BorderColor}"
+                                        Cursor="Hand" Tag="{Binding}"
+                                        Click="ViewDomains_Click"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+            </DockPanel>
         </Border>
 
     </Grid>

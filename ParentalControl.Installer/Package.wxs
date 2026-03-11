@@ -1,0 +1,271 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ParentGuard MSI Installer — WiX v4
+  Build with: .\build-installer.ps1  (run from solution root as Administrator)
+
+  AppFiles.generated.wxs and ExtFiles.generated.wxs are auto-generated at build time
+  by the New-HarvestWxs function in build-installer.ps1. Run build-installer.ps1 first
+  to publish all projects and create publish\combined\ before building this project.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+
+  <Package Name="ParentGuard"
+           Manufacturer="ParentGuard"
+           Version="1.0.0"
+           UpgradeCode="{3F8A6C2D-7B4E-4A9F-B5C8-1D3E6F2A8B4C}"
+           Compressed="yes">
+
+    <SummaryInformation Description="ParentGuard Parental Control Software"
+                        Manufacturer="ParentGuard" />
+
+    <!-- Prevent downgrades; seamlessly replace older versions -->
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- ── UI ─────────────────────────────────────────────────────── -->
+    <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
+    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLDIR" />
+
+    <!-- ── Directories ───────────────────────────────────────────── -->
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLDIR" Name="ParentalControl">
+        <!-- Browser extension files live here so Edge/Chrome can load them -->
+        <Directory Id="ExtDir" Name="extension" />
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="CommonAppDataFolder">
+      <!-- C:\ProgramData\ParentalControl — SQLite database lives here -->
+      <Directory Id="DataDir" Name="ParentalControl" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="AppMenuDir" Name="ParentGuard" />
+    </StandardDirectory>
+
+    <!-- ── Feature ───────────────────────────────────────────────── -->
+    <Feature Id="Complete" Title="ParentGuard" Level="1">
+      <!-- Bulk app files (harvested from publish\combined\ by wixproj HarvestDirectory) -->
+      <ComponentGroupRef Id="AppFiles" />
+      <!-- Extension files (harvested from ParentalControl.Extension\ by wixproj) -->
+      <ComponentGroupRef Id="ExtensionFiles" />
+      <!-- Service/watchdog EXEs with ServiceInstall elements -->
+      <ComponentRef Id="ServiceExeComp" />
+      <ComponentRef Id="WatchdogExeComp" />
+      <!-- Post-install configuration script -->
+      <ComponentRef Id="ConfigureScriptComp" />
+      <!-- C:\ProgramData\ParentalControl\ with correct ACLs -->
+      <ComponentGroupRef Id="DataDirComps" />
+      <!-- Registry: native messaging host for Chrome/Edge/Firefox/Brave -->
+      <ComponentGroupRef Id="RegistryComps" />
+      <!-- Start Menu shortcuts -->
+      <ComponentGroupRef Id="ShortcutComps" />
+    </Feature>
+
+    <!-- ── Custom Action: post-install configuration ─────────────── -->
+    <!--
+      SetProperty runs in the immediate sequence and can resolve [INSTALLDIR].
+      Its Id must match the deferred CA Id — WiX passes the Value as CustomActionData.
+      WixQuietExec reads CustomActionData as the shell command to execute.
+    -->
+    <SetProperty Id="CA_Configure"
+                 Sequence="execute"
+                 Before="CA_Configure"
+                 Value="&quot;[System64Folder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -NonInteractive -ExecutionPolicy Bypass -File &quot;[INSTALLDIR]configure.ps1&quot; -InstallDir &quot;[INSTALLDIR]&quot;" />
+
+    <CustomAction Id="CA_Configure"
+                  DllEntry="WixQuietExec"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="check"
+                  BinaryRef="Wix4UtilCA_X64" />
+
+    <InstallExecuteSequence>
+      <!-- Run configure.ps1 after all files land on disk (first install and reinstall) -->
+      <Custom Action="CA_Configure" After="InstallFiles" Condition="NOT Installed OR REINSTALL" />
+    </InstallExecuteSequence>
+
+  </Package>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       Main Service — ParentalControlService (Manual / demand start)
+       The Watchdog is responsible for starting and restarting it.
+       ═══════════════════════════════════════════════════════════════ -->
+  <Fragment>
+    <Component Id="ServiceExeComp"
+               Directory="INSTALLDIR"
+               Guid="{A7C3E1F5-2D8B-4A6C-9E3F-1B5D7A9C2E4F}">
+      <File Id="ServiceExe"
+            Source="..\publish\service\ParentalControl.Service.exe"
+            KeyPath="yes" />
+      <ServiceInstall Id="SvcInstall"
+                      Name="ParentalControlService"
+                      DisplayName="ParentGuard Control Service"
+                      Description="Enforces parental controls: app blocking, screen time limits, and website filtering."
+                      Type="ownProcess"
+                      Start="demand"
+                      ErrorControl="normal"
+                      Account="LocalSystem" />
+      <!-- Stop on upgrade/uninstall; Watchdog handles starting -->
+      <ServiceControl Id="SvcControl"
+                      Name="ParentalControlService"
+                      Stop="both"
+                      Remove="uninstall"
+                      Wait="yes" />
+      <util:ServiceConfig ServiceName="ParentalControlService"
+                          FirstFailureActionType="restart"
+                          SecondFailureActionType="restart"
+                          ThirdFailureActionType="restart"
+                          ResetPeriodInDays="1"
+                          RestartServiceDelayInSeconds="5" />
+    </Component>
+  </Fragment>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       Watchdog Service — ParentalControlWatchdog (Automatic start)
+       Starts at boot, brings up the main service, and keeps it alive.
+       ═══════════════════════════════════════════════════════════════ -->
+  <Fragment>
+    <Component Id="WatchdogExeComp"
+               Directory="INSTALLDIR"
+               Guid="{B8D4F2A6-3E9C-4B7D-AF4E-2C6E8BAD3F5A}">
+      <File Id="WatchdogExe"
+            Source="..\publish\watchdog\ParentalControl.Watchdog.exe"
+            KeyPath="yes" />
+      <ServiceInstall Id="WdgInstall"
+                      Name="ParentalControlWatchdog"
+                      DisplayName="ParentGuard Watchdog Service"
+                      Description="Monitors and restarts the ParentalControl enforcement service if it stops unexpectedly."
+                      Type="ownProcess"
+                      Start="auto"
+                      ErrorControl="normal"
+                      Account="LocalSystem" />
+      <ServiceControl Id="WdgControl"
+                      Name="ParentalControlWatchdog"
+                      Start="install"
+                      Stop="both"
+                      Remove="uninstall"
+                      Wait="yes" />
+      <util:ServiceConfig ServiceName="ParentalControlWatchdog"
+                          FirstFailureActionType="restart"
+                          SecondFailureActionType="restart"
+                          ThirdFailureActionType="restart"
+                          ResetPeriodInDays="1"
+                          RestartServiceDelayInSeconds="5" />
+    </Component>
+  </Fragment>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       Post-install configuration script
+       ═══════════════════════════════════════════════════════════════ -->
+  <Fragment>
+    <Component Id="ConfigureScriptComp"
+               Directory="INSTALLDIR"
+               Guid="{C5EBB01D-A503-4C4E-167F-9D3F5C1E0A2B}">
+      <File Id="ConfigureScript" Source="configure.ps1" KeyPath="yes" />
+    </Component>
+  </Fragment>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       Data Directory — C:\ProgramData\ParentalControl
+       SYSTEM (service) and Administrators (parent UI) get full access.
+       Standard users (children) are intentionally excluded — the service
+       writes all DB data on their behalf; direct DB access would let a
+       child tamper with time limits or app rules using a SQLite editor.
+       configure.ps1 also runs sc sdset after services are registered.
+       ═══════════════════════════════════════════════════════════════ -->
+  <Fragment>
+    <ComponentGroup Id="DataDirComps" Directory="DataDir">
+      <Component Id="DataDirComp" Guid="{C9E5A3B7-4FAD-4C8E-B05F-3D7F9CBE4A6B}">
+        <CreateFolder>
+          <util:PermissionEx User="SYSTEM"         GenericAll="yes" />
+          <util:PermissionEx User="Administrators" GenericAll="yes" />
+          <!-- Users entry intentionally absent — see comment above -->
+        </CreateFolder>
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       Registry — Native Messaging Host
+       Chrome, Edge, Firefox, and Brave each need a registry entry
+       pointing to the installed nativemessaging-manifest.json.
+       configure.ps1 writes that file with the correct NativeHost path.
+       ═══════════════════════════════════════════════════════════════ -->
+  <Fragment>
+    <ComponentGroup Id="RegistryComps" Directory="INSTALLDIR">
+
+      <Component Id="RegChrome" Guid="{D0F6B4C8-50BE-4D9F-C16A-4E8A0DCF5B7C}">
+        <RegistryKey Root="HKLM"
+                     Key="SOFTWARE\Google\Chrome\NativeMessagingHosts\com.parentalcontrol.host"
+                     ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes">
+          <RegistryValue Type="string"
+                         Value="[INSTALLDIR]nativemessaging-manifest.json"
+                         KeyPath="yes" />
+        </RegistryKey>
+      </Component>
+
+      <Component Id="RegEdge" Guid="{E1A7C5D9-61CF-4E0A-D27B-5F9B1EDA6C8D}">
+        <RegistryKey Root="HKLM"
+                     Key="SOFTWARE\Microsoft\Edge\NativeMessagingHosts\com.parentalcontrol.host"
+                     ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes">
+          <RegistryValue Type="string"
+                         Value="[INSTALLDIR]nativemessaging-manifest.json"
+                         KeyPath="yes" />
+        </RegistryKey>
+      </Component>
+
+      <Component Id="RegFirefox" Guid="{F2B8D6EA-72D0-4F1B-E38C-6A0C2FEB7D9E}">
+        <RegistryKey Root="HKLM"
+                     Key="SOFTWARE\Mozilla\NativeMessagingHosts\com.parentalcontrol.host"
+                     ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes">
+          <RegistryValue Type="string"
+                         Value="[INSTALLDIR]nativemessaging-manifest.json"
+                         KeyPath="yes" />
+        </RegistryKey>
+      </Component>
+
+      <Component Id="RegBrave" Guid="{A3C9E7FB-83E1-4A2C-F49D-7B1D3AFC8E0F}">
+        <RegistryKey Root="HKLM"
+                     Key="SOFTWARE\BraveSoftware\Brave-Browser\NativeMessagingHosts\com.parentalcontrol.host"
+                     ForceCreateOnInstall="yes" ForceDeleteOnUninstall="yes">
+          <RegistryValue Type="string"
+                         Value="[INSTALLDIR]nativemessaging-manifest.json"
+                         KeyPath="yes" />
+        </RegistryKey>
+      </Component>
+
+    </ComponentGroup>
+  </Fragment>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       Start Menu Shortcuts
+       ═══════════════════════════════════════════════════════════════ -->
+  <Fragment>
+    <ComponentGroup Id="ShortcutComps" Directory="AppMenuDir">
+      <Component Id="AppShortcutComp" Guid="{B4DAFA0C-94F2-4B3D-056E-8C2E4B0D9F1A}">
+        <Shortcut Id="AppShortcut"
+                  Name="ParentGuard"
+                  Description="Open the ParentGuard parental-control dashboard"
+                  Target="[INSTALLDIR]ParentalControl.UI.exe"
+                  WorkingDirectory="INSTALLDIR" />
+        <Shortcut Id="UninstallShortcut"
+                  Name="Uninstall ParentGuard"
+                  Target="[System64Folder]msiexec.exe"
+                  Arguments="/x [ProductCode]" />
+        <!-- RemoveFolder cleans up the Start Menu group on uninstall -->
+        <RemoveFolder Id="RemoveAppMenuDir" Directory="AppMenuDir" On="uninstall" />
+        <!-- Shortcuts require a registry KeyPath -->
+        <RegistryValue Root="HKCU"
+                       Key="Software\ParentGuard\Installed"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+
+</Wix>

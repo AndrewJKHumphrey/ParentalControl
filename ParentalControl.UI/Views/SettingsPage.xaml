@@ -217,21 +217,31 @@
                         <!-- Red → Rose spectrum -->
                         <ComboBoxItem Content="Red"/>
                         <ComboBoxItem Content="Scarlet"/>
+                        <ComboBoxItem Content="Coral"/>
                         <ComboBoxItem Content="Vermilion"/>
                         <ComboBoxItem Content="Orange"/>
                         <ComboBoxItem Content="Amber"/>
+                        <ComboBoxItem Content="Gold"/>
                         <ComboBoxItem Content="Yellow"/>
                         <ComboBoxItem Content="Chartreuse"/>
                         <ComboBoxItem Content="Lime"/>
+                        <ComboBoxItem Content="Mint"/>
                         <ComboBoxItem Content="Green"/>
                         <ComboBoxItem Content="Teal"/>
                         <ComboBoxItem Content="Cyan"/>
+                        <ComboBoxItem Content="Sky"/>
                         <ComboBoxItem Content="Blue"/>
                         <ComboBoxItem Content="Indigo"/>
+                        <ComboBoxItem Content="Lavender"/>
                         <ComboBoxItem Content="Violet"/>
                         <ComboBoxItem Content="Purple"/>
                         <ComboBoxItem Content="Magenta"/>
+                        <ComboBoxItem Content="Pink"/>
                         <ComboBoxItem Content="Rose"/>
+                        <!-- Neutral tones -->
+                        <ComboBoxItem Content="Cocoa"/>
+                        <ComboBoxItem Content="Silver"/>
+                        <ComboBoxItem Content="Sand"/>
 
                         <!-- ── Two-colour  (sorted by background hue) ────────────────── -->
                         <!-- Red bg -->
@@ -325,6 +335,31 @@
                         <ComboBoxItem Content="Cyberpunk"/>
                         <ComboBoxItem Content="Monokai"/>
                         <ComboBoxItem Content="High Contrast"/>
+                        <!-- New two-colour themes (spectrum order) -->
+                        <!-- Red bg -->
+                        <ComboBoxItem Content="Ruby"/>
+                        <ComboBoxItem Content="Dragon Blood"/>
+                        <!-- Orange bg -->
+                        <ComboBoxItem Content="Tangerine"/>
+                        <ComboBoxItem Content="Pumpkin"/>
+                        <!-- Amber bg -->
+                        <ComboBoxItem Content="Honey"/>
+                        <!-- Green bg -->
+                        <ComboBoxItem Content="Woodland"/>
+                        <ComboBoxItem Content="Meadow"/>
+                        <!-- Teal bg -->
+                        <ComboBoxItem Content="Sea Coral"/>
+                        <!-- Blue bg -->
+                        <ComboBoxItem Content="Royal"/>
+                        <!-- Dark Navy bg -->
+                        <ComboBoxItem Content="Inkwell"/>
+                        <!-- Blue-Purple bg -->
+                        <ComboBoxItem Content="Topaz"/>
+                        <!-- Violet bg -->
+                        <ComboBoxItem Content="Twilight Bloom"/>
+                        <!-- Rose bg -->
+                        <ComboBoxItem Content="Valentine"/>
+                        <ComboBoxItem Content="Cherry Blossom"/>
 
                         <!-- ── Three-colour  (sorted by background hue → accent hue) ── -->
                         <!-- Red bg -->
@@ -405,6 +440,32 @@
                         <ComboBoxItem Content="Midnight Purple"/>
                         <ComboBoxItem Content="Void"/>
                         <ComboBoxItem Content="Forge"/>
+                        <!-- New three-colour themes (spectrum order) -->
+                        <!-- Red bg -->
+                        <ComboBoxItem Content="Hellfire"/>
+                        <!-- Amber bg -->
+                        <ComboBoxItem Content="Citrus"/>
+                        <ComboBoxItem Content="Beekeeper"/>
+                        <!-- Green bg -->
+                        <ComboBoxItem Content="Grassland"/>
+                        <!-- Teal bg -->
+                        <ComboBoxItem Content="Tidepools"/>
+                        <!-- Dark Blue-Teal bg -->
+                        <ComboBoxItem Content="Fjord"/>
+                        <!-- Cyan bg -->
+                        <ComboBoxItem Content="Aquifer"/>
+                        <!-- Blue bg -->
+                        <ComboBoxItem Content="Prism"/>
+                        <!-- Dark bg -->
+                        <ComboBoxItem Content="Lunar"/>
+                        <ComboBoxItem Content="Obsidian"/>
+                        <!-- Indigo bg -->
+                        <ComboBoxItem Content="Oracle"/>
+                        <!-- Blue-Purple bg -->
+                        <ComboBoxItem Content="Dusk Storm"/>
+                        <!-- Violet bg -->
+                        <ComboBoxItem Content="Prophecy"/>
+                        <ComboBoxItem Content="Mirage"/>
 
                     </ComboBox>
 
@@ -489,7 +550,10 @@
                         <ComboBox x:Name="UiScaleBox" Grid.Column="1" Width="110" VerticalAlignment="Center"
                                   SelectionChanged="UiScale_Changed">
                             <ComboBoxItem Content="1080p"/>
+                            <ComboBoxItem Content="1200p"/>
                             <ComboBoxItem Content="1440p"/>
+                            <ComboBoxItem Content="1600p"/>
+                            <ComboBoxItem Content="1800p"/>
                             <ComboBoxItem Content="2160p"/>
                         </ComboBox>
                     </Grid>

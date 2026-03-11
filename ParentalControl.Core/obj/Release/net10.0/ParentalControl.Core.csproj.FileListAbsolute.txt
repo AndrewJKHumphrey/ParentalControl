@@ -13,3 +13,7 @@ C:\Users\humph\ParentalControl\ParentalControl.Core\obj\Release\net10.0\Parental
 C:\Users\humph\ParentalControl\ParentalControl.Core\obj\Release\net10.0\ParentalControl.Core.genruntimeconfig.cache
 C:\Users\humph\ParentalControl\ParentalControl.Core\obj\Release\net10.0\ref\ParentalControl.Core.dll
 C:\Users\humph\ParentalControl\ParentalControl.Core\obj\Release\net10.0\ParentalControl.Core.sourcelink.json
+C:\Users\humph\ParentalControl\publish\nativehost\ParentalControl.Core.deps.json
+C:\Users\humph\ParentalControl\publish\nativehost\ParentalControl.Core.runtimeconfig.json
+C:\Users\humph\ParentalControl\publish\nativehost\ParentalControl.Core.dll
+C:\Users\humph\ParentalControl\publish\nativehost\ParentalControl.Core.pdb

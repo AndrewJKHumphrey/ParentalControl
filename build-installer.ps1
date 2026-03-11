@@ -1,0 +1,183 @@
+#Requires -RunAsAdministrator
+<#
+.SYNOPSIS
+    Builds the ParentGuard MSI installer.
+.DESCRIPTION
+    1. Publishes all four projects (Service, Watchdog, NativeHost, UI) as self-contained win-x64.
+    2. Merges the output into publish\combined\ (Service.exe and Watchdog.exe are kept
+       in their own publish directories; non-Windows runtimes are excluded).
+    3. Generates WiX component WXS files from the merged directory contents.
+    4. Builds the WiX installer project.
+
+    Output: ParentalControl.Installer\bin\Release\en-US\ParentGuard-Setup.msi
+
+PREREQUISITES
+    dotnet SDK 8+  (WixToolset.Sdk NuGet is downloaded automatically on first build)
+#>
+
+$ErrorActionPreference = "Stop"
+$SolutionDir   = $PSScriptRoot
+$InstallerDir  = Join-Path $SolutionDir "ParentalControl.Installer"
+$CombinedDir   = Join-Path $SolutionDir "publish\combined"
+$ExtensionDir  = Join-Path $SolutionDir "ParentalControl.Extension"
+
+Write-Host "=== ParentGuard — Build MSI ===" -ForegroundColor Cyan
+
+# ── Helper: publish a project ────────────────────────────────────────────────
+function Publish-Project {
+    param([string]$Project, [string]$OutDir)
+    Write-Host "`nPublishing $Project..." -ForegroundColor Yellow
+    dotnet publish "$SolutionDir\$Project\$Project.csproj" `
+        -c Release -r win-x64 --self-contained true `
+        -p:PublishSingleFile=false `
+        -o "$SolutionDir\publish\$OutDir"
+    if ($LASTEXITCODE -ne 0) { throw "Publish failed for $Project" }
+}
+
+# ── 1. Publish all four projects ─────────────────────────────────────────────
+Publish-Project "ParentalControl.Service"    "service"
+Publish-Project "ParentalControl.Watchdog"   "watchdog"
+Publish-Project "ParentalControl.NativeHost" "nativehost"
+Publish-Project "ParentalControl.UI"         "ui"
+
+# ── 2. Merge into publish\combined\ ──────────────────────────────────────────
+# Exclude: service/watchdog EXEs (handled by explicit WiX service components)
+# Exclude: non-Windows runtimes (linux-*, osx-*, maccatalyst-*, browser-wasm)
+Write-Host "`nMerging publish outputs into publish\combined\..." -ForegroundColor Yellow
+
+if (Test-Path $CombinedDir) { Remove-Item $CombinedDir -Recurse -Force }
+New-Item -ItemType Directory -Force -Path $CombinedDir | Out-Null
+
+$excludeExes    = @('ParentalControl.Service.exe', 'ParentalControl.Watchdog.exe')
+$excludeRtPaths = 'runtimes\browser-wasm', 'runtimes\linux-', 'runtimes\osx-',
+                  'runtimes\maccatalyst-', 'runtimes\android', 'runtimes\ios',
+                  'runtimes\tvos', 'runtimes\watchos'
+
+function ShouldExclude([string]$relPath) {
+    foreach ($prefix in $excludeRtPaths) {
+        if ($relPath.StartsWith($prefix)) { return $true }
+    }
+    return $false
+}
+
+foreach ($src in @('watchdog', 'nativehost', 'ui', 'service')) {
+    $srcPath = "$SolutionDir\publish\$src"
+
+    # Root-level files
+    Get-ChildItem $srcPath -File | Where-Object {
+        $_.Name -notin $excludeExes
+    } | ForEach-Object {
+        Copy-Item $_.FullName -Destination $CombinedDir -Force
+    }
+
+    # Subdirectories (with non-Windows runtime filtering)
+    Get-ChildItem $srcPath -Directory -Recurse | ForEach-Object {
+        $relDir = $_.FullName.Substring($srcPath.Length + 1)
+        if (-not (ShouldExclude $relDir)) {
+            $dest = Join-Path $CombinedDir $relDir
+            if (-not (Test-Path $dest)) { New-Item -ItemType Directory $dest | Out-Null }
+        }
+    }
+
+    Get-ChildItem $srcPath -File -Recurse | Where-Object {
+        $rel = $_.FullName.Substring($srcPath.Length + 1)
+        $dir = [System.IO.Path]::GetDirectoryName($rel)
+        -not (ShouldExclude $dir) -and $_.Name -notin $excludeExes
+    } | ForEach-Object {
+        $rel  = $_.FullName.Substring($srcPath.Length + 1)
+        $dest = Join-Path $CombinedDir $rel
+        Copy-Item $_.FullName -Destination $dest -Force
+    }
+}
+
+$count = (Get-ChildItem $CombinedDir -Recurse -File).Count
+Write-Host "  Combined: $count files" -ForegroundColor Green
+
+# ── 3. Generate WXS harvest files ────────────────────────────────────────────
+# WiX v4 doesn't support MSBuild HarvestDirectory items in 4.0.5.
+# We generate the ComponentGroup WXS files from PowerShell instead.
+# WiX auto-includes all *.wxs files in the installer project directory.
+
+function New-HarvestWxs {
+    param(
+        [string] $SourceDir,   # Absolute path to the directory to harvest
+        [string] $RelSource,   # Relative source path used in <File Source="...\xxx"> e.g. "publish\combined"
+        [string] $DirRefId,    # WiX Directory Id for the root (e.g. INSTALLDIR)
+        [string] $GroupName,   # ComponentGroup name
+        [string] $IdPrefix,    # Unique prefix for component/file Ids
+        [string] $OutFile      # Output .wxs file absolute path
+    )
+
+    $allFiles = Get-ChildItem $SourceDir -File -Recurse | Sort-Object FullName
+    $xml = [System.Text.StringBuilder]::new()
+    [void]$xml.AppendLine('<?xml version="1.0" encoding="UTF-8"?>')
+    [void]$xml.AppendLine('<!-- AUTO-GENERATED by build-installer.ps1 — do not edit manually -->')
+    [void]$xml.AppendLine('<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">')
+    [void]$xml.AppendLine('  <Fragment>')
+    [void]$xml.AppendLine("    <ComponentGroup Id=""$GroupName"">")
+
+    $idx = 0
+    foreach ($f in $allFiles) {
+        $relFile = $f.FullName.Substring($SourceDir.Length + 1)
+        $relDir  = [System.IO.Path]::GetDirectoryName($relFile)
+        $srcAttr = "..\$RelSource\$relFile"
+        $fid     = "${IdPrefix}_f$idx"
+
+        if ($relDir) {
+            [void]$xml.AppendLine("      <Component Directory=""$DirRefId"" Subdirectory=""$relDir"">")
+        } else {
+            [void]$xml.AppendLine("      <Component Directory=""$DirRefId"">")
+        }
+        [void]$xml.AppendLine("        <File Id=""$fid"" Source=""$srcAttr"" />")
+        [void]$xml.AppendLine("      </Component>")
+        $idx++
+    }
+
+    [void]$xml.AppendLine("    </ComponentGroup>")
+    [void]$xml.AppendLine('  </Fragment>')
+    [void]$xml.AppendLine('</Wix>')
+
+    [System.IO.File]::WriteAllText($OutFile, $xml.ToString(), [System.Text.Encoding]::UTF8)
+    Write-Host "  Generated: $(Split-Path $OutFile -Leaf) ($idx components)" -ForegroundColor Green
+}
+
+Write-Host "`nGenerating WXS harvest files..." -ForegroundColor Yellow
+
+New-HarvestWxs `
+    -SourceDir  $CombinedDir `
+    -RelSource  "publish\combined" `
+    -DirRefId   "INSTALLDIR" `
+    -GroupName  "AppFiles" `
+    -IdPrefix   "app" `
+    -OutFile    (Join-Path $InstallerDir "AppFiles.generated.wxs")
+
+New-HarvestWxs `
+    -SourceDir  $ExtensionDir `
+    -RelSource  "ParentalControl.Extension" `
+    -DirRefId   "ExtDir" `
+    -GroupName  "ExtensionFiles" `
+    -IdPrefix   "ext" `
+    -OutFile    (Join-Path $InstallerDir "ExtFiles.generated.wxs")
+
+# ── 4. Build the WiX project ─────────────────────────────────────────────────
+Write-Host "`nBuilding WiX installer project..." -ForegroundColor Yellow
+dotnet build "$InstallerDir\ParentalControl.Installer.wixproj" `
+    --configuration Release `
+    -p:Platform=x64
+
+if ($LASTEXITCODE -ne 0) { throw "WiX build failed" }
+
+# ── 5. Report location of the MSI ────────────────────────────────────────────
+$msi = Get-ChildItem "$InstallerDir\bin" -Filter "*.msi" -Recurse -ErrorAction SilentlyContinue |
+       Sort-Object LastWriteTime -Descending | Select-Object -First 1
+
+if ($msi) {
+    Write-Host "`n=== Build complete! ===" -ForegroundColor Green
+    Write-Host "MSI: $($msi.FullName)" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "To install:    msiexec /i `"$($msi.FullName)`"" -ForegroundColor White
+    Write-Host "To uninstall:  msiexec /x `"$($msi.FullName)`"" -ForegroundColor White
+    Write-Host "Silent install: msiexec /i `"$($msi.FullName)`" /qn" -ForegroundColor White
+} else {
+    Write-Warning "Build completed but MSI not found under $InstallerDir\bin\"
+}

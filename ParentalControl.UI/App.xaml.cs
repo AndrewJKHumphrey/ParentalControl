@@ -31,7 +31,13 @@ public partial class App : Application
             catch { /* Column already exists */ }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN IsAllowMode INTEGER NOT NULL DEFAULT 0"); }
             catch { /* Column already exists */ }
-            // WebsiteRules table is created via EnsureCreated() — no ALTER needed here
+            try { db.Database.ExecuteSqlRaw(@"
+                CREATE TABLE IF NOT EXISTS WebsiteRules (
+                    Id            INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                    Pattern       TEXT    NOT NULL DEFAULT '',
+                    IsBlocked     INTEGER NOT NULL DEFAULT 1,
+                    UserProfileId INTEGER NOT NULL DEFAULT 1
+                )"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ScreenTimeEnabled INTEGER NOT NULL DEFAULT 1"); }
             catch { /* Column already exists */ }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN AppControlEnabled INTEGER NOT NULL DEFAULT 1"); }
@@ -179,6 +185,15 @@ public partial class App : Application
 
     }
 
+    private void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+    {
+        var log = $"{e.Exception.GetType().Name}: {e.Exception.Message}\n\n{e.Exception.StackTrace}";
+        var logPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "pc_crash.log");
+        try { System.IO.File.WriteAllText(logPath, log); } catch { }
+        MessageBox.Show($"Unhandled exception:\n\n{log}", "Crash Details", MessageBoxButton.OK, MessageBoxImage.Error);
+        e.Handled = true;
+    }
+
     public static void ApplyTheme(string name, bool isDark = true,
         string customPrimary   = "#1E1E2E",
         string customSecondary = "#585B70",
@@ -227,6 +242,10 @@ public partial class App : Application
             ["Scarlet"]   = (("#1E0A06", "#160604", "#2C1008", "#3E1A12", "#240C06", "#DD1100", "#F5C4B0", "#CC7E60"),
                               ("#FFF2EE", "#FFE4DC", "#FFFBFA", "#FFD0C0", "#FFF6F2", "#CC2200", "#3A0800", "#882010")),
 
+            // ── Quinary: Coral (Scarlet → Vermilion) ──────────────────────────
+            ["Coral"]     = (("#1E0C06", "#150806", "#2C1408", "#3C1E12", "#220E06", "#DD4422", "#F5CAB0", "#CC8866"),
+                              ("#FFF6F2", "#FFEAE0", "#FFFBF8", "#FFD8C8", "#FFF0E8", "#BB2200", "#441010", "#882222")),
+
             // ── Tertiary: Vermilion (Red-Orange) ───────────────────────────────
             ["Vermilion"] = (("#1E1208", "#150D05", "#2E1E0E", "#3E2A18", "#241808", "#993322", "#F5CCB8", "#CC8860"),
                               ("#FFF3EE", "#FFE5D8", "#FFFAF8", "#FFD8C0", "#FFF6F2", "#CC4422", "#3A1005", "#883322")),
@@ -238,6 +257,10 @@ public partial class App : Application
             // ── Tertiary: Amber (Yellow-Orange) ───────────────────────────────
             ["Amber"]     = (("#1A1800", "#131200", "#282400", "#363200", "#1E1C00", "#887700", "#F0DD77", "#C8AA30"),
                               ("#FFFBEE", "#FFF5D8", "#FFFEF8", "#FFEEB8", "#FFFDF0", "#CC8800", "#3A2A00", "#886600")),
+
+            // ── Quinary: Gold (Amber → Yellow) ────────────────────────────────
+            ["Gold"]      = (("#1C1A00", "#141200", "#2A2600", "#3A3400", "#201E00", "#CC9900", "#FFEE88", "#DDCC44"),
+                              ("#FEFDE8", "#FAF8D0", "#FDFCE0", "#F8F480", "#FCFCE8", "#996600", "#443300", "#664400")),
 
             // ── Primary: Yellow ────────────────────────────────────────────────
             ["Yellow"]    = (("#1A1A00", "#131300", "#282800", "#363600", "#1E1E00", "#888800", "#F0EE77", "#C8C030"),
@@ -251,6 +274,10 @@ public partial class App : Application
             ["Lime"]      = (("#0E1800", "#0A1200", "#182800", "#223800", "#121E00", "#447800", "#BBFF44", "#88CC20"),
                               ("#F4FFEE", "#E8FFD8", "#FBFFFA", "#D0FF99", "#F8FFE8", "#448800", "#1A3A00", "#336600")),
 
+            // ── Quinary: Mint (Lime → Green) ──────────────────────────────────
+            ["Mint"]      = (("#061C0E", "#041208", "#0C2A14", "#143A1C", "#081E10", "#00CC88", "#AAFFDD", "#55DDAA"),
+                              ("#EEFFF6", "#D8FFF0", "#F5FFF8", "#B0FFD8", "#E4FFF0", "#009966", "#003322", "#005544")),
+
             // ── Secondary: Green ───────────────────────────────────────────────
             ["Green"]     = (("#0A1E0C", "#081410", "#102C14", "#1C3C20", "#0E2010", "#2A7A30", "#AAEEBB", "#70BB80"),
                               ("#EEFAF0", "#DCF4E0", "#F8FFFB", "#C8ECC8", "#F2FCF4", "#228844", "#0A2A10", "#1A6030")),
@@ -263,6 +290,10 @@ public partial class App : Application
             ["Cyan"]      = (("#001C22", "#001418", "#002C34", "#003A44", "#002028", "#00AACC", "#88EEFF", "#44BBCC"),
                               ("#EEFFFF", "#D8FFFF", "#F5FFFF", "#B0FFFF", "#E0FFFF", "#007799", "#002830", "#006070")),
 
+            // ── Quinary: Sky (Cyan → Blue) ────────────────────────────────────
+            ["Sky"]       = (("#061826", "#041018", "#0C2436", "#103046", "#081C2C", "#0088DD", "#AADDFF", "#66AADD"),
+                              ("#EAF4FF", "#D4ECFF", "#F2F8FF", "#C0E4FF", "#E4F0FF", "#0055BB", "#001844", "#003388")),
+
             // ── Primary: Blue ──────────────────────────────────────────────────
             ["Blue"]      = (("#0C1224", "#080D1A", "#101E38", "#18304C", "#0E162C", "#2255AA", "#88BBFF", "#5588CC"),
                               ("#EEF2FF", "#DCE6FF", "#F8FAFF", "#BCCEFF", "#F2F6FF", "#2244BB", "#080E30", "#1A2E88")),
@@ -270,6 +301,10 @@ public partial class App : Application
             // ── Tertiary: Indigo (Blue-Purple) ────────────────────────────────
             ["Indigo"]    = (("#100C22", "#0C0818", "#1A1234", "#261A46", "#140E28", "#4433AA", "#AAAAFF", "#7766CC"),
                               ("#F0EEFF", "#E4E0FF", "#FAFAFF", "#CCC8FF", "#F5F4FF", "#4433AA", "#100830", "#2A1888")),
+
+            // ── Quinary: Lavender (Indigo → Violet) ───────────────────────────
+            ["Lavender"]  = (("#120E26", "#0C0A1C", "#1C1638", "#26204A", "#16122E", "#7766BB", "#CCBBFF", "#9988DD"),
+                              ("#F2F0FF", "#E8E4FF", "#F8F6FF", "#DDD8FF", "#EEE8FF", "#4433AA", "#2A1A6A", "#3A2288")),
 
             // ── Quaternary: Violet (Indigo → Purple) ──────────────────────────
             ["Violet"]    = (("#120820", "#0C0418", "#1C1030", "#281840", "#160C28", "#6622CC", "#CCAAFF", "#9966CC"),
@@ -282,6 +317,10 @@ public partial class App : Application
             // ── Tertiary: Magenta (Red-Purple) ────────────────────────────────
             ["Magenta"]   = (("#1E0818", "#170512", "#2E1028", "#3E183A", "#240C1E", "#882288", "#FFB0EE", "#CC70CC"),
                               ("#FFF0FA", "#FFE0F5", "#FFFCFE", "#FFC8F0", "#FFF5FB", "#AA2299", "#3A0030", "#880888")),
+
+            // ── Quinary: Pink (Magenta → Rose) ────────────────────────────────
+            ["Pink"]      = (("#1E0A16", "#160610", "#2E1222", "#3E1A30", "#240E1C", "#DD2266", "#FFB8D8", "#DD7799"),
+                              ("#FFF0F8", "#FFE0F0", "#FFFBFE", "#FFC8E8", "#FFF5FA", "#BB0044", "#441022", "#882244")),
 
             // ── Quaternary: Rose (Magenta → Red, closes wheel) ────────────────
             ["Rose"]      = (("#1E0810", "#160508", "#2E1020", "#3E1830", "#240C18", "#CC1155", "#F5BBCC", "#CC7788"),
@@ -849,6 +888,136 @@ public partial class App : Application
             // Dark warm-grey bg │ Crimson accent │ Amber text
             ["Forge"]          = (("#181410", "#100E0C", "#242018", "#302C24", "#1C1814", "#CC1133", "#FFCC44", "#DDAA11"),
                                    ("#FFF8F0", "#FFF0E0", "#FFFCF8", "#FFE8D0", "#FFF4EC", "#AA0022", "#7A5500", "#5A3A00")),
+
+            // ── Neutral single-colour themes ──────────────────────────────────
+
+            // Warm brown neutral
+            ["Cocoa"]          = (("#1C1008", "#140A06", "#2A1A10", "#3A2820", "#201410", "#AA6633", "#F5DCC4", "#CCAA88"),
+                                   ("#FFF8F2", "#FFEEDD", "#FFFCF8", "#FFE0C8", "#FFF4EA", "#884422", "#3A1A10", "#662210")),
+
+            // Cool blue-grey neutral
+            ["Silver"]         = (("#0E1014", "#080A0E", "#161820", "#20222A", "#121416", "#8899BB", "#CCD8EE", "#9AAABB"),
+                                   ("#F0F2F8", "#E4E8F0", "#F8FAFF", "#D4D8E4", "#ECEEF8", "#445577", "#1A2030", "#2A3040")),
+
+            // Warm sandy neutral
+            ["Sand"]           = (("#1E1A10", "#161208", "#2C2618", "#3C3428", "#221E14", "#AA9955", "#F5E8C8", "#CCBB88"),
+                                   ("#FFF8EC", "#FFF0D8", "#FFFDF8", "#FFE8C0", "#FFF4E8", "#886633", "#3A2E10", "#664400")),
+
+            // ── New two-colour themes (spectrum order: Red → Rose) ────────────
+
+            // Deep red bg │ Cyan accent
+            ["Ruby"]           = (("#200808", "#160404", "#301010", "#401818", "#280C0C", "#00BBDD", "#FFCCCC", "#CC8888"),
+                                   ("#FFF2F2", "#FFE8E8", "#FFFBFB", "#FFD0D0", "#FFF5F5", "#007799", "#380808", "#882222")),
+
+            // Scorched deep red bg │ Yellow-green acid accent
+            ["Dragon Blood"]   = (("#200306", "#160204", "#30060A", "#400C10", "#280406", "#AADD00", "#FFBBBB", "#DD7777"),
+                                   ("#FFF0F2", "#FFE0E8", "#FFFBFC", "#FFC8D0", "#FFF5F6", "#667700", "#380808", "#882222")),
+
+            // Orange bg │ Teal accent
+            ["Tangerine"]      = (("#1E1208", "#150C06", "#2C1C10", "#3A2818", "#221608", "#00BBAA", "#FFD4AA", "#CC8855"),
+                                   ("#FFF6EC", "#FFEAD8", "#FFFBF7", "#FFD8B8", "#FFF0E8", "#007777", "#441A00", "#884400")),
+
+            // Orange bg │ Violet accent
+            ["Pumpkin"]        = (("#1C1006", "#140A04", "#2A1808", "#3A2410", "#201408", "#AA33CC", "#FFD4AA", "#CC8855"),
+                                   ("#FFF6EE", "#FFEADC", "#FFFBF8", "#FFD8B8", "#FFF2E8", "#771199", "#441A00", "#884400")),
+
+            // Deep amber bg │ Navy accent
+            ["Honey"]          = (("#1C1800", "#141200", "#2A2400", "#3A3200", "#201C00", "#2244AA", "#FFEE88", "#DDCC44"),
+                                   ("#FEFDE8", "#FAF8D0", "#FDFCE0", "#F8F488", "#FCFCE8", "#112299", "#442200", "#886600")),
+
+            // Dark forest green bg │ Amber accent
+            ["Woodland"]       = (("#081A08", "#041206", "#102810", "#183818", "#0C1E0C", "#CC8800", "#AAEEAA", "#66BB66"),
+                                   ("#F0FFF0", "#E4FFE4", "#F8FFF8", "#D0FFD0", "#EAFFF0", "#996600", "#0A2A0A", "#226622")),
+
+            // Soft green bg │ Rose accent
+            ["Meadow"]         = (("#0A1A0A", "#061206", "#102A10", "#183A18", "#0E1E0E", "#FF4499", "#AAFFAA", "#66CC66"),
+                                   ("#F0FFF0", "#E4FFE4", "#F8FFF8", "#D0FFD0", "#EAFFEA", "#CC1155", "#0A2A0A", "#226622")),
+
+            // Dark teal bg │ Coral/salmon accent
+            ["Sea Coral"]      = (("#061A18", "#041210", "#0C2826", "#123634", "#081C1A", "#FF6644", "#AAFFEE", "#55CCBB"),
+                                   ("#EDFFFE", "#DAFFF8", "#F5FFFC", "#B0FFEE", "#E0FFFA", "#CC3311", "#031C18", "#1A6060")),
+
+            // Deep navy bg │ Gold accent
+            ["Royal"]          = (("#080E22", "#060A18", "#0E1634", "#141E44", "#0A102A", "#DDAA00", "#AACCFF", "#6688CC"),
+                                   ("#EEF2FF", "#DCE6FF", "#F5F8FF", "#C8D8FF", "#E4EEFF", "#AA7700", "#040E2E", "#1A2E88")),
+
+            // Very dark navy bg │ Silver-blue accent
+            ["Inkwell"]        = (("#060810", "#040608", "#0C101A", "#141822", "#08090E", "#CCDDFF", "#AABBEE", "#7788BB"),
+                                   ("#F0F4FF", "#E4EBFF", "#F8FAFF", "#D4DDFF", "#ECF0FF", "#334488", "#0A0C1E", "#1A2060")),
+
+            // Deep violet-grey bg │ Hot pink accent
+            ["Twilight Bloom"] = (("#0E0820", "#080418", "#160E30", "#201640", "#120A28", "#FF77BB", "#CCBBFF", "#9977CC"),
+                                   ("#F2EEFF", "#E8E0FF", "#F8F5FF", "#DACCFF", "#EEEAFF", "#CC0066", "#180830", "#3A1888")),
+
+            // Deep blue-purple bg │ Amber accent
+            ["Topaz"]          = (("#0A0C1E", "#060810", "#121430", "#1A1E40", "#0C1028", "#DDAA33", "#AABBFF", "#7788CC"),
+                                   ("#EEF0FF", "#E0E6FF", "#F5F8FF", "#C8D4FF", "#E8EEFF", "#AA7700", "#060E30", "#1A2A88")),
+
+            // Deep rose bg │ Teal accent
+            ["Valentine"]      = (("#200616", "#160410", "#300A22", "#401232", "#28081C", "#00AAAA", "#FFBBDD", "#DD77AA"),
+                                   ("#FFF0F8", "#FFE0EE", "#FFFCFE", "#FFC8E0", "#FFF5FA", "#007777", "#380010", "#880030")),
+
+            // Deep rose-pink bg │ Lavender accent
+            ["Cherry Blossom"] = (("#1E0810", "#160608", "#2E1020", "#3E1A2C", "#221020", "#9966DD", "#FFAABB", "#DD6688"),
+                                   ("#FFF0F5", "#FFE0EC", "#FFFBFE", "#FFC8D8", "#FFF5F8", "#6633BB", "#380010", "#880030")),
+
+            // ── New three-colour themes (spectrum order: bg hue → accent hue) ─
+
+            // Deep red-black bg │ Orange-red accent │ Bright yellow text
+            ["Hellfire"]       = (("#1A0202", "#120000", "#280806", "#38100A", "#200404", "#EE4400", "#FFEE44", "#DDCC00"),
+                                   ("#FFF5F5", "#FFECEC", "#FFFBFB", "#FFD8D8", "#FFF0F0", "#CC2200", "#664400", "#443300")),
+
+            // Deep amber-orange bg │ Lime accent │ Red text
+            ["Citrus"]         = (("#1C1200", "#140C00", "#2A1C00", "#3A2A00", "#201600", "#AAEE00", "#FF6644", "#DD3311"),
+                                   ("#FFF8EC", "#FFEECC", "#FFFDF8", "#FFE8B8", "#FFF4E8", "#667700", "#881100", "#660000")),
+
+            // Dark amber bg │ Sienna accent │ Teal text
+            ["Beekeeper"]      = (("#1C1800", "#141200", "#2A2400", "#3A3200", "#201C00", "#995533", "#44DDCC", "#22AAAA"),
+                                   ("#FEFDE8", "#FAF8D0", "#FDFCE0", "#F8F488", "#FCFCE8", "#773300", "#003344", "#002233")),
+
+            // Dark forest green bg │ Sky blue accent │ Gold text
+            ["Grassland"]      = (("#081A08", "#041206", "#102810", "#183818", "#0C1E0C", "#2299CC", "#FFDD55", "#CCAA22"),
+                                   ("#F0FFF0", "#E4FFE4", "#F8FFF8", "#D0FFD0", "#EAFFF0", "#116688", "#665500", "#443300")),
+
+            // Dark teal bg │ Rose accent │ Amber text
+            ["Tidepools"]      = (("#061C1A", "#041210", "#0C2A28", "#123836", "#081E1C", "#FF4499", "#FFCC55", "#DDAA22"),
+                                   ("#EDFFFE", "#DAFFF8", "#F5FFFC", "#B0FFEE", "#E0FFFA", "#CC0055", "#775500", "#553300")),
+
+            // Very dark blue-teal bg │ Ice-cyan accent │ Ember-orange text
+            ["Fjord"]          = (("#040E1A", "#020A12", "#08162A", "#0E2038", "#060C1E", "#44CCEE", "#FF8844", "#DD5522"),
+                                   ("#EAF4FF", "#D4ECFF", "#F2F8FF", "#C0E4FF", "#E4F0FF", "#0077AA", "#883300", "#661100")),
+
+            // Deep dark cyan bg │ Lime accent │ Hot pink text
+            ["Aquifer"]        = (("#021818", "#011010", "#062424", "#0A3030", "#041A1A", "#88DD00", "#FF6699", "#DD2266"),
+                                   ("#EAFFFF", "#D0FFFF", "#F5FFFF", "#A8FFFF", "#DEFFFF", "#226600", "#881133", "#660022")),
+
+            // Dark blue bg │ Yellow accent │ Violet text
+            ["Prism"]          = (("#060E22", "#040A18", "#0C1434", "#121E44", "#08102A", "#FFDD00", "#CC88FF", "#9944DD"),
+                                   ("#EEF2FF", "#DCE6FF", "#F5F8FF", "#C8D8FF", "#E4EEFF", "#AA8800", "#440088", "#330066")),
+
+            // Near-black bg │ Silver-cyan accent │ Warm amber text
+            ["Lunar"]          = (("#080A0C", "#040608", "#101418", "#181C22", "#0C0E10", "#88CCDD", "#FFD066", "#CCAA33"),
+                                   ("#F4F8FC", "#E8F0F8", "#FAFCFF", "#D8E8F4", "#F0F4FA", "#3366AA", "#664400", "#443300")),
+
+            // Deep indigo bg │ Gold accent │ Rose text
+            ["Oracle"]         = (("#0C0A20", "#080618", "#141232", "#1E1A42", "#100E28", "#DDAA00", "#FF88BB", "#DD4477"),
+                                   ("#F0EEFF", "#E4E0FF", "#FAFAFF", "#D4CCFF", "#ECEAFF", "#AA7700", "#881133", "#660022")),
+
+            // Dark purple-blue bg │ Orange-red accent │ Cyan text
+            ["Dusk Storm"]     = (("#0A0C22", "#060818", "#121436", "#1A1C46", "#0C1028", "#EE5500", "#44DDEE", "#22AACC"),
+                                   ("#F0EEFF", "#E4E0FF", "#FAFAFF", "#D0CCFF", "#E8E4FF", "#CC2200", "#003344", "#002233")),
+
+            // Deep violet-purple bg │ Rose-magenta accent │ Pale gold text
+            ["Prophecy"]       = (("#120A22", "#0C0618", "#1C1034", "#261844", "#160C2A", "#EE2288", "#FFDD66", "#DDBB33"),
+                                   ("#F4EEFF", "#EAE0FF", "#FAFAFF", "#D8CCFF", "#F0EAFF", "#CC0066", "#887700", "#665500")),
+
+            // Deep dark violet bg │ Amber accent │ Mint-teal text
+            ["Mirage"]         = (("#0E0A20", "#080616", "#161030", "#201840", "#120C28", "#BB8800", "#44DDBB", "#22AAAA"),
+                                   ("#F2EEFF", "#E8E0FF", "#F8F6FF", "#DDD8FF", "#EEE8FF", "#996600", "#003344", "#002233")),
+
+            // Very dark near-black bg │ Silver accent │ Crimson text
+            ["Obsidian"]       = (("#080808", "#040404", "#101010", "#181818", "#0C0C0C", "#AABBCC", "#FF1133", "#CC0022"),
+                                   ("#F5F5F5", "#EEEEEE", "#FAFAFA", "#E0E0E0", "#F2F2F2", "#556677", "#880011", "#660011")),
         };
 
         // Fallback for legacy names

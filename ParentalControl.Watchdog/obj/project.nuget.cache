@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "bX+sbmKJCD8=",
+  "dgSpecHash": "rH/MeXh8qh8=",
   "success": true,
   "projectFilePath": "C:\\Users\\humph\\ParentalControl\\ParentalControl.Watchdog\\ParentalControl.Watchdog.csproj",
   "expectedPackageFiles": [
@@ -33,7 +33,10 @@
     "C:\\Users\\humph\\.nuget\\packages\\microsoft.extensions.options.configurationextensions\\10.0.0\\microsoft.extensions.options.configurationextensions.10.0.0.nupkg.sha512",
     "C:\\Users\\humph\\.nuget\\packages\\microsoft.extensions.primitives\\10.0.0\\microsoft.extensions.primitives.10.0.0.nupkg.sha512",
     "C:\\Users\\humph\\.nuget\\packages\\system.diagnostics.eventlog\\10.0.0\\system.diagnostics.eventlog.10.0.0.nupkg.sha512",
-    "C:\\Users\\humph\\.nuget\\packages\\system.serviceprocess.servicecontroller\\10.0.0\\system.serviceprocess.servicecontroller.10.0.0.nupkg.sha512"
+    "C:\\Users\\humph\\.nuget\\packages\\system.serviceprocess.servicecontroller\\10.0.0\\system.serviceprocess.servicecontroller.10.0.0.nupkg.sha512",
+    "C:\\Users\\humph\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x64\\10.0.3\\microsoft.netcore.app.runtime.win-x64.10.0.3.nupkg.sha512",
+    "C:\\Users\\humph\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-x64\\10.0.3\\microsoft.windowsdesktop.app.runtime.win-x64.10.0.3.nupkg.sha512",
+    "C:\\Users\\humph\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-x64\\10.0.3\\microsoft.aspnetcore.app.runtime.win-x64.10.0.3.nupkg.sha512"
   ],
   "logs": []
 }

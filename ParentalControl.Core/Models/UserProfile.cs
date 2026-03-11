@@ -18,6 +18,8 @@ public class UserProfile
     public bool     AlwaysRelock             { get; set; } = false;
     /// <summary>Persisted across service restarts to prevent double-locking on the same day.</summary>
     public bool     IsScreenTimeLocked       { get; set; } = false;
+    /// <summary>When true, only explicitly allowed domains are accessible; everything else is blocked.</summary>
+    public bool     WebFilterAllowMode       { get; set; } = false;
 
     /// <summary>Runtime-only: true when the Windows account requires a password to log in.</summary>
     [System.ComponentModel.DataAnnotations.Schema.NotMapped]
