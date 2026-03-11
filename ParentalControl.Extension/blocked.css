@@ -1,9 +1,39 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* ── Dark theme (default — matches the app's dark mode) ──────────────────── */
+:root {
+  --bg:        #1e1e2e;
+  --card-bg:   #313244;
+  --border:    #585b70;
+  --text:      #cdd6f4;
+  --text-sub:  #a6adc8;
+  --accent:    #f38ba8;
+  --url-color: #89b4fa;
+  --btn-bg:    #585b70;
+  --btn-hover: #6c7086;
+  --shadow:    rgba(0,0,0,0.4);
+}
+
+/* ── Light theme — activates when Windows/browser is set to light mode ───── */
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg:        #eff1f5;
+    --card-bg:   #ffffff;
+    --border:    #bcc0cc;
+    --text:      #4c4f69;
+    --text-sub:  #6c6f85;
+    --accent:    #d20f39;
+    --url-color: #1e66f5;
+    --btn-bg:    #dce0e8;
+    --btn-hover: #ccd0da;
+    --shadow:    rgba(0,0,0,0.12);
+  }
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: #1e1e2e;
-  color: #cdd6f4;
+  background: var(--bg);
+  color: var(--text);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -11,14 +41,14 @@ body {
 }
 
 .card {
-  background: #313244;
-  border: 1px solid #585b70;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 48px 40px;
   max-width: 480px;
   width: 90%;
   text-align: center;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  box-shadow: 0 8px 32px var(--shadow);
 }
 
 .icon {
@@ -29,13 +59,13 @@ body {
 h1 {
   font-size: 28px;
   font-weight: 700;
-  color: #f38ba8;
+  color: var(--accent);
   margin-bottom: 12px;
 }
 
 .url {
   font-size: 16px;
-  color: #89b4fa;
+  color: var(--url-color);
   font-weight: 600;
   margin-bottom: 16px;
   word-break: break-all;
@@ -43,14 +73,14 @@ h1 {
 
 .reason {
   font-size: 14px;
-  color: #a6adc8;
+  color: var(--text-sub);
   line-height: 1.6;
   margin-bottom: 28px;
 }
 
 button {
-  background: #585b70;
-  color: #cdd6f4;
+  background: var(--btn-bg);
+  color: var(--text);
   border: none;
   border-radius: 6px;
   padding: 10px 24px;
@@ -59,4 +89,4 @@ button {
   transition: background 0.15s;
 }
 
-button:hover { background: #6c7086; }
+button:hover { background: var(--btn-hover); }

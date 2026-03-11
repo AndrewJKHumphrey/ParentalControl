@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO;
 using System.ServiceProcess;
 using System.Windows;
 using System.Windows.Media;
@@ -219,6 +220,8 @@ public partial class App : Application
             customRes["BorderColor"]   = new SolidColorBrush(s);
             customRes["TextPrimary"]   = new SolidColorBrush(t);
             customRes["TextSecondary"] = new SolidColorBrush(Blend(t, p, 0.65));
+            static string ToHex(Color c) => $"#{c.R:X2}{c.G:X2}{c.B:X2}";
+            WriteThemeJson(ToHex(p), ToHex(Lighten(p, 0.12)), ToHex(s), ToHex(t), ToHex(Blend(t, p, 0.65)), ToHex(Lighten(p, 0.22)));
             return;
         }
 
@@ -1035,8 +1038,37 @@ public partial class App : Application
         res["TextPrimary"]   = Brush(palette.Item7);
         res["TextSecondary"] = Brush(palette.Item8);
 
+        WriteThemeJson(palette.Item1, palette.Item3, palette.Item6, palette.Item7, palette.Item8, palette.Item4);
+
         static SolidColorBrush Brush(string hex) =>
             new((Color)ColorConverter.ConvertFromString(hex));
+    }
+
+    private static void WriteThemeJson(
+        string appBg, string cardBg, string borderColor,
+        string textPrimary, string textSecondary, string cardHover)
+    {
+        try
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(new
+            {
+                bg       = appBg,
+                cardBg,
+                border   = borderColor,
+                text     = textPrimary,
+                textSub  = textSecondary,
+                btnBg    = cardHover,
+                btnHover = borderColor,
+                accent   = borderColor,
+                urlColor = borderColor,
+            });
+            var dir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                "ParentalControl");
+            Directory.CreateDirectory(dir);
+            File.WriteAllText(Path.Combine(dir, "theme.json"), json);
+        }
+        catch { }
     }
 
     public static void SeedBrowsers(AppDbContext db)

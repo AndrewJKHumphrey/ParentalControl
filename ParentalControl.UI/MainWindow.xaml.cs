@@ -38,6 +38,10 @@ public partial class MainWindow : Window
             var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
             timer.Tick += (_, _) => RefreshServiceButton();
             timer.Start();
+
+            // Start downloading any unsynced content-tag domains immediately so
+            // the extension has up-to-date block lists as soon as the UI opens.
+            WebFilterPage.KickStartupSync();
         };
     }
 

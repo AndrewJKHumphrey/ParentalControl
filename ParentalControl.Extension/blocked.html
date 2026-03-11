@@ -23,6 +23,21 @@
     } catch {
       document.getElementById("blocked-url").textContent = "";
     }
+
+    // Apply the app theme selected by the parent in Settings
+    chrome.storage.local.get("theme", ({ theme }) => {
+      if (!theme) return;
+      const s = document.documentElement.style;
+      s.setProperty("--bg",        theme.bg);
+      s.setProperty("--card-bg",   theme.cardBg);
+      s.setProperty("--border",    theme.border);
+      s.setProperty("--text",      theme.text);
+      s.setProperty("--text-sub",  theme.textSub);
+      s.setProperty("--accent",    theme.accent);
+      s.setProperty("--url-color", theme.urlColor);
+      s.setProperty("--btn-bg",    theme.btnBg);
+      s.setProperty("--btn-hover", theme.btnHover);
+    });
   </script>
 </body>
 </html>

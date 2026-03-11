@@ -15,7 +15,8 @@ const RULE_ALLOW_DOMAINS     = 4;  // allow-mode: allow explicitly-allowed domai
 // Tag domains are fetched in chunks to stay under the Chrome/Edge 1 MB native
 // messaging message size limit.  174k adult-content domains ≈ 4 MB of JSON —
 // exceeds the limit and causes Chrome to silently drop the port connection.
-const TAG_DOMAIN_CHUNK = 40_000;
+// 20k domains × ~28 bytes/entry ≈ 560 KB — safe margin below the 1 MB cap.
+const TAG_DOMAIN_CHUNK = 20_000;
 
 // ── Persistent native port ───────────────────────────────────────────────────
 
@@ -99,7 +100,8 @@ async function syncRules() {
     return;
   }
 
-  const { allowMode, blocked: manualBlocked = [], allowed = [], tagBlockedCount = 0 } = data;
+  const { allowMode, blocked: manualBlocked = [], allowed = [], tagBlockedCount = 0, theme } = data;
+  if (theme) chrome.storage.local.set({ theme });
 
   // 2. Fetch tag domains in chunks to stay under the 1 MB native messaging limit.
   //    Each chunk is ≤40,000 domains (~920 KB JSON), safely under the cap.

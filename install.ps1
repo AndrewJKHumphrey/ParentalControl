@@ -144,6 +144,14 @@ if ($closedAny) {
     Write-Host "  Browsers closed. They will reopen normally after install." -ForegroundColor Green
 }
 
+# Delete existing database — ensures a clean install with no leftover data
+# from previous versions.  Must run AFTER browsers are closed so the NativeHost
+# (which the browser spawns) has released any locks on the DB file.
+Write-Host "`nDeleting existing database for clean install..." -ForegroundColor Yellow
+New-Item -ItemType Directory -Force -Path $DataDir | Out-Null
+Remove-Item -Path "$DataDir\data.db*" -Force -ErrorAction SilentlyContinue
+Write-Host "  Database cleared." -ForegroundColor Green
+
 Copy-Item "$SolutionDir\publish\service\*"    $InstallDir -Recurse -Force
 Copy-Item "$SolutionDir\publish\watchdog\*"   $InstallDir -Recurse -Force
 Copy-Item "$SolutionDir\publish\nativehost\*" $InstallDir -Recurse -Force
@@ -169,15 +177,24 @@ $acl.AddAccessRule($adminsRule)
 $acl.AddAccessRule($usersRule)
 Set-Acl $InstallDir $acl
 
-# Set ACLs on data directory — SYSTEM and Admins only.
-# The service (SYSTEM) writes all DB data on behalf of users; the parent UI runs
-# as Administrator. Children have no legitimate reason to touch the DB files directly.
+# Set ACLs on data directory.
+# SYSTEM and Admins get FullControl.
+# Users need read+write (without delete) so the NativeHost — which the browser
+# launches as the logged-in (non-elevated) user — can query the DB and log blocked
+# URLs.  SQLite also requires write access to the directory to create WAL/journal
+# files even for read operations, so ReadAndExecute alone is not sufficient.
 $dataAcl = New-Object System.Security.AccessControl.DirectorySecurity
 $dataAcl.SetAccessRuleProtection($true, $false)  # break inheritance, no inherited copy
 $dataAcl.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule(
     "SYSTEM",         "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")))
 $dataAcl.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule(
     "Administrators", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")))
+# Read+Write without Delete — lets NativeHost use the DB but prevents users
+# from deleting the database file directly.
+$usersDataRights = [System.Security.AccessControl.FileSystemRights]::ReadAndExecute -bor `
+                   [System.Security.AccessControl.FileSystemRights]::Write
+$dataAcl.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule(
+    "Users", $usersDataRights, "ContainerInherit,ObjectInherit", "None", "Allow")))
 Set-Acl $DataDir $dataAcl
 
 

@@ -123,7 +123,7 @@ namespace ParentalControl.UI.Views {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/ParentalControl.UI;V1.0.0.0;component/views/appcontrolpage.xaml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/ParentalControl.UI;component/views/appcontrolpage.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\..\Views\AppControlPage.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);

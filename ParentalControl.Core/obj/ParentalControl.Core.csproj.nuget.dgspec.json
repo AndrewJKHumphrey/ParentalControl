@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\humph\\ParentalControl\\ParentalControl.Core\\ParentalControl.Core.csproj": {}
+    "c:\\Users\\humph\\ParentalControl\\ParentalControl.Core\\ParentalControl.Core.csproj": {}
   },
   "projects": {
-    "C:\\Users\\humph\\ParentalControl\\ParentalControl.Core\\ParentalControl.Core.csproj": {
+    "c:\\Users\\humph\\ParentalControl\\ParentalControl.Core\\ParentalControl.Core.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\humph\\ParentalControl\\ParentalControl.Core\\ParentalControl.Core.csproj",
+        "projectUniqueName": "c:\\Users\\humph\\ParentalControl\\ParentalControl.Core\\ParentalControl.Core.csproj",
         "projectName": "ParentalControl.Core",
-        "projectPath": "C:\\Users\\humph\\ParentalControl\\ParentalControl.Core\\ParentalControl.Core.csproj",
+        "projectPath": "c:\\Users\\humph\\ParentalControl\\ParentalControl.Core\\ParentalControl.Core.csproj",
         "packagesPath": "C:\\Users\\humph\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\humph\\ParentalControl\\ParentalControl.Core\\obj\\",
+        "outputPath": "c:\\Users\\humph\\ParentalControl\\ParentalControl.Core\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\humph\\AppData\\Roaming\\NuGet\\NuGet.Config"

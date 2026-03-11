@@ -86,12 +86,27 @@ var pollThread = new Thread(() =>
 pollThread.Start();
 
 // Resolve the active profile for the current Windows user.
+// If a specific profile exists but has no web filter configuration
+// (auto-seeded blank profile), fall back to the Default catch-all profile
+// so that rules set on the Default profile still apply.
 static UserProfile ResolveProfile(AppDbContext db)
 {
     var username = Environment.UserName;
-    return db.UserProfiles.AsNoTracking()
-               .FirstOrDefault(p => p.WindowsUsername.ToLower() == username.ToLower())
-        ?? db.UserProfiles.AsNoTracking().FirstOrDefault(p => p.WindowsUsername == "")
+
+    var specific = db.UserProfiles.AsNoTracking()
+                      .FirstOrDefault(p => p.WindowsUsername.ToLower() == username.ToLower());
+
+    if (specific != null)
+    {
+        bool hasRules = db.WebsiteRules.Any(r => r.UserProfileId == specific.Id);
+        bool hasTags  = db.ProfileWebFilterTags.Any(pt => pt.UserProfileId == specific.Id);
+        if (hasRules || hasTags || specific.WebFilterAllowMode)
+            return specific;
+    }
+
+    // Fall through to the Default (catch-all) profile
+    return db.UserProfiles.AsNoTracking().FirstOrDefault(p => p.WindowsUsername == "")
+        ?? specific                // return the blank specific profile if no Default exists
         ?? new UserProfile { Id = 1 };
 }
 
@@ -114,6 +129,21 @@ while (true)
             var profile  = ResolveProfile(db);
             var settings = db.Settings.AsNoTracking().FirstOrDefault();
 
+            // Read theme colors written by the UI whenever the theme is changed.
+            JsonElement? theme = null;
+            try
+            {
+                var themeFile = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                    "ParentalControl", "theme.json");
+                if (File.Exists(themeFile))
+                {
+                    using var themeDoc = JsonDocument.Parse(File.ReadAllText(themeFile));
+                    theme = themeDoc.RootElement.Clone();
+                }
+            }
+            catch { }
+
             if (settings?.WebFilterEnabled == false)
             {
                 // Web filter disabled — tell extension to clear all rules.
@@ -124,7 +154,8 @@ while (true)
                     blocked         = Array.Empty<string>(),
                     allowed         = Array.Empty<string>(),
                     tagBlockedCount = 0,
-                    profileId       = profile.Id
+                    profileId       = profile.Id,
+                    theme
                 });
             }
             else
@@ -158,7 +189,8 @@ while (true)
                     blocked,         // manual block entries only (small)
                     allowed,
                     tagBlockedCount, // extension fetches tag domains separately
-                    profileId = profile.Id
+                    profileId = profile.Id,
+                    theme
                 });
             }
         }

@@ -40,6 +40,49 @@ public partial class WebFilterPage : Page
     private bool _suppressTagCheck  = false;
     private const string PlaceholderText = "Domain (e.g. example.com)";
 
+    // ── Startup-sync shared state ────────────────────────────────────────────
+    // Allows MainWindow to kick a silent background sync so domains are ready
+    // before the user ever opens the Web Filter page.
+    private static readonly SemaphoreSlim _syncLock        = new(1, 1);
+    private static           Task?        _startupSyncTask = null;
+
+    /// <summary>Called by MainWindow.Loaded — starts a silent background sync of
+    /// any source-backed tags that currently have zero domains.</summary>
+    internal static void KickStartupSync()
+    {
+        if (_startupSyncTask is null || _startupSyncTask.IsCompleted)
+            _startupSyncTask = DoStartupSyncAsync();
+    }
+
+    private static async Task DoStartupSyncAsync()
+    {
+        await _syncLock.WaitAsync();
+        try
+        {
+            List<(int Id, string SourceUrl)> tags;
+            using (var db = new AppDbContext())
+            {
+                var hasDomains = db.WebFilterTagDomains.Select(d => d.TagId).Distinct().ToHashSet();
+                tags = db.WebFilterTags
+                         .Where(t => t.SourceUrl != null && t.SourceUrl != "")
+                         .ToList()
+                         .Where(t => !hasDomains.Contains(t.Id))
+                         .Select(t => (t.Id, t.SourceUrl))
+                         .ToList();
+            }
+
+            bool anySynced = false;
+            foreach (var (tagId, sourceUrl) in tags)
+            {
+                try   { await SyncTagFromSourceAsync(tagId, sourceUrl); anySynced = true; }
+                catch { /* best-effort; user can retry via Sync All */ }
+            }
+
+            if (anySynced) BumpWebRulesVersion();
+        }
+        finally { _syncLock.Release(); }
+    }
+
     public WebFilterPage()
     {
         InitializeComponent();
@@ -65,19 +108,36 @@ public partial class WebFilterPage : Page
     }
 
     /// <summary>
-    /// Silently downloads domains for any source-backed tag that currently has no entries.
-    /// Shows the progress bar while running. Runs fire-and-forget from InitPage.
+    /// Shows progress while source-backed tags are downloaded.
+    /// If a startup background sync is already running it waits for that instead
+    /// of launching a duplicate download.
     /// </summary>
     private async Task SyncEmptyTagsAsync()
     {
+        // ── Case 1: startup sync is already in flight ────────────────────────
+        if (_startupSyncTask is { IsCompleted: false })
+        {
+            SyncProgressPanel.Visibility  = Visibility.Visible;
+            SyncAllBtn.IsEnabled          = false;
+            SyncProgressLabel.Text        = "Syncing content tags in background…";
+            SyncProgressBar.IsIndeterminate = true;
+            try   { await _startupSyncTask; } catch { }
+            SyncProgressBar.IsIndeterminate = false;
+            SyncProgressBar.Value = 100;
+            SyncProgressLabel.Text = "Sync complete.";
+            await Task.Delay(1500);
+            SyncProgressPanel.Visibility = Visibility.Collapsed;
+            SyncAllBtn.IsEnabled = true;
+            LoadTags();
+            return;
+        }
+
+        // ── Case 2: nothing running — check whether there is anything to sync ─
         List<(int Id, string Name, string SourceUrl)> tagsToSync;
         try
         {
             using var db = new AppDbContext();
-            var hasDomains = db.WebFilterTagDomains
-                               .Select(d => d.TagId)
-                               .Distinct()
-                               .ToHashSet();
+            var hasDomains = db.WebFilterTagDomains.Select(d => d.TagId).Distinct().ToHashSet();
             tagsToSync = db.WebFilterTags
                            .Where(t => t.SourceUrl != null && t.SourceUrl != "")
                            .ToList()
@@ -89,26 +149,38 @@ public partial class WebFilterPage : Page
 
         if (tagsToSync.Count == 0) return;
 
+        // Acquire the lock (non-blocking — bail if someone else grabbed it).
+        if (!await _syncLock.WaitAsync(0)) return;
+
         SyncProgressPanel.Visibility = Visibility.Visible;
         SyncAllBtn.IsEnabled = false;
 
-        for (int i = 0; i < tagsToSync.Count; i++)
+        try
         {
-            var (tagId, tagName, sourceUrl) = tagsToSync[i];
-            SyncProgressLabel.Text = $"Syncing {tagName}… ({i + 1} of {tagsToSync.Count})";
-            SyncProgressBar.Value  = (double)i / tagsToSync.Count * 100;
-
-            try
+            for (int i = 0; i < tagsToSync.Count; i++)
             {
-                await SyncTagFromSourceAsync(tagId, sourceUrl);
-            }
-            catch { /* best-effort — user can sync manually */ }
+                var (tagId, tagName, sourceUrl) = tagsToSync[i];
+                SyncProgressLabel.Text = $"Syncing {tagName}… ({i + 1} of {tagsToSync.Count})";
+                SyncProgressBar.Value  = (double)i / tagsToSync.Count * 100;
 
-            await Dispatcher.InvokeAsync(LoadTags);
+                try
+                {
+                    await SyncTagFromSourceAsync(tagId, sourceUrl);
+                }
+                catch (Exception ex)
+                {
+                    SyncProgressLabel.Text = $"Failed — {tagName}: {ex.Message.Split('\n')[0]}";
+                    await Task.Delay(2500);
+                }
+
+                await Dispatcher.InvokeAsync(LoadTags);
+            }
         }
+        finally { _syncLock.Release(); }
 
         SyncProgressBar.Value  = 100;
-        SyncProgressLabel.Text = $"Sync complete — {tagsToSync.Count} tag(s) updated.";
+        SyncProgressLabel.Text = $"Sync complete — {tagsToSync.Count} tag(s) processed.";
+        BumpWebRulesVersion();
 
         await Task.Delay(2000);
         SyncProgressPanel.Visibility = Visibility.Collapsed;
@@ -424,6 +496,12 @@ public partial class WebFilterPage : Page
 
     private async void SyncAll_Click(object sender, RoutedEventArgs e)
     {
+        if (!await _syncLock.WaitAsync(0))
+        {
+            StatusText.Text = "A sync is already in progress — please wait.";
+            return;
+        }
+
         List<(int Id, string Name, string SourceUrl)> allTags;
         try
         {
@@ -437,11 +515,12 @@ public partial class WebFilterPage : Page
         }
         catch (Exception ex)
         {
+            _syncLock.Release();
             StatusText.Text = $"Error: {ex.Message}";
             return;
         }
 
-        if (allTags.Count == 0) return;
+        if (allTags.Count == 0) { _syncLock.Release(); return; }
 
         SyncAllBtn.IsEnabled         = false;
         SyncProgressPanel.Visibility = Visibility.Visible;
@@ -462,8 +541,8 @@ public partial class WebFilterPage : Page
                 }
                 catch (Exception ex)
                 {
-                    SyncProgressLabel.Text = $"Error syncing {tagName}: {ex.Message}";
-                    await Task.Delay(1500);
+                    SyncProgressLabel.Text = $"Failed — {tagName}: {ex.Message.Split('\n')[0]}";
+                    await Task.Delay(2500);
                 }
             }
             else
@@ -475,6 +554,8 @@ public partial class WebFilterPage : Page
 
             LoadTags();
         }
+
+        _syncLock.Release();
 
         SyncProgressBar.Value  = 100;
         SyncProgressLabel.Text = $"Complete — {synced} tag(s) refreshed from source.";
@@ -535,7 +616,7 @@ public partial class WebFilterPage : Page
 
     // ── Shared sync helper ───────────────────────────────────────────────────
 
-    private static async Task SyncTagFromSourceAsync(int tagId, string sourceUrl)
+    internal static async Task SyncTagFromSourceAsync(int tagId, string sourceUrl)
     {
         string content;
         using (var http = new HttpClient())
@@ -596,7 +677,7 @@ public partial class WebFilterPage : Page
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    private static void BumpWebRulesVersion()
+    internal static void BumpWebRulesVersion()
     {
         try
         {

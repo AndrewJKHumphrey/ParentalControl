@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "MJFpPRCvrw4=",
+  "dgSpecHash": "EB6wl3ZFQzo=",
   "success": true,
-  "projectFilePath": "C:\\Users\\humph\\ParentalControl\\ParentalControl.Core\\ParentalControl.Core.csproj",
+  "projectFilePath": "c:\\Users\\humph\\ParentalControl\\ParentalControl.Core\\ParentalControl.Core.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\humph\\.nuget\\packages\\bcrypt.net-next\\4.1.0\\bcrypt.net-next.4.1.0.nupkg.sha512",
     "C:\\Users\\humph\\.nuget\\packages\\bouncycastle.cryptography\\2.6.2\\bouncycastle.cryptography.2.6.2.nupkg.sha512",
