@@ -30,10 +30,51 @@ public partial class SettingsPage : Page
     {
         InitializeComponent();
 #if DEBUG
-        DebugSection.Visibility   = System.Windows.Visibility.Visible;
+        DebugSection.Visibility    = System.Windows.Visibility.Visible;
         CustomThemeItem.Visibility = System.Windows.Visibility.Visible;
+        RavenThemeItem.Visibility  = System.Windows.Visibility.Visible;
+        foreach (System.Windows.Controls.ComboBoxItem item in ThemeBox.Items.OfType<System.Windows.Controls.ComboBoxItem>())
+            if (item.Tag as string == "MonHun")
+                item.Visibility = System.Windows.Visibility.Visible;
 #endif
-        Loaded += (_, _) => LoadSettings();
+        Loaded += (_, _) =>
+        {
+            PopulateChildVaultThemeBox();
+            LoadSettings();
+        };
+    }
+
+    private void PopulateChildVaultThemeBox()
+    {
+        ChildVaultThemeBox.Items.Clear();
+        foreach (ComboBoxItem src in ThemeBox.Items.OfType<ComboBoxItem>())
+        {
+            // Skip debug-only items
+            if (src.Tag?.ToString() == "MonHun") continue;
+            if (src.Name is "CustomThemeItem" or "RavenThemeItem") continue;
+
+            var dst = new ComboBoxItem
+            {
+                IsEnabled        = src.IsEnabled,
+                IsHitTestVisible = src.IsHitTestVisible,
+                Padding          = src.Padding,
+            };
+            if (!src.IsEnabled)
+            {
+                dst.Content = new TextBlock
+                {
+                    Text       = (src.Content as TextBlock)?.Text ?? "",
+                    FontSize   = 10,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = (Brush)Application.Current.Resources["TextSecondary"]
+                };
+            }
+            else
+            {
+                dst.Content = src.Content?.ToString() ?? "";
+            }
+            ChildVaultThemeBox.Items.Add(dst);
+        }
     }
 
     private void LoadSettings()
@@ -146,6 +187,15 @@ public partial class SettingsPage : Page
                 CustomThemePanel.Visibility = themeName == "Custom"
                     ? System.Windows.Visibility.Visible
                     : System.Windows.Visibility.Collapsed;
+
+                // Child Vault theme
+                ChildVaultDarkModeToggle.IsChecked = settings.ChildVaultIsDark;
+                var cvTheme = settings.ChildVaultTheme;
+                foreach (ComboBoxItem ci in ChildVaultThemeBox.Items.OfType<ComboBoxItem>())
+                {
+                    if (ci.Content?.ToString() == cvTheme)
+                    { ChildVaultThemeBox.SelectedItem = ci; break; }
+                }
             }
         }
         catch { }
@@ -228,6 +278,38 @@ public partial class SettingsPage : Page
             settings.CustomPrimaryColor   = primary;
             settings.CustomSecondaryColor = secondary;
             settings.CustomTertiaryColor  = tertiary;
+            db.SaveChanges();
+        }
+        catch { }
+    }
+
+    private void ChildVaultThemeBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_loaded) return;
+        ApplyAndSaveChildVaultTheme();
+    }
+
+    private void ChildVaultDarkMode_Changed(object sender, RoutedEventArgs e)
+    {
+        if (!_loaded) return;
+        ApplyAndSaveChildVaultTheme();
+    }
+
+    private void ApplyAndSaveChildVaultTheme()
+    {
+        if (ChildVaultThemeBox.SelectedItem is not ComboBoxItem item) return;
+        var name   = item.Content?.ToString() ?? "Default";
+        bool isDark = ChildVaultDarkModeToggle.IsChecked == true;
+
+        App.ApplyTheme(name, isDark, forChildVault: true);
+
+        try
+        {
+            using var db = new AppDbContext();
+            var settings = db.Settings.FirstOrDefault();
+            if (settings == null) return;
+            settings.ChildVaultTheme  = name;
+            settings.ChildVaultIsDark = isDark;
             db.SaveChanges();
         }
         catch { }

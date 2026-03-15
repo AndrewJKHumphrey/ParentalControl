@@ -21,6 +21,9 @@ public class UserProfile
     /// <summary>When true, only explicitly allowed domains are accessible; everything else is blocked.</summary>
     public bool     WebFilterAllowMode       { get; set; } = false;
 
+    /// <summary>BCrypt hash of the PIN the parent sets for child vault access. Empty = no PIN configured.</summary>
+    public string   VaultPin                 { get; set; } = string.Empty;
+
     /// <summary>Runtime-only: true when the Windows account requires a password to log in.</summary>
     [System.ComponentModel.DataAnnotations.Schema.NotMapped]
     public bool     AccountIsPasswordProtected { get; set; }

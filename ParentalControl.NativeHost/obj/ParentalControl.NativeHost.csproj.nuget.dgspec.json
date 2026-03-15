@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "c:\\Users\\humph\\ParentalControl\\ParentalControl.NativeHost\\ParentalControl.NativeHost.csproj": {}
+    "C:\\Users\\humph\\ParentalControl\\ParentalControl.NativeHost\\ParentalControl.NativeHost.csproj": {}
   },
   "projects": {
-    "c:\\Users\\humph\\ParentalControl\\ParentalControl.Core\\ParentalControl.Core.csproj": {
+    "C:\\Users\\humph\\ParentalControl\\ParentalControl.Core\\ParentalControl.Core.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "c:\\Users\\humph\\ParentalControl\\ParentalControl.Core\\ParentalControl.Core.csproj",
+        "projectUniqueName": "C:\\Users\\humph\\ParentalControl\\ParentalControl.Core\\ParentalControl.Core.csproj",
         "projectName": "ParentalControl.Core",
-        "projectPath": "c:\\Users\\humph\\ParentalControl\\ParentalControl.Core\\ParentalControl.Core.csproj",
+        "projectPath": "C:\\Users\\humph\\ParentalControl\\ParentalControl.Core\\ParentalControl.Core.csproj",
         "packagesPath": "C:\\Users\\humph\\.nuget\\packages\\",
-        "outputPath": "c:\\Users\\humph\\ParentalControl\\ParentalControl.Core\\obj\\",
+        "outputPath": "C:\\Users\\humph\\ParentalControl\\ParentalControl.Core\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\humph\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -61,6 +61,10 @@
             "Microsoft.EntityFrameworkCore.Sqlite": {
               "target": "Package",
               "version": "[10.0.3, )"
+            },
+            "System.Security.Cryptography.ProtectedData": {
+              "target": "Package",
+              "version": "[9.0.5, )"
             }
           },
           "imports": [
@@ -74,6 +78,20 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Runtime.win-x64",
+              "version": "[10.0.3, 10.0.3]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Runtime.win-x64",
+              "version": "[10.0.3, 10.0.3]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Runtime.win-x64",
+              "version": "[10.0.3, 10.0.3]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
@@ -355,16 +373,21 @@
             "System.Xml.XPath.XDocument": "(,5.0.32767]"
           }
         }
+      },
+      "runtimes": {
+        "win-x64": {
+          "#import": []
+        }
       }
     },
-    "c:\\Users\\humph\\ParentalControl\\ParentalControl.NativeHost\\ParentalControl.NativeHost.csproj": {
+    "C:\\Users\\humph\\ParentalControl\\ParentalControl.NativeHost\\ParentalControl.NativeHost.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "c:\\Users\\humph\\ParentalControl\\ParentalControl.NativeHost\\ParentalControl.NativeHost.csproj",
+        "projectUniqueName": "C:\\Users\\humph\\ParentalControl\\ParentalControl.NativeHost\\ParentalControl.NativeHost.csproj",
         "projectName": "ParentalControl.NativeHost",
-        "projectPath": "c:\\Users\\humph\\ParentalControl\\ParentalControl.NativeHost\\ParentalControl.NativeHost.csproj",
+        "projectPath": "C:\\Users\\humph\\ParentalControl\\ParentalControl.NativeHost\\ParentalControl.NativeHost.csproj",
         "packagesPath": "C:\\Users\\humph\\.nuget\\packages\\",
-        "outputPath": "c:\\Users\\humph\\ParentalControl\\ParentalControl.NativeHost\\obj\\",
+        "outputPath": "C:\\Users\\humph\\ParentalControl\\ParentalControl.NativeHost\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\humph\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -379,8 +402,8 @@
           "net10.0-windows7.0": {
             "targetAlias": "net10.0-windows",
             "projectReferences": {
-              "c:\\Users\\humph\\ParentalControl\\ParentalControl.Core\\ParentalControl.Core.csproj": {
-                "projectPath": "c:\\Users\\humph\\ParentalControl\\ParentalControl.Core\\ParentalControl.Core.csproj"
+              "C:\\Users\\humph\\ParentalControl\\ParentalControl.Core\\ParentalControl.Core.csproj": {
+                "projectPath": "C:\\Users\\humph\\ParentalControl\\ParentalControl.Core\\ParentalControl.Core.csproj"
               }
             }
           }
@@ -411,6 +434,20 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Runtime.win-x64",
+              "version": "[10.0.3, 10.0.3]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Runtime.win-x64",
+              "version": "[10.0.3, 10.0.3]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Runtime.win-x64",
+              "version": "[10.0.3, 10.0.3]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
@@ -691,6 +728,11 @@
             "System.Xml.XPath": "(,4.3.32767]",
             "System.Xml.XPath.XDocument": "(,5.0.32767]"
           }
+        }
+      },
+      "runtimes": {
+        "win-x64": {
+          "#import": []
         }
       }
     }

@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ParentGuard — Developer Guide</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #1e1e2e;
+    color: #cdd6f4;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── Sidebar TOC ── */
+  nav {
+    width: 220px;
+    min-width: 220px;
+    background: #181825;
+    padding: 28px 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    border-right: 1px solid #313244;
+  }
+  nav .brand {
+    font-size: 15px;
+    font-weight: 700;
+    color: #a6e3a1;
+    padding: 0 20px 4px;
+  }
+  nav .brand-sub {
+    font-size: 11px;
+    color: #585b70;
+    padding: 0 20px 20px;
+    border-bottom: 1px solid #313244;
+    margin-bottom: 12px;
+  }
+  nav a {
+    display: block;
+    padding: 7px 20px;
+    color: #a6adc8;
+    text-decoration: none;
+    font-size: 14px;
+    border-left: 3px solid transparent;
+    transition: color .15s, border-color .15s, background .15s;
+  }
+  nav a:hover { color: #cdd6f4; background: #24273a; }
+  nav a.active { color: #a6e3a1; border-left-color: #a6e3a1; background: #1e2030; }
+  nav .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: #585b70;
+    padding: 14px 20px 4px;
+  }
+
+  /* ── Main content ── */
+  main {
+    flex: 1;
+    padding: 48px 56px;
+    max-width: 900px;
+  }
+
+  h1 { font-size: 28px; font-weight: 700; color: #cdd6f4; margin-bottom: 6px; }
+  .subtitle { color: #a6adc8; font-size: 15px; margin-bottom: 40px; }
+
+  h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #a6e3a1;
+    margin: 48px 0 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #313244;
+    scroll-margin-top: 24px;
+  }
+  h3 { font-size: 15px; font-weight: 600; color: #cdd6f4; margin: 22px 0 8px; }
+
+  p { line-height: 1.7; color: #a6adc8; margin-bottom: 12px; }
+  p strong { color: #cdd6f4; }
+
+  ul, ol { padding-left: 20px; margin-bottom: 12px; }
+  li { line-height: 1.7; color: #a6adc8; margin-bottom: 3px; }
+  li strong { color: #cdd6f4; }
+
+  .tip {
+    background: #1e2030;
+    border-left: 3px solid #a6e3a1;
+    border-radius: 0 6px 6px 0;
+    padding: 12px 16px;
+    margin: 14px 0;
+    font-size: 14px;
+    color: #a6adc8;
+  }
+  .tip strong { color: #a6e3a1; }
+
+  .warn {
+    background: #1e2030;
+    border-left: 3px solid #fab387;
+    border-radius: 0 6px 6px 0;
+    padding: 12px 16px;
+    margin: 14px 0;
+    font-size: 14px;
+    color: #a6adc8;
+  }
+  .warn strong { color: #fab387; }
+
+  .quirk {
+    background: #1e2030;
+    border-left: 3px solid #f38ba8;
+    border-radius: 0 6px 6px 0;
+    padding: 12px 16px;
+    margin: 14px 0;
+    font-size: 14px;
+    color: #a6adc8;
+  }
+  .quirk strong { color: #f38ba8; }
+
+  /* Step badges */
+  .steps { counter-reset: step; }
+  .step { display: flex; gap: 14px; margin-bottom: 12px; align-items: flex-start; }
+  .step::before {
+    counter-increment: step;
+    content: counter(step);
+    min-width: 26px; height: 26px;
+    background: #a6e3a1;
+    color: #1e1e2e;
+    border-radius: 50%;
+    font-weight: 700; font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 2px;
+  }
+  .step p { margin: 0; }
+
+  code {
+    background: #45475a;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-family: 'Cascadia Code', 'Consolas', monospace;
+    font-size: 13px;
+    color: #cba6f7;
+  }
+
+  pre {
+    background: #11111b;
+    border: 1px solid #313244;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0 16px;
+    overflow-x: auto;
+    font-family: 'Cascadia Code', 'Consolas', monospace;
+    font-size: 13px;
+    color: #cdd6f4;
+    line-height: 1.6;
+  }
+  pre .comment { color: #585b70; }
+  pre .cmd     { color: #a6e3a1; }
+  pre .kw      { color: #cba6f7; }
+  pre .str     { color: #a6e3a1; }
+
+  table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 14px; }
+  th { text-align: left; padding: 9px 12px; background: #45475a; color: #cdd6f4; font-weight: 600; }
+  td { padding: 8px 12px; border-bottom: 1px solid #313244; color: #a6adc8; vertical-align: top; }
+  td strong { color: #cdd6f4; }
+  td code { font-size: 12px; }
+  tr:last-child td { border-bottom: none; }
+</style>
+</head>
+<body>
+
+<!-- ── Navigation ── -->
+<nav>
+  <div class="brand">ParentGuard</div>
+  <div class="brand-sub">Developer Guide</div>
+  <div class="section-label">Overview</div>
+  <a href="#structure">Project Structure</a>
+  <a href="#workflow">Dev Workflow</a>
+  <div class="section-label">Scripts</div>
+  <a href="#scripts">Script Reference</a>
+  <a href="#diagnostics">Diagnostic Scripts</a>
+  <div class="section-label">Reference</div>
+  <a href="#quirks">Known Quirks</a>
+  <a href="#database">Database</a>
+  <a href="#themes">Adding Themes</a>
+  <a href="#extension">Extension Dev</a>
+  <a href="#ipc">IPC &amp; Service</a>
+</nav>
+
+<!-- ── Content ── -->
+<main>
+  <h1>Developer Guide</h1>
+  <p class="subtitle">Internal reference for building, testing, and extending ParentGuard. Not intended for end users.</p>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <h2 id="structure">Project Structure</h2>
+  <p>The solution contains six C# projects plus the browser extension and WiX installer.</p>
+
+  <table>
+    <tr><th>Project</th><th>Type</th><th>Description</th></tr>
+    <tr><td><strong>ParentalControl.Core</strong></td><td><code>net10.0</code></td><td>Shared models, EF Core DbContext, IPC message types. Referenced by all other C# projects.</td></tr>
+    <tr><td><strong>ParentalControl.Service</strong></td><td><code>net10.0-windows</code></td><td>Windows background service. Enforces all rules (screen time, app blocking, focus mode). Hosts the named-pipe IPC server.</td></tr>
+    <tr><td><strong>ParentalControl.Watchdog</strong></td><td><code>net10.0-windows</code></td><td>Lightweight watchdog service. Restarts the main service if it crashes; the main service reciprocates.</td></tr>
+    <tr><td><strong>ParentalControl.UI</strong></td><td><code>net10.0-windows</code> WPF</td><td>Admin UI. Password-protected. Communicates with the service over the named pipe.</td></tr>
+    <tr><td><strong>ParentalControl.NativeHost</strong></td><td><code>net10.0-windows</code></td><td>Native messaging host launched by the browser extension. Bridges the extension to the service over the named pipe.</td></tr>
+    <tr><td><strong>ParentalControl.Extension</strong></td><td>Browser extension (JS)</td><td>Chromium extension. Intercepts navigations, queries the NativeHost for the current rule set, shows the block page.</td></tr>
+    <tr><td><strong>ParentalControl.Installer</strong></td><td>WiX v4</td><td>Produces <code>ParentGuard-Setup.msi</code>. Harvest WXS files are auto-generated by <code>build-installer.ps1</code>.</td></tr>
+  </table>
+
+  <h3>Key Paths</h3>
+  <table>
+    <tr><th>Path</th><th>Purpose</th></tr>
+    <tr><td><code>C:\ProgramData\ParentalControl\data.db</code></td><td>SQLite database — profiles, rules, activity log</td></tr>
+    <tr><td><code>C:\ProgramData\ParentalControl\theme.json</code></td><td>Current theme colours written by the UI, read by the extension for the block page</td></tr>
+    <tr><td><code>C:\Program Files\ParentalControl\</code></td><td>Default install directory for service, UI, and extension files</td></tr>
+    <tr><td><code>publish\service\</code>, <code>publish\ui\</code>, …</td><td>dotnet publish output directories used by <code>install.ps1</code></td></tr>
+    <tr><td><code>publish\combined\</code></td><td>Merged output directory used by <code>build-installer.ps1</code> for WiX harvesting</td></tr>
+  </table>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <h2 id="workflow">Dev Workflow</h2>
+
+  <h3>Debug builds (day-to-day development)</h3>
+  <p>Build and run directly from Visual Studio or the CLI. The Debug build skips the login window so you can iterate quickly.</p>
+  <pre><span class="comment"># Build all projects</span>
+<span class="cmd">dotnet build</span> --configuration Debug
+
+<span class="comment"># Run the UI (no elevation needed)</span>
+<span class="cmd">dotnet run</span> --project ParentalControl.UI</pre>
+  <div class="tip"><strong>Note:</strong> Debug builds expose extra UI — the Raven and Custom themes, a Debug section in Settings, and the Developer Guide nav button — all hidden in Release.</div>
+
+  <h3>Testing the full Release stack locally</h3>
+  <p>Use <code>run-ui-release.bat</code> to publish the UI in Release mode and launch it without a full service reinstall. The service must already be running (installed via <code>install.ps1</code> or the MSI).</p>
+  <pre><span class="comment"># From the solution root — no elevation required</span>
+<span class="cmd">run-ui-release.bat</span></pre>
+  <p>This publishes to <code>publish\ui-release-test\</code> and immediately launches the exe, giving you the full login flow and Release-only behaviour.</p>
+
+  <h3>Installing for testing (dev machine)</h3>
+  <p>Use <code>install.bat</code> (which wraps <code>install.ps1</code>) when you need the service and watchdog running on your dev machine. It publishes all four projects, stops any running services, copies files to <code>Program Files</code>, and re-registers the services.</p>
+  <pre><span class="comment"># Must be run as Administrator — will self-elevate if not</span>
+<span class="cmd">install.bat</span></pre>
+  <div class="warn"><strong>Warning:</strong> This overwrites the install directory. Stop the UI and close browsers before running to avoid file-lock errors.</div>
+
+  <h3>Building the MSI for distribution</h3>
+  <pre><span class="comment"># Must be run as Administrator</span>
+<span class="cmd">.\build-installer.ps1</span>
+
+<span class="comment"># Output:</span>
+<span class="comment">#   ParentalControl.Installer\bin\Release\en-US\ParentGuard-Setup.msi</span></pre>
+  <p>The script: publishes all four projects → merges into <code>publish\combined\</code> → packs the browser extension as a <code>.crx</code> → auto-generates WiX harvest WXS files → builds the WiX project.</p>
+  <div class="tip"><strong>Prerequisite:</strong> <code>extension.pem</code> must exist in the solution root for <code>.crx</code> packing to succeed. If it is missing the script will skip packing and warn.</div>
+
+  <h3>Service management (quick commands)</h3>
+  <pre><span class="comment"># Check service status</span>
+<span class="cmd">Get-Service</span> ParentalControlService, ParentalControlWatchdog
+
+<span class="comment"># Start / stop manually</span>
+<span class="cmd">Start-Service</span> ParentalControlService
+<span class="cmd">Stop-Service</span>  ParentalControlService -Force
+
+<span class="comment"># View recent service log entries</span>
+<span class="cmd">Get-WinEvent</span> -FilterHashtable @{LogName=<span class="str">'Application'</span>; ProviderName=<span class="str">'ParentalControl'</span>} -MaxEvents 20 | <span class="cmd">Format-List</span></pre>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <h2 id="scripts">Script Reference</h2>
+
+  <table>
+    <tr><th>File</th><th>Elevation</th><th>Purpose</th></tr>
+    <tr>
+      <td><strong>install.bat</strong></td><td>Self-elevates</td>
+      <td>Convenience wrapper — self-elevates to Admin and runs <code>install.ps1</code> with <code>-ExecutionPolicy Bypass</code>. The recommended way to trigger a dev install.</td>
+    </tr>
+    <tr>
+      <td><strong>install.ps1</strong></td><td>Required</td>
+      <td>Full dev-machine installer. Adds Defender exclusions, stops services, publishes all four projects, copies files to <code>Program Files</code>, registers services with auto-restart recovery, registers the NativeHost, and copies <code>help.html</code> and <code>dev-help.html</code>.</td>
+    </tr>
+    <tr>
+      <td><strong>build-installer.ps1</strong></td><td>Required</td>
+      <td>Builds the distributable MSI. Publishes projects, merges output, packs the extension <code>.crx</code>, generates WiX harvest files, and invokes the WiX build. Output is <code>ParentGuard-Setup.msi</code>.</td>
+    </tr>
+    <tr>
+      <td><strong>run-ui-release.bat</strong></td><td>Not required</td>
+      <td>Publishes the UI in Release mode to <code>publish\ui-release-test\</code> and immediately launches it. Use this to test the login flow and Release-only behaviour without reinstalling the service.</td>
+    </tr>
+    <tr>
+      <td><strong>ParentalControl.Installer\configure.ps1</strong></td><td>Required</td>
+      <td>Run by the MSI at install time via a WiX custom action. Registers the NativeHost manifest and applies any post-install configuration. Not intended to be run directly.</td>
+    </tr>
+    <tr>
+      <td><strong>TestingCommands.ps1</strong></td><td>Varies</td>
+      <td>Ad-hoc scratchpad of useful PowerShell one-liners for testing — service status, DB queries, IPC checks, etc. Not a formal test runner.</td>
+    </tr>
+  </table>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <h2 id="diagnostics">Diagnostic Scripts</h2>
+  <p>A set of numbered diagnostic scripts in the solution root for debugging specific subsystems. Run from an elevated PowerShell prompt.</p>
+
+  <table>
+    <tr><th>Script</th><th>What it checks</th></tr>
+    <tr><td><code>check-svc.ps1</code> / <code>check-svc2.ps1</code> / <code>check-svc3.ps1</code></td><td>Service and watchdog status, process list, recent event log entries.</td></tr>
+    <tr><td><code>diag-ext.ps1</code> … <code>diag-ext5.ps1</code></td><td>Progressive browser extension diagnostics — port listeners, HTTP fetch of extension assets, registry policy, event log, <code>HttpListener</code> binding tests. Each version refined the previous.</td></tr>
+  </table>
+
+  <div class="tip"><strong>Tip:</strong> <code>diag-ext4.ps1</code> and <code>diag-ext5.ps1</code> are the most complete. Run <code>diag-ext4.ps1</code> first to check port 47252, HTTP fetch, and registry policy; then <code>diag-ext5.ps1</code> to check binary timestamps and <code>HttpListener</code> binding.</div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <h2 id="quirks">Known Quirks</h2>
+
+  <h3>Build error — DLL locked / error code 0x800711C7</h3>
+  <div class="quirk"><strong>Symptom:</strong> <code>dotnet publish</code> or a file copy fails mid-run with an access-denied or sharing-violation error referencing <code>ParentalControl.Core.dll</code> or another output DLL. Error code <code>0x800711C7</code> is Windows Smart App Control or Defender quarantining a newly compiled binary before it can be written.</div>
+  <p><strong>Cause:</strong> Windows Smart App Control (or real-time Defender scanning) intercepts and locks freshly compiled DLLs the moment they land on disk, before the publish step finishes copying them.</p>
+  <p><strong>Fix already applied in <code>install.ps1</code>:</strong> Defender exclusions for all build output directories (<code>publish\</code>, each project's <code>bin\</code>, and the install directory) are added <em>before</em> <code>dotnet publish</code> runs. If you hit this in a plain <code>dotnet build</code>, add the exclusion manually:</p>
+  <pre><span class="cmd">Add-MpPreference</span> -ExclusionPath <span class="str">"C:\Users\&lt;you&gt;\ParentalControl"</span> -ErrorAction SilentlyContinue</pre>
+  <div class="warn"><strong>Note:</strong> Smart App Control cannot be disabled per-directory — if exclusions stop working, disable SAC in Windows Security → App &amp; Browser Control → Smart App Control.</div>
+
+  <h3>Service or UI exe locked during reinstall</h3>
+  <div class="quirk"><strong>Symptom:</strong> <code>install.ps1</code> fails to copy <code>ParentalControl.Service.exe</code> or <code>ParentalControl.UI.exe</code> because a process holds the file open.</div>
+  <p><strong>Fix:</strong> <code>install.ps1</code> stops services, waits for processes to exit, and kills any lingering instances before copying. If you see this error outside of that script, manually stop the service and close the UI before retrying:</p>
+  <pre><span class="cmd">Stop-Service</span> ParentalControlWatchdog, ParentalControlService -Force
+<span class="cmd">Stop-Process</span> -Name ParentalControl.UI -Force -ErrorAction SilentlyContinue</pre>
+
+  <h3>Named pipe — UI shows "Stopped" immediately after service starts</h3>
+  <div class="quirk"><strong>Symptom:</strong> The sidebar shows the service as stopped even though <code>Get-Service</code> reports it running. Refreshes after a few seconds fix it.</div>
+  <p>The IPC client has a short connection timeout on first connect. The service takes a moment to initialise its pipe server after startup. The UI retries automatically — this is cosmetic only and resolves within a few seconds.</p>
+
+  <h3>Debug build skips the login window</h3>
+  <p>In a <code>#if DEBUG</code> block in <code>App.xaml.cs</code>, the login window is bypassed so you can iterate on UI pages without re-entering the password. The full authentication flow is only active in Release builds. Use <code>run-ui-release.bat</code> to test authentication without doing a full service reinstall.</p>
+
+  <h3>NativeHost manifest must be re-registered after a reinstall</h3>
+  <p>The NativeHost communicates with the browser extension via the native messaging protocol. Its path is stored in a registry key under <code>HKCU\Software\Google\Chrome\NativeMessagingHosts</code> (and the Edge equivalent). <code>install.ps1</code> re-writes this key on every run. If the extension stops communicating after a reinstall, re-run <code>install.ps1</code> or check the registry path.</p>
+
+  <h3>EF Core — "table already exists" on startup</h3>
+  <p>The service uses <code>EnsureCreated()</code>, not EF migrations. New columns are added via raw <code>ALTER TABLE … ADD COLUMN IF NOT EXISTS</code> statements in <code>Worker.EnsureDatabase()</code>. If you add a new property to a model, add the matching <code>ALTER TABLE</code> there — do not delete the database and rely on <code>EnsureCreated()</code> alone, or existing user data will be wiped.</p>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <h2 id="database">Database</h2>
+  <p>SQLite database at <code>C:\ProgramData\ParentalControl\data.db</code>, managed via EF Core.</p>
+
+  <h3>Schema changes</h3>
+  <p>There are no EF migrations. To add a column:</p>
+  <ol>
+    <li>Add the property to the model class in <strong>ParentalControl.Core</strong>.</li>
+    <li>Add a corresponding <code>ALTER TABLE … ADD COLUMN … DEFAULT …</code> in <code>Worker.EnsureDatabase()</code> in <strong>ParentalControl.Service</strong>.</li>
+  </ol>
+  <p>The <code>IF NOT EXISTS</code> form is safe to run on every startup — it is a no-op when the column already exists.</p>
+
+  <h3>Resetting for a clean test</h3>
+  <pre><span class="comment"># Stop services first so the file is not locked</span>
+<span class="cmd">Stop-Service</span> ParentalControlWatchdog, ParentalControlService -Force
+<span class="cmd">Remove-Item</span> <span class="str">"C:\ProgramData\ParentalControl\data.db"</span> -Force
+<span class="cmd">Start-Service</span> ParentalControlService   <span class="comment"># watchdog starts automatically</span></pre>
+  <div class="warn"><strong>Warning:</strong> This wipes all profiles, rules, app time data, and activity history. The default password <code>parent1234</code> is restored on first run.</div>
+
+  <h3>Inspecting the database directly</h3>
+  <p>Use <strong>DB Browser for SQLite</strong> or any SQLite-compatible tool to open <code>data.db</code> directly. Stop the service first to avoid a sharing conflict.</p>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <h2 id="themes">Adding Themes</h2>
+  <p>Themes are defined in <code>App.xaml.cs</code> as a dictionary of 8-colour tuples and exposed via <code>ComboBoxItem</code> entries in <code>SettingsPage.xaml</code>.</p>
+
+  <h3>Colour tuple format</h3>
+  <pre><span class="comment">// Tuple order: AppBg, SidebarBg, CardBg, CardHover, AltRowBg, BorderColor, TextPrimary, TextSecondary</span>
+[<span class="str">"My Theme"</span>] = ((<span class="str">"#0A0C20"</span>, <span class="str">"#060814"</span>, <span class="str">"#10163A"</span>, <span class="str">"#182248"</span>, <span class="str">"#0E1228"</span>, <span class="str">"#FFDD22"</span>, <span class="str">"#44DDFF"</span>, <span class="str">"#1AAACC"</span>),   <span class="comment">// dark</span>
+               (<span class="str">"#EEF0FF"</span>, <span class="str">"#E0E4FF"</span>, <span class="str">"#F5F8FF"</span>, <span class="str">"#C8D0FF"</span>, <span class="str">"#E8EEFF"</span>, <span class="str">"#997700"</span>, <span class="str">"#003388"</span>, <span class="str">"#002266"</span>)), <span class="comment">// light</span></pre>
+
+  <h3>Adding a DEBUG-only theme</h3>
+  <p>Mark the <code>ComboBoxItem</code> in <code>SettingsPage.xaml</code> with <code>Tag="MonHun" Visibility="Collapsed"</code> (for the Mon Hun group) or give it an <code>x:Name</code> and show it in the <code>#if DEBUG</code> block in <code>SettingsPage.xaml.cs</code>. The Mon Hun Inspired section is currently entirely DEBUG-only and revealed via a <code>foreach</code> loop over items tagged <code>"MonHun"</code>.</p>
+
+  <h3>DEBUG-only themes currently hidden in Release</h3>
+  <ul>
+    <li><strong>Raven</strong> — shown via <code>RavenThemeItem.Visibility</code> in the DEBUG block</li>
+    <li><strong>Custom</strong> — shown via <code>CustomThemeItem.Visibility</code>; reveals the hex colour picker panel</li>
+    <li><strong>Mon Hun Inspired</strong> (25 themes) — all <code>Tag="MonHun"</code>, pending palette review before promotion to Release</li>
+  </ul>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <h2 id="extension">Extension Development</h2>
+
+  <h3>Extension structure</h3>
+  <table>
+    <tr><th>File</th><th>Role</th></tr>
+    <tr><td><code>manifest.json</code></td><td>Extension manifest (Manifest V3). Declares permissions, background service worker, and content scripts.</td></tr>
+    <tr><td><code>background.js</code></td><td>Service worker. Receives rule updates from the NativeHost via native messaging, caches rules in <code>chrome.storage.local</code>, and applies blocking logic.</td></tr>
+    <tr><td><code>blocked.html</code></td><td>Block page shown when a navigation is intercepted. Reads <code>theme.json</code> from the NativeHost to match the current app theme colours.</td></tr>
+    <tr><td><code>parentguard.crx</code></td><td>Packed extension produced by <code>build-installer.ps1</code>. Requires <code>extension.pem</code> in the solution root.</td></tr>
+    <tr><td><code>update.xml</code></td><td>Update manifest used by the browser to find and install the <code>.crx</code>. The <code>codebase</code> URL is rewritten by <code>configure.ps1</code> at install time.</td></tr>
+  </table>
+
+  <h3>Packing the extension manually</h3>
+  <pre><span class="comment"># Edge must be installed; extension.pem must exist in the solution root</span>
+<span class="cmd">&amp;</span> <span class="str">"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"</span> `
+    --pack-extension=<span class="str">".\ParentalControl.Extension"</span> `
+    --pack-extension-key=<span class="str">".\extension.pem"</span></pre>
+  <p>The output <code>ParentalControl.Extension.crx</code> is placed next to the solution root. <code>build-installer.ps1</code> moves it into the extension directory automatically.</p>
+
+  <div class="warn"><strong>Keep <code>extension.pem</code> private.</strong> It is the signing key for the extension. Its extension ID is <code>lackpoggaaeodfcagkfcglokeilcfokg</code> — this ID is derived from the key and must remain stable across updates.</div>
+
+  <h3>Native messaging host</h3>
+  <p>The NativeHost is a .NET console app launched on demand by the browser when the extension requests it. Communication is via stdin/stdout with length-prefixed JSON messages (the native messaging protocol). The NativeHost connects to the same named pipe as the UI to retrieve rules and theme data.</p>
+  <p>Its registry manifest path is written by <code>install.ps1</code> and <code>configure.ps1</code> to both the Chrome and Edge native messaging host registry keys.</p>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <h2 id="ipc">IPC &amp; Service Architecture</h2>
+
+  <h3>Named pipe</h3>
+  <p>The service hosts a named pipe server. Both the UI and the NativeHost connect as clients. Messages are length-prefixed JSON. The <code>IpcCommand</code> enum (in Core) defines all message types — <code>ReloadRules</code> is the most common, sent by the UI after any rule save to tell the service to re-read the database without restarting.</p>
+
+  <h3>Rule enforcement loop</h3>
+  <p>The service worker runs on a 5-second tick. Each tick it: checks screen time, checks focus mode windows, calls <code>ProcessMonitor.EnforceRules()</code> which iterates running processes and kills any that violate the active profile's rules.</p>
+
+  <h3>Profile resolution</h3>
+  <p>The service detects the active Windows session user via <code>WTSQuerySessionInformation</code> and matches it case-insensitively against <code>UserProfile.WindowsUsername</code>. If no match is found, the default profile (<code>Id = 1</code>, <code>WindowsUsername = ""</code>) applies.</p>
+
+  <h3>Adding a new IPC command</h3>
+  <ol>
+    <li>Add a value to <code>IpcCommand</code> in <strong>ParentalControl.Core</strong>.</li>
+    <li>Handle it in the <code>switch</code> in <code>IpcServer.HandleCommand()</code> in <strong>ParentalControl.Service</strong>.</li>
+    <li>Call <code>_ipc.SendAsync(IpcCommand.YourCommand)</code> from the UI page after the relevant DB write.</li>
+  </ol>
+
+</main>
+
+<script>
+  const sections = document.querySelectorAll('h2[id]');
+  const navLinks  = document.querySelectorAll('nav a');
+  const observer  = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        navLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`nav a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-10% 0px -80% 0px' });
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

@@ -212,7 +212,12 @@
 
                         <!-- DEBUG only — hidden in Release builds via code-behind -->
                         <ComboBoxItem x:Name="CustomThemeItem" Content="Custom" Visibility="Collapsed"/>
-                        <!-- ── Single-colour ─────────────────────────────────────────── -->
+                        <!-- DEBUG only — hidden in Release builds via code-behind -->
+                        <ComboBoxItem x:Name="RavenThemeItem" Content="Raven" Visibility="Collapsed"/>
+                        <ComboBoxItem IsEnabled="False" IsHitTestVisible="False" Padding="4,6,4,2">
+                            <TextBlock Text="── Single Color ──" FontSize="10" FontWeight="Bold"
+                                       Foreground="{DynamicResource TextSecondary}"/>
+                        </ComboBoxItem>
                         <ComboBoxItem Content="Default"/>
                         <!-- Red → Rose spectrum -->
                         <ComboBoxItem Content="Red"/>
@@ -243,7 +248,10 @@
                         <ComboBoxItem Content="Silver"/>
                         <ComboBoxItem Content="Sand"/>
 
-                        <!-- ── Two-colour  (sorted by background hue) ────────────────── -->
+                        <ComboBoxItem IsEnabled="False" IsHitTestVisible="False" Padding="4,6,4,2">
+                            <TextBlock Text="── Two Color ──" FontSize="10" FontWeight="Bold"
+                                       Foreground="{DynamicResource TextSecondary}"/>
+                        </ComboBoxItem>
                         <!-- Red bg -->
                         <ComboBoxItem Content="Volcanic"/>
                         <ComboBoxItem Content="Gothic"/>
@@ -361,7 +369,10 @@
                         <ComboBoxItem Content="Valentine"/>
                         <ComboBoxItem Content="Cherry Blossom"/>
 
-                        <!-- ── Three-colour  (sorted by background hue → accent hue) ── -->
+                        <ComboBoxItem IsEnabled="False" IsHitTestVisible="False" Padding="4,6,4,2">
+                            <TextBlock Text="── Three Color ──" FontSize="10" FontWeight="Bold"
+                                       Foreground="{DynamicResource TextSecondary}"/>
+                        </ComboBoxItem>
                         <!-- Red bg -->
                         <ComboBoxItem Content="Bloodrite"/>
                         <ComboBoxItem Content="Inferno"/>
@@ -467,6 +478,48 @@
                         <ComboBoxItem Content="Prophecy"/>
                         <ComboBoxItem Content="Mirage"/>
 
+                        <!-- DEBUG only — Mon Hun Inspired hidden in Release builds via code-behind -->
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed"
+                                      IsEnabled="False" IsHitTestVisible="False" Padding="4,6,4,2">
+                            <TextBlock Text="── Mon Hun Inspired ──" FontSize="10" FontWeight="Bold"
+                                       Foreground="{DynamicResource TextSecondary}"/>
+                        </ComboBoxItem>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Zinogre"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Lagiacrus"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Brachydios"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Teostra"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Gore Magala"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Kushala Daora"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Chameleos"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Glavenus"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Mizutsune"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Astalos"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Gammoth"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Nerscylla"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Shrouded Nerscylla"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Seregios"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Seltas Queen"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Najarala"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Shagaru Magala"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Fatalis"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Rajang"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Soulseer Mizu"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Bloodbath"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Dreadqueen"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Dreadking Rath"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Silverwind Narg"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Stonefist Herm"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Crystalbrd Urag"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Drilltusk Tetsu"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Thunderlord Zin"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Elderfrost Gam"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Grimclaw Tigrex"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Boltreaver Ast"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Deadeye Garuga"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Nightcloak Malf"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Redhelm Arz"/>
+                        <ComboBoxItem Tag="MonHun" Visibility="Collapsed" Content="Snowbaron Lag"/>
+
                     </ComboBox>
 
                     <!-- Custom theme color pickers — visible only when Custom is selected -->
@@ -557,6 +610,28 @@
                             <ComboBoxItem Content="2160p"/>
                         </ComboBox>
                     </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Child Vault Appearance -->
+            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="20" Margin="0,0,0,24">
+                <StackPanel>
+                    <TextBlock Text="Child Vault Appearance" Foreground="{DynamicResource TextPrimary}"
+                               FontSize="16" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                    <TextBlock Text="Sets the theme of the child-facing password vault app independently from the parent UI."
+                               Foreground="{DynamicResource TextSecondary}" FontSize="12" TextWrapping="Wrap"
+                               Margin="0,0,0,12"/>
+
+                    <TextBlock Text="Theme:" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,8"/>
+                    <ComboBox x:Name="ChildVaultThemeBox" Width="200" Height="32" HorizontalAlignment="Left"
+                              SelectionChanged="ChildVaultThemeBox_SelectionChanged" Margin="0,0,0,12"/>
+
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="Light Mode" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="13"/>
+                        <CheckBox x:Name="ChildVaultDarkModeToggle" Style="{StaticResource ToggleSwitch}"
+                                  Checked="ChildVaultDarkMode_Changed" Unchecked="ChildVaultDarkMode_Changed"/>
+                        <TextBlock Text="Dark Mode" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="8,0,0,0" FontSize="13"/>
+                    </StackPanel>
                 </StackPanel>
             </Border>
 

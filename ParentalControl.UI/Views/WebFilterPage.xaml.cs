@@ -249,6 +249,18 @@ public partial class WebFilterPage : Page
             : "Off — only Blocked entries are blocked; everything else is accessible";
     }
 
+    // ── Extension folder shortcut ────────────────────────────────────────────
+
+    private void OpenExtensionFolder_Click(object sender, RoutedEventArgs e)
+    {
+        var folder = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+            "ParentalControl", "extension");
+        if (Directory.Exists(folder))
+            System.Diagnostics.Process.Start(
+                new System.Diagnostics.ProcessStartInfo("explorer.exe", $"\"{folder}\"") { UseShellExecute = true });
+    }
+
     // ── Individual domain rules ──────────────────────────────────────────────
 
     private void AddDomain_Click(object sender, RoutedEventArgs e) => TryAddDomain();

@@ -18,6 +18,7 @@ public class Worker : BackgroundService
     private ProcessMonitor? _processMonitor;
     private ScreenTimeEnforcer? _screenTimeEnforcer;
     private IpcServer? _ipcServer;
+    private ExtensionFileServer? _extensionFileServer;
 
     private DateTime _lastWatchdogCheck = DateTime.UtcNow;
 
@@ -39,6 +40,9 @@ public class Worker : BackgroundService
         _ipcServer = new IpcServer(_processMonitor, _screenTimeEnforcer, _activityLogger);
         _ipcServer.Start();
 
+        _extensionFileServer = new ExtensionFileServer();
+        _extensionFileServer.Start();
+
         _activityLogger.Log(ActivityType.ServiceStarted, "ParentalControl service started");
         _log.LogInformation("ParentalControl service started.");
 
@@ -54,6 +58,7 @@ public class Worker : BackgroundService
                 _screenTimeEnforcer!.Tick();
                 _processMonitor!.EnforceRules(_screenTimeEnforcer.IsScreenTimeLocked);
 
+#if DEBUG
                 if (_screenTimeEnforcer.TriggeredDebugStop)
                 {
                     _log.LogInformation("Debug stop flag triggered — stopping watchdog then service.");
@@ -72,6 +77,7 @@ public class Worker : BackgroundService
                     _lifetime.StopApplication();
                     return;
                 }
+#endif
 
                 // ── Mutual watchdog: ensure ParentalControlWatchdog is still running ───
                 if ((DateTime.UtcNow - _lastWatchdogCheck).TotalMinutes >= 5)
@@ -110,6 +116,7 @@ public class Worker : BackgroundService
         _activityLogger?.Log(ActivityType.ServiceStopped, "ParentalControl service stopped");
         _activityLogger?.Flush();
         _ipcServer?.Dispose();
+        _extensionFileServer?.Dispose();
         _activityLogger?.Dispose();
         _log.LogInformation("ParentalControl service stopped.");
         await base.StopAsync(ct);
@@ -156,6 +163,8 @@ public class Worker : BackgroundService
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ScanBlockedGenres TEXT NOT NULL DEFAULT ''"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ScanBlockedTags   TEXT NOT NULL DEFAULT ''"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN UiScale           TEXT NOT NULL DEFAULT '1080p'"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ChildVaultTheme  TEXT NOT NULL DEFAULT 'Default'"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ChildVaultIsDark INTEGER NOT NULL DEFAULT 1"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ScanRatedDefault   INTEGER NOT NULL DEFAULT 0"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ScanUnratedDefault INTEGER NOT NULL DEFAULT 0"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE Settings ADD COLUMN ScanAppTimeRating   TEXT NOT NULL DEFAULT 'None'"); } catch { }
@@ -179,6 +188,7 @@ public class Worker : BackgroundService
             try { db.Database.ExecuteSqlRaw("ALTER TABLE UserProfiles ADD COLUMN AlwaysRelock INTEGER NOT NULL DEFAULT 0"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE UserProfiles ADD COLUMN IsScreenTimeLocked INTEGER NOT NULL DEFAULT 0"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE UserProfiles ADD COLUMN WebFilterAllowMode INTEGER NOT NULL DEFAULT 0"); } catch { }
+            try { db.Database.ExecuteSqlRaw("ALTER TABLE UserProfiles ADD COLUMN VaultPin TEXT NOT NULL DEFAULT ''"); } catch { }
             try { db.Database.ExecuteSqlRaw("ALTER TABLE WebFilterTags ADD COLUMN SourceUrl TEXT NOT NULL DEFAULT ''"); } catch { }
 
             // Backfill SourceUrl for tags seeded before this column existed (idempotent — only fires when blank).
@@ -306,6 +316,21 @@ public class Worker : BackgroundService
                         Id            INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                         TagId         INTEGER NOT NULL,
                         UserProfileId INTEGER NOT NULL
+                    )");
+            }
+            catch { }
+
+            // VaultEntries table
+            try
+            {
+                db.Database.ExecuteSqlRaw(@"
+                    CREATE TABLE IF NOT EXISTS VaultEntries (
+                        Id                INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                        UserProfileId     INTEGER NOT NULL DEFAULT 1,
+                        SiteName          TEXT    NOT NULL DEFAULT '',
+                        Username          TEXT    NOT NULL DEFAULT '',
+                        EncryptedPassword TEXT    NOT NULL DEFAULT '',
+                        CreatedAt         TEXT    NOT NULL DEFAULT (datetime('now'))
                     )");
             }
             catch { }

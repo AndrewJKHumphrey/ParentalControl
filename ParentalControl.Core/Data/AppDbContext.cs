@@ -17,6 +17,7 @@ public class AppDbContext : DbContext
     public DbSet<WebFilterTag>         WebFilterTags        { get; set; }
     public DbSet<WebFilterTagDomain>   WebFilterTagDomains  { get; set; }
     public DbSet<ProfileWebFilterTag>  ProfileWebFilterTags { get; set; }
+    public DbSet<VaultEntry>           VaultEntries         { get; set; }
 
     public static string DbPath
     {

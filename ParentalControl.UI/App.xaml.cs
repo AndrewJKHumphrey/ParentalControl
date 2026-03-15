@@ -149,7 +149,16 @@ public partial class App : Application
 
             // Apply saved theme before showing any window
             var settings = db.Settings.FirstOrDefault();
-            ApplyTheme(settings?.AppTheme ?? "Default", settings?.ThemeIsDark ?? true,
+#if DEBUG
+            // In DEBUG, default to the "Debug" theme on fresh installs so it is
+            // immediately obvious which build configuration is running.
+            var resolvedTheme = settings?.AppTheme is null or "Default" or "Dark"
+                ? "Debug"
+                : settings.AppTheme;
+#else
+            var resolvedTheme = settings?.AppTheme ?? "Default";
+#endif
+            ApplyTheme(resolvedTheme, settings?.ThemeIsDark ?? true,
                 settings?.CustomPrimaryColor   ?? "#1E1E2E",
                 settings?.CustomSecondaryColor ?? "#585B70",
                 settings?.CustomTertiaryColor  ?? "#CDD6F4");
@@ -198,7 +207,8 @@ public partial class App : Application
     public static void ApplyTheme(string name, bool isDark = true,
         string customPrimary   = "#1E1E2E",
         string customSecondary = "#585B70",
-        string customTertiary  = "#CDD6F4")
+        string customTertiary  = "#CDD6F4",
+        bool forChildVault = false)
     {
         // Custom theme: derive palette from 3 user-defined colours
         if (name == "Custom")
@@ -211,17 +221,21 @@ public partial class App : Application
             var p = ParseC(customPrimary);
             var s = ParseC(customSecondary);
             var t = ParseC(customTertiary);
-            var customRes = Application.Current.Resources;
-            customRes["AppBg"]         = new SolidColorBrush(p);
-            customRes["SidebarBg"]     = new SolidColorBrush(Darken(p, 0.10));
-            customRes["CardBg"]        = new SolidColorBrush(Lighten(p, 0.12));
-            customRes["CardHover"]     = new SolidColorBrush(Lighten(p, 0.22));
-            customRes["AltRowBg"]      = new SolidColorBrush(Lighten(p, 0.05));
-            customRes["BorderColor"]   = new SolidColorBrush(s);
-            customRes["TextPrimary"]   = new SolidColorBrush(t);
-            customRes["TextSecondary"] = new SolidColorBrush(Blend(t, p, 0.65));
+            if (!forChildVault)
+            {
+                var customRes = Application.Current.Resources;
+                customRes["AppBg"]         = new SolidColorBrush(p);
+                customRes["SidebarBg"]     = new SolidColorBrush(Darken(p, 0.10));
+                customRes["CardBg"]        = new SolidColorBrush(Lighten(p, 0.12));
+                customRes["CardHover"]     = new SolidColorBrush(Lighten(p, 0.22));
+                customRes["AltRowBg"]      = new SolidColorBrush(Lighten(p, 0.05));
+                customRes["BorderColor"]   = new SolidColorBrush(s);
+                customRes["TextPrimary"]   = new SolidColorBrush(t);
+                customRes["TextSecondary"] = new SolidColorBrush(Blend(t, p, 0.65));
+            }
             static string ToHex(Color c) => $"#{c.R:X2}{c.G:X2}{c.B:X2}";
-            WriteThemeJson(ToHex(p), ToHex(Lighten(p, 0.12)), ToHex(s), ToHex(t), ToHex(Blend(t, p, 0.65)), ToHex(Lighten(p, 0.22)));
+            WriteThemeJson(ToHex(p), ToHex(Lighten(p, 0.12)), ToHex(s), ToHex(t), ToHex(Blend(t, p, 0.65)), ToHex(Lighten(p, 0.22)),
+                forChildVault ? "child_vault_theme.json" : "theme.json");
             return;
         }
 
@@ -1025,7 +1039,157 @@ public partial class App : Application
             // Very dark near-black bg │ Silver accent │ Crimson text
             ["Obsidian"]       = (("#080808", "#040404", "#101010", "#181818", "#0C0C0C", "#AABBCC", "#FF1133", "#CC0022"),
                                    ("#F5F5F5", "#EEEEEE", "#FAFAFA", "#E0E0E0", "#F2F2F2", "#556677", "#880011", "#660011")),
+
+            // ── Monster Hunter Inspired ───────────────────────────────────────
+
+            // Zinogre (MH3U) — storm wolf: dark navy bg │ electric gold accent │ cyan text
+            ["Zinogre"]        = (("#0A0C20", "#060814", "#10163A", "#182248", "#0E1228", "#FFDD22", "#44DDFF", "#1AAACC"),
+                                   ("#EEF0FF", "#E0E4FF", "#F5F8FF", "#C8D0FF", "#E8EEFF", "#997700", "#003388", "#002266")),
+
+            // Lagiacrus (MH3U) — sea leviathan: deep teal-navy bg │ electric blue accent │ amber text
+            ["Lagiacrus"]      = (("#041A22", "#021216", "#082832", "#0E3640", "#061E28", "#44BBFF", "#FFCC44", "#CC9900"),
+                                   ("#EDFFFE", "#DAFFF8", "#F5FFFC", "#B0FFEE", "#E0FFFA", "#006688", "#664400", "#443300")),
+
+            // Brachydios (MH3U) — explosive brute: dark moss bg │ slime-lime accent │ orange text
+            ["Brachydios"]     = (("#0C1A00", "#081000", "#142800", "#1E3A00", "#101C00", "#AAFF00", "#FF8844", "#CC5522"),
+                                   ("#F0FFE8", "#E4FFD0", "#F8FFEE", "#C8FF80", "#EEFFD8", "#557700", "#883300", "#662200")),
+
+            // Teostra (MH4U) — fire lion elder: ember-red bg │ golden fire accent │ ice-blue text
+            ["Teostra"]        = (("#200606", "#160404", "#300A0A", "#401212", "#280808", "#FFCC00", "#AADDFF", "#6699CC"),
+                                   ("#FFF2F2", "#FFE8E8", "#FFFBFB", "#FFD0D0", "#FFF5F5", "#997700", "#003366", "#002244")),
+
+            // Gore Magala (MH4U) — frenzy elder: void-purple bg │ frenzy violet accent │ gold text
+            ["Gore Magala"]    = (("#0E0818", "#090410", "#181028", "#221838", "#121022", "#AA22CC", "#FFDD44", "#DDAA11"),
+                                   ("#F2EEFF", "#EAE0FF", "#FAFAFF", "#D8CCFF", "#F0EAFF", "#6600AA", "#7A5500", "#5A3A00")),
+
+            // Kushala Daora (MH4U) — steel wind elder: dark steel-indigo bg │ wind-teal accent │ silver text
+            ["Kushala Daora"]  = (("#0A0E18", "#060A12", "#10182A", "#182038", "#0C1220", "#33CCBB", "#DDEEFF", "#99AACC"),
+                                   ("#EEF2FF", "#E0E8FF", "#F5F8FF", "#CCDAFF", "#E8EEFF", "#117766", "#1A2A40", "#2A4060")),
+
+            // Chameleos (MH4U) — cloaking elder: swamp-purple bg │ poison-rose accent │ pale violet text
+            ["Chameleos"]      = (("#120A22", "#0C0618", "#1E1034", "#2A1844", "#16102C", "#FF4499", "#DDBBFF", "#9966CC"),
+                                   ("#F4EEFF", "#EAE0FF", "#FAFAFF", "#D8CCFF", "#F0EAFF", "#CC0055", "#440088", "#330066")),
+
+            // Glavenus (MHGU) — blade-tail raptor: charcoal-red bg │ blade-silver accent │ ember text
+            ["Glavenus"]       = (("#1A0808", "#100404", "#281010", "#381C1C", "#1E0C0C", "#BBCCDD", "#FF8833", "#CC5500"),
+                                   ("#FFF4F4", "#FFEAEA", "#FFF9F9", "#FFD8D8", "#FFF0F0", "#556677", "#882200", "#661100")),
+
+            // Mizutsune (MHGU) — water fox wyvern: deep teal bg │ sakura-pink accent │ pale-gold text
+            ["Mizutsune"]      = (("#041E1A", "#021412", "#082E2A", "#0E3C38", "#062220", "#FF88BB", "#FFDD88", "#DDAA44"),
+                                   ("#EDFFFE", "#DAFFF8", "#F5FFFC", "#B0FFEE", "#E0FFFA", "#CC1155", "#886600", "#664400")),
+
+            // Astalos (MHGU) — electric wyvern: storm-black bg │ electric yellow-green accent │ neon-teal text
+            ["Astalos"]        = (("#080A10", "#040608", "#0E1018", "#161820", "#0A0C14", "#BBFF00", "#22FFEE", "#11CCBB"),
+                                   ("#F0F4FF", "#E4EBFF", "#F8FAFF", "#D0DDFF", "#ECF2FF", "#667700", "#006655", "#004433")),
+
+            // Gammoth (MHGU) — arctic mammoth: ice-navy bg │ frost accent │ warm amber text
+            ["Gammoth"]        = (("#060E1A", "#040A12", "#0C1828", "#122038", "#080E20", "#AADDFF", "#FFCC88", "#CC9944"),
+                                   ("#EEF4FF", "#E0EBFF", "#F5FAFF", "#CCDEFF", "#E8F2FF", "#336699", "#664400", "#443300")),
+
+            // Nerscylla (MH4U) — spider Temnoceran: void-purple bg │ pale-violet accent │ magenta text
+            ["Nerscylla"]      = (("#180A24", "#100618", "#241034", "#301444", "#1C0E2A", "#DDBBFF", "#FF44BB", "#BB2288"),
+                                   ("#F8F0FF", "#F0E4FF", "#FEFBFF", "#E8D4FF", "#F4EEFF", "#885599", "#881144", "#660033")),
+
+            // Shrouded Nerscylla (MHGU) — dark spider deviant: near-black bg │ crimson accent │ dark-silver text
+            ["Shrouded Nerscylla"] = (("#0C0610", "#080410", "#161020", "#201830", "#100818", "#DD1133", "#CCBBDD", "#887799"),
+                                   ("#F5F0FF", "#EEE0FF", "#FAFAFF", "#D8CCFF", "#F0EAFF", "#AA0022", "#330044", "#220033")),
+
+            // Seregios (MH4U) — pinecone rival wyvern: burnt-sienna bg │ bronze-gold accent │ rival-blue text
+            ["Seregios"]       = (("#1E1000", "#160A00", "#2C1800", "#3C2400", "#221400", "#FFAA33", "#55AAFF", "#2277CC"),
+                                   ("#FFF8EC", "#FFEEDD", "#FFFDF8", "#FFE0CC", "#FFF4E8", "#AA6600", "#003388", "#002266")),
+
+            // Seltas Queen (MH4U) — insect queen: dark forest-teal bg │ electric-blue accent │ gold text
+            ["Seltas Queen"]   = (("#0A1808", "#061004", "#102614", "#183A1C", "#0C1E0C", "#2299FF", "#FFCC33", "#DDAA00"),
+                                   ("#EDFFF0", "#DCFFEA", "#F5FFFC", "#B8FFCC", "#E4FFF5", "#0055AA", "#665500", "#443300")),
+
+            // Najarala (MH4U) — snake wyvern: dark teal-navy bg │ orange accent │ teal text
+            ["Najarala"]       = (("#041820", "#021012", "#082A30", "#0E3840", "#061A22", "#FF7722", "#44DDDD", "#22AAAA"),
+                                   ("#EDFFFE", "#DAFFF8", "#F5FFFC", "#B0FFEE", "#E0FFFA", "#CC4400", "#006666", "#004444")),
+
+            // Shagaru Magala (MH4U) — transcended elder: cold-indigo bg │ pale-gold accent │ silver-lavender text
+            ["Shagaru Magala"] = (("#0C0A1E", "#080618", "#141230", "#1C1A40", "#100C28", "#FFEE88", "#EEDDFF", "#CCBBDD"),
+                                   ("#F0EEFF", "#E4E0FF", "#FAFAFF", "#D0C8FF", "#E8E4FF", "#997700", "#330066", "#220044")),
+
+            // Fatalis (Classic) — black elder dragon: near-black bg │ crimson accent │ bone-white text
+            ["Fatalis"]        = (("#080606", "#040402", "#100E0E", "#181616", "#0C0A0A", "#CC1122", "#EEEECC", "#BBBB99"),
+                                   ("#F5F5F0", "#EEEEEC", "#FAFAFA", "#E0E0DC", "#F2F2EE", "#AA0011", "#333322", "#222211")),
+
+            // Rajang (Classic) — golden gorilla elder: near-black bg │ electric-gold accent │ fiery-orange text
+            ["Rajang"]         = (("#120A00", "#0C0600", "#1E1400", "#2E2000", "#160E00", "#FFCC00", "#FF8833", "#CC5500"),
+                                   ("#FFF8EC", "#FFF0D8", "#FFFDF8", "#FFE8C0", "#FFF4E8", "#AA7700", "#882200", "#661100")),
+
+            // Soulseer Mizutsune (MHGU) — psychic variant: dark violet-teal bg │ psychic-pink accent │ icy-cyan text
+            ["Soulseer Mizu"]  = (("#0C0E22", "#080A18", "#141634", "#1E1E44", "#10122A", "#FF44CC", "#44FFEE", "#22CCBB"),
+                                   ("#EEEEFF", "#E0E4FF", "#F5F8FF", "#C8CCFF", "#E8EAFF", "#CC0099", "#006655", "#004433")),
+
+            // Bloodbath Diablos (MHGU) — scarred obsidian brute: deep obsidian bg │ blood-red accent │ bone text
+            ["Bloodbath"]      = (("#100800", "#0A0600", "#1C1000", "#281A00", "#141000", "#BB1100", "#DDCCAA", "#AA9966"),
+                                   ("#FFF8EE", "#FFF0DC", "#FFFDF8", "#FFE4BC", "#FFF4E8", "#880000", "#443300", "#332200")),
+
+            // Dreadqueen Rathian (MHGU) — dark elegant subspecies: deep violet bg │ rose-gold accent │ pale silver text
+            ["Dreadqueen"]     = (("#14081E", "#0E0516", "#201030", "#2C1840", "#180C26", "#DD8866", "#DDBFFF", "#AA88CC"),
+                                   ("#F8F0FF", "#F0E4FF", "#FEFBFF", "#E8D4FF", "#F4EEFF", "#AA4422", "#440077", "#330055")),
+
+            // ── MHGU Deviants ─────────────────────────────────────────────────
+
+            // Dreadking Rathalos — obsidian-black king: near-black red-tint bg │ deep-crimson accent │ ember text
+            ["Dreadking Rath"] = (("#160808", "#0E0404", "#221010", "#2E1616", "#1A0C0C", "#DD2200", "#FFAA44", "#CC7722"),
+                                   ("#FFF2F0", "#FFECE8", "#FFFBFA", "#FFD4CC", "#FFF5F4", "#AA1100", "#883300", "#662200")),
+
+            // Silverwind Nargacuga — silver-white elegant: dark steel bg │ silver-blue accent │ near-white text
+            ["Silverwind Narg"]= (("#101418", "#0C1014", "#182026", "#222C36", "#141A1E", "#88CCFF", "#EEEEFF", "#AABBCC"),
+                                   ("#F0F4FF", "#E4EAFF", "#F8FAFF", "#D0DCFF", "#ECEFF8", "#3366AA", "#1A2A3A", "#2A3A50")),
+
+            // Stonefist Hermitaur — petrified rock shell: dark stone-grey bg │ earth-tan accent │ stone-white text
+            ["Stonefist Herm"] = (("#101008", "#0C0C06", "#1C1C10", "#282818", "#161610", "#AA8844", "#DDDDCC", "#AAAA99"),
+                                   ("#F8F8F0", "#F0F0E4", "#FDFDF8", "#E4E4D0", "#F4F4EC", "#776622", "#222222", "#444433")),
+
+            // Crystalbeard Uragaan — crystal-encrusted brute: dark charcoal bg │ crystal-gold accent │ warm pale text
+            ["Crystalbrd Urag"]= (("#141210", "#0E0C0A", "#201E18", "#2C2A22", "#181614", "#FFCC44", "#EEDDBB", "#BB9966"),
+                                   ("#F8F6F0", "#F0EEE4", "#FDFCF8", "#E8E4D0", "#F4F2EC", "#996600", "#443300", "#332200")),
+
+            // Drilltusk Tetsucabra — rock-tusk frog: dark earthy-brown bg │ rust-red accent │ warm pale text
+            ["Drilltusk Tetsu"]= (("#180E08", "#100806", "#241808", "#342410", "#1C1208", "#CC4400", "#FFEECC", "#CCBB88"),
+                                   ("#FFF8F0", "#FFEEDD", "#FFFDF8", "#FFE0C0", "#FFF4E8", "#993300", "#442200", "#331100")),
+
+            // Thunderlord Zinogre — gold-lightning peak: storm-black bg │ pure-gold accent │ electric-yellow text
+            ["Thunderlord Zin"]= (("#0A0C10", "#060808", "#10141A", "#181C24", "#0C1014", "#FFCC00", "#FFEE44", "#DDCC11"),
+                                   ("#F4F0E8", "#EEE8D8", "#FAFAF0", "#E8E0C0", "#F0EEE4", "#886600", "#4A4000", "#333000")),
+
+            // Elderfrost Gammoth — frost-crystal mammoth: deep ice-blue bg │ crystal-ice accent │ pale-ice text
+            ["Elderfrost Gam"] = (("#060C18", "#040810", "#0C1428", "#121E38", "#080E1C", "#88EEFF", "#DDEEFF", "#99BBDD"),
+                                   ("#EAF4FF", "#D4ECFF", "#F2F8FF", "#B8E4FF", "#E0F0FF", "#0066AA", "#1A3A5A", "#2A4A6A")),
+
+            // Grimclaw Tigrex — savage dark-purple beast: dark slate-purple bg │ rage-crimson accent │ silver-purple text
+            ["Grimclaw Tigrex"]= (("#100C18", "#0C0810", "#1A1428", "#241E38", "#141020", "#EE2244", "#CCBBEE", "#9977BB"),
+                                   ("#F4F0FF", "#EAE4FF", "#FAFAFF", "#D8CCFF", "#F0ECFF", "#CC0033", "#330055", "#220044")),
+
+            // Boltreaver Astalos — fully-charged dark wyvern: near-black bg │ blinding electric-green accent │ neon-green text
+            ["Boltreaver Ast"] = (("#060808", "#040606", "#0C1010", "#141818", "#080C0C", "#DDFF00", "#88FF44", "#55CC22"),
+                                   ("#F0F8E8", "#E4F2D4", "#F8FCF0", "#D0EEB8", "#ECF8E0", "#778800", "#225500", "#1A3300")),
+
+            // Deadeye Yian Garuga — scarred black bird: near-black purple bg │ dark-magenta accent │ sickly-pink text
+            ["Deadeye Garuga"] = (("#0E080C", "#0A0608", "#181018", "#221820", "#120C10", "#BB0088", "#FFAACC", "#CC7799"),
+                                   ("#FFF0F8", "#FFE4F0", "#FFFBFE", "#FFD0E8", "#FFF5FA", "#880055", "#660033", "#440022")),
+
+            // Nightcloak Malfestio — void-dark owl: deep void-navy bg │ amber-eye accent │ sleepy-purple text
+            ["Nightcloak Malf"]= (("#080A14", "#06080E", "#0E1020", "#16182C", "#0A0C18", "#DDAA22", "#BB88FF", "#8855CC"),
+                                   ("#EEF0FF", "#E0E4FF", "#F5F8FF", "#C8D0FF", "#E8EAFF", "#AA7700", "#440088", "#330066")),
+
+            // Redhelm Arzuros — red-skull bear: dark navy-teal bg │ battle-red accent │ bright-cyan text
+            ["Redhelm Arz"]    = (("#081018", "#060C12", "#101C28", "#182838", "#0C141E", "#DD3300", "#44CCFF", "#2299CC"),
+                                   ("#EEF4FF", "#E0ECFF", "#F5FAFF", "#C8DEFF", "#E8F2FF", "#AA2200", "#003366", "#002244")),
+
+            // Snowbaron Lagombi — icy snowball lagomorph: deep ice-navy bg │ frost-white accent │ soft ice-white text
+            ["Snowbaron Lag"]  = (("#080E18", "#060A12", "#0E1828", "#162038", "#0A1220", "#BBDDFF", "#EEEEFF", "#CCDDFF"),
+                                   ("#EEF4FF", "#E0EBFF", "#F5FAFF", "#CCDEFF", "#E8F2FF", "#334488", "#1A2A4A", "#2A3A60")),
         };
+
+#if DEBUG
+        // Cool blue-gray base + light blue highlight accent — debug builds only
+        themes["Debug"] = (("#1A1C1E", "#13151A", "#252830", "#323640", "#1E2028", "#5BB8F5", "#E4EEF8", "#8899AA"),
+                            ("#F0F4F8", "#E8EEF4", "#FFFFFF", "#DDE6F0", "#F4F7FA", "#1A7CC4", "#1A1C1E", "#5B6A7A"));
+#endif
 
         // Fallback for legacy names
         if (!themes.ContainsKey(name)) name = "Default";
@@ -1033,16 +1197,20 @@ public partial class App : Application
         var palette = isDark ? themes[name].dark : themes[name].light;
 
         var res = Application.Current.Resources;
-        res["AppBg"]         = Brush(palette.Item1);
-        res["SidebarBg"]     = Brush(palette.Item2);
-        res["CardBg"]        = Brush(palette.Item3);
-        res["CardHover"]     = Brush(palette.Item4);
-        res["AltRowBg"]      = Brush(palette.Item5);
-        res["BorderColor"]   = Brush(palette.Item6);
-        res["TextPrimary"]   = Brush(palette.Item7);
-        res["TextSecondary"] = Brush(palette.Item8);
+        if (!forChildVault)
+        {
+            res["AppBg"]         = Brush(palette.Item1);
+            res["SidebarBg"]     = Brush(palette.Item2);
+            res["CardBg"]        = Brush(palette.Item3);
+            res["CardHover"]     = Brush(palette.Item4);
+            res["AltRowBg"]      = Brush(palette.Item5);
+            res["BorderColor"]   = Brush(palette.Item6);
+            res["TextPrimary"]   = Brush(palette.Item7);
+            res["TextSecondary"] = Brush(palette.Item8);
+        }
 
-        WriteThemeJson(palette.Item1, palette.Item3, palette.Item6, palette.Item7, palette.Item8, palette.Item4);
+        WriteThemeJson(palette.Item1, palette.Item3, palette.Item6, palette.Item7, palette.Item8, palette.Item4,
+            forChildVault ? "child_vault_theme.json" : "theme.json");
 
         static SolidColorBrush Brush(string hex) =>
             new((Color)ColorConverter.ConvertFromString(hex));
@@ -1050,7 +1218,8 @@ public partial class App : Application
 
     private static void WriteThemeJson(
         string appBg, string cardBg, string borderColor,
-        string textPrimary, string textSecondary, string cardHover)
+        string textPrimary, string textSecondary, string cardHover,
+        string fileName = "theme.json")
     {
         try
         {
@@ -1070,7 +1239,7 @@ public partial class App : Application
                 Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
                 "ParentalControl");
             Directory.CreateDirectory(dir);
-            File.WriteAllText(Path.Combine(dir, "theme.json"), json);
+            File.WriteAllText(Path.Combine(dir, fileName), json);
         }
         catch { }
     }

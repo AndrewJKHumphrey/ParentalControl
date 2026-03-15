@@ -254,3 +254,4 @@ C:\Users\humph\ParentalControl\ParentalControl.Service\bin\Release\net10.0-windo
 C:\Users\humph\ParentalControl\ParentalControl.Service\bin\Release\net10.0-windows\win-x64\MailKit.dll
 C:\Users\humph\ParentalControl\ParentalControl.Service\bin\Release\net10.0-windows\win-x64\MimeKit.dll
 C:\Users\humph\ParentalControl\ParentalControl.Service\bin\Release\net10.0-windows\win-x64\System.Security.Cryptography.Pkcs.dll
+C:\Users\humph\ParentalControl\ParentalControl.Service\bin\Release\net10.0-windows\win-x64\System.Security.Cryptography.ProtectedData.dll

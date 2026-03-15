@@ -60,6 +60,10 @@ public class AppSettings
     public string CustomSecondaryColor { get; set; } = "#585B70";
     public string CustomTertiaryColor  { get; set; } = "#CDD6F4";
 
+    // Child Vault appearance (independent from parent UI theme)
+    public string ChildVaultTheme    { get; set; } = "Default";
+    public bool   ChildVaultIsDark   { get; set; } = true;
+
     // UI scale / target resolution
     public string UiScale { get; set; } = "1080p"; // "1080p","1440p","2160p"
 

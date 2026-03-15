@@ -15,7 +15,13 @@ Work through sections in order — each section builds on the previous (service 
 - [ ] Open UI (`ParentalControl.UI.exe`) — login prompt should appear
 - [ ] Login with default password `parent1234`
 - [ ] Confirm first-run flow completes without error
-- [ ] Open Edge and confirm ParentGuard extension is installed and active
+
+**Browser Extension (auto-installed — no manual steps required):**
+- [ ] Open Edge — ParentGuard Web Filter extension appears automatically in `edge://extensions`
+- [ ] Extension shows as enabled with no errors or warnings
+- [ ] Open Chrome (if installed) — same extension appears automatically
+- [ ] Extension ID in `edge://extensions` matches `lackpoggaaeodfcagkfcglokeilcfokg`
+- [ ] Native messaging host connected: navigate to a blocked domain → redirected to `blocked.html` (not a browser error)
 
 ---
 

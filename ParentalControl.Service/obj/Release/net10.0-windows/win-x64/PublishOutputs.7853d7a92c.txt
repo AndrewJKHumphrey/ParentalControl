@@ -238,6 +238,7 @@ C:\Users\humph\ParentalControl\publish\service\SQLitePCLRaw.provider.e_sqlite3.d
 C:\Users\humph\ParentalControl\publish\service\System.Diagnostics.EventLog.Messages.dll
 C:\Users\humph\ParentalControl\publish\service\System.Diagnostics.EventLog.dll
 C:\Users\humph\ParentalControl\publish\service\System.Security.Cryptography.Pkcs.dll
+C:\Users\humph\ParentalControl\publish\service\System.Security.Cryptography.ProtectedData.dll
 C:\Users\humph\ParentalControl\publish\service\System.ServiceProcess.ServiceController.dll
 C:\Users\humph\ParentalControl\publish\service\e_sqlite3.dll
 C:\Users\humph\ParentalControl\publish\service\ParentalControl.Core.dll

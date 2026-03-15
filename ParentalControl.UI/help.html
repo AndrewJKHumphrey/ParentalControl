@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ParentGuard — Help</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #1e1e2e;
+    color: #cdd6f4;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── Sidebar TOC ── */
+  nav {
+    width: 220px;
+    min-width: 220px;
+    background: #181825;
+    padding: 28px 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    border-right: 1px solid #313244;
+  }
+  nav .brand {
+    font-size: 17px;
+    font-weight: 700;
+    color: #89b4fa;
+    padding: 0 20px 20px;
+    border-bottom: 1px solid #313244;
+    margin-bottom: 12px;
+  }
+  nav a {
+    display: block;
+    padding: 7px 20px;
+    color: #a6adc8;
+    text-decoration: none;
+    font-size: 14px;
+    border-left: 3px solid transparent;
+    transition: color .15s, border-color .15s, background .15s;
+  }
+  nav a:hover { color: #cdd6f4; background: #24273a; }
+  nav a.active { color: #89b4fa; border-left-color: #89b4fa; background: #1e2030; }
+  nav .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: #585b70;
+    padding: 14px 20px 4px;
+  }
+
+  /* ── Main content ── */
+  main {
+    flex: 1;
+    padding: 48px 56px;
+    max-width: 860px;
+  }
+
+  h1 { font-size: 28px; font-weight: 700; color: #cdd6f4; margin-bottom: 6px; }
+  .subtitle { color: #a6adc8; font-size: 15px; margin-bottom: 40px; }
+
+  h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #89b4fa;
+    margin: 48px 0 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #313244;
+    scroll-margin-top: 24px;
+  }
+  h3 { font-size: 15px; font-weight: 600; color: #cdd6f4; margin: 22px 0 8px; }
+
+  p { line-height: 1.7; color: #a6adc8; margin-bottom: 12px; }
+  p strong { color: #cdd6f4; }
+
+  ul, ol { padding-left: 20px; margin-bottom: 12px; }
+  li { line-height: 1.7; color: #a6adc8; margin-bottom: 3px; }
+  li strong { color: #cdd6f4; }
+
+  /* Cards */
+  .card {
+    background: #313244;
+    border-radius: 8px;
+    padding: 18px 22px;
+    margin-bottom: 16px;
+  }
+  .card-title { font-weight: 600; color: #cdd6f4; margin-bottom: 6px; font-size: 14px; }
+
+  /* Tips / notes */
+  .tip {
+    background: #1e2030;
+    border-left: 3px solid #89b4fa;
+    border-radius: 0 6px 6px 0;
+    padding: 12px 16px;
+    margin: 14px 0;
+    font-size: 14px;
+    color: #a6adc8;
+  }
+  .tip strong { color: #89b4fa; }
+
+  .warn {
+    background: #1e2030;
+    border-left: 3px solid #fab387;
+    border-radius: 0 6px 6px 0;
+    padding: 12px 16px;
+    margin: 14px 0;
+    font-size: 14px;
+    color: #a6adc8;
+  }
+  .warn strong { color: #fab387; }
+
+  /* Step badges */
+  .steps { counter-reset: step; }
+  .step { display: flex; gap: 14px; margin-bottom: 12px; align-items: flex-start; }
+  .step::before {
+    counter-increment: step;
+    content: counter(step);
+    min-width: 26px; height: 26px;
+    background: #89b4fa;
+    color: #1e1e2e;
+    border-radius: 50%;
+    font-weight: 700; font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 2px;
+  }
+  .step p { margin: 0; }
+
+  /* Badge labels */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    vertical-align: middle;
+  }
+  .badge-block  { background: #f38ba8; color: #1e1e2e; }
+  .badge-time   { background: #fab387; color: #1e1e2e; }
+  .badge-allow  { background: #a6e3a1; color: #1e1e2e; }
+
+  code {
+    background: #45475a;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-family: 'Cascadia Code', 'Consolas', monospace;
+    font-size: 13px;
+    color: #cba6f7;
+  }
+
+  table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 14px; }
+  th { text-align: left; padding: 9px 12px; background: #45475a; color: #cdd6f4; font-weight: 600; }
+  td { padding: 8px 12px; border-bottom: 1px solid #313244; color: #a6adc8; vertical-align: top; }
+  td strong { color: #cdd6f4; }
+  tr:last-child td { border-bottom: none; }
+</style>
+</head>
+<body>
+
+<!-- ── Navigation ── -->
+<nav>
+  <div class="brand">ParentGuard Help</div>
+  <div class="section-label">Getting Started</div>
+  <a href="#quickstart">Quick Start</a>
+  <a href="#login">Login &amp; Password</a>
+  <div class="section-label">Features</div>
+  <a href="#dashboard">Dashboard</a>
+  <a href="#profiles">Profiles</a>
+  <a href="#screentime">Screen Time</a>
+  <a href="#appcontrol">App Control</a>
+  <a href="#focusmode">Focus Mode</a>
+  <a href="#extension">Browser Extension</a>
+  <a href="#webfilter">Web Filter</a>
+  <a href="#activitylog">Activity Log</a>
+  <a href="#settings">Settings</a>
+  <div class="section-label">Support</div>
+  <a href="#troubleshooting">Troubleshooting</a>
+</nav>
+
+<!-- ── Content ── -->
+<main>
+  <h1>ParentGuard Help</h1>
+  <p class="subtitle">Everything you need to set up and manage parental controls on Windows.</p>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <h2 id="quickstart">Quick Start</h2>
+  <p>ParentGuard runs as a background Windows service that enforces your rules 24/7, plus an admin UI that only you can access.</p>
+
+  <div class="steps">
+    <div class="step"><p>Run <strong>ParentGuardSetup.msi</strong> and follow the installer wizard. Administrator rights are required.</p></div>
+    <div class="step"><p>Open <strong>ParentalControl.UI.exe</strong> and log in with the default password <code>parent1234</code>.</p></div>
+    <div class="step"><p>Go to <strong>Profiles</strong> and add a profile for each child, entering their Windows username.</p></div>
+    <div class="step"><p>Configure <strong>Screen Time</strong>, <strong>App Control</strong>, and <strong>Web Filter</strong> limits per profile.</p></div>
+    <div class="step"><p>Rules take effect immediately — no reboot required. Check the <strong>Dashboard</strong> to monitor activity.</p></div>
+  </div>
+
+  <div class="tip"><strong>Tip:</strong> Change the default password immediately in <strong>Settings → Change Password</strong> before a child gets access to the machine.</div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <h2 id="login">Login &amp; Password</h2>
+  <p>The UI is protected by a password so children cannot change their own rules.</p>
+  <ul>
+    <li><strong>Default password:</strong> <code>parent1234</code></li>
+    <li>Change it in <strong>Settings → Change Password</strong> (minimum 6 characters).</li>
+    <li>Wrong password is rejected with an error — the UI does not open.</li>
+    <li>If you forget your password, delete <code>%ProgramData%\ParentalControl\data.db</code> and re-run <strong>ParentGuardSetup.msi</strong> (this resets all data).</li>
+  </ul>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <h2 id="dashboard">Dashboard</h2>
+  <p>The Dashboard shows a real-time overview of the active profile and lets you make quick adjustments.</p>
+
+  <h3>Status Cards</h3>
+  <ul>
+    <li><strong>Screen Time Remaining</strong> — time left today for the active user. Colour-coded: green &gt;30 min, yellow &lt;30 min, red &lt;5 min, purple = locked.</li>
+    <li><strong>App Time</strong> — time left for Screen-Time-Only apps today.</li>
+    <li><strong>Focus Mode</strong> — whether a focus window is currently active.</li>
+    <li><strong>Web Filter</strong> — number of sites blocked today.</li>
+  </ul>
+
+  <h3>Enforcement Toggles</h3>
+  <p>Each feature can be individually enabled or disabled. <strong>Admin Mode</strong> disables all four at once — useful when you want to temporarily lift all restrictions.</p>
+
+  <h3>Time Adjustments</h3>
+  <table>
+    <tr><th>Button</th><th>Effect</th></tr>
+    <tr><td><strong>Screen Time +30 / −30</strong></td><td>Adds or removes bonus minutes from today's allowance.</td></tr>
+    <tr><td><strong>Allowed Range +60</strong></td><td>Extends the allowed hours window end time by 60 minutes for today.</td></tr>
+    <tr><td><strong>App Time +30</strong></td><td>Adds 30 bonus minutes for Screen-Time-Only apps today.</td></tr>
+  </table>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <h2 id="profiles">Profiles</h2>
+  <p>Each profile maps to a Windows user account. Rules (screen time, app control, web filter) are enforced based on which user is logged in.</p>
+
+  <h3>Default Profile</h3>
+  <p>A built-in <strong>Default</strong> profile (blank Windows username) acts as a catch-all. Any logged-in user with no specific profile uses its rules.</p>
+
+  <h3>Adding a Profile</h3>
+  <div class="steps">
+    <div class="step"><p>Click <strong>Add Profile</strong> and enter a display name (e.g. "Lily") and the child's exact Windows username.</p></div>
+    <div class="step"><p>ParentGuard automatically creates 7-day screen time and focus schedules for the new profile.</p></div>
+    <div class="step"><p>Set rules on the Screen Time, App Control, Focus Mode, and Web Filter pages for this profile.</p></div>
+  </div>
+
+  <h3>Profile Options</h3>
+  <ul>
+    <li><strong>IsEnabled</strong> — toggle off to temporarily suspend all enforcement for that profile.</li>
+    <li><strong>AlwaysRelock</strong> — when on, the session is locked on every new login once the daily limit is reached, not just the first time.</li>
+  </ul>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <h2 id="screentime">Screen Time</h2>
+  <p>Limits how long a child can use the computer each day, and restricts usage to certain hours.</p>
+
+  <h3>Daily Limit</h3>
+  <p>Enter minutes per day. Set to <strong>0</strong> for unlimited. When the limit is reached the session is locked.</p>
+
+  <h3>Allowed Hours</h3>
+  <p>Set <strong>Allowed From</strong> and <strong>Allowed Until</strong> to define when the computer can be used. Outside these hours the session is locked.</p>
+  <p>Accepted time formats: <code>0800</code>, <code>8:00</code>, <code>8am</code>, <code>8:30pm</code>, <code>20:30</code>.</p>
+
+  <div class="tip"><strong>Tip:</strong> Use <strong>Save to All</strong> to apply the same schedule across every profile at once.</div>
+  <div class="warn"><strong>Note:</strong> Spans-midnight ranges (e.g. 10 pm – 6 am) are not currently supported. Set Allowed From earlier than Allowed Until.</div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <h2 id="appcontrol">App Control</h2>
+  <p>Controls which applications a child can run and for how long.</p>
+
+  <h3>Access Modes</h3>
+  <div class="card">
+    <p><span class="badge badge-block">Block</span> &nbsp;App is killed within 5 seconds of launch. Logged in Activity Log.</p>
+  </div>
+  <div class="card">
+    <p><span class="badge badge-time">Screen Time Only</span> &nbsp;App runs but counts toward the daily screen-time limit. Killed when the limit is reached or outside allowed hours.</p>
+  </div>
+  <div class="card">
+    <p><span class="badge badge-allow">Allow</span> &nbsp;App is unrestricted.</p>
+  </div>
+
+  <h3>App Time Limits</h3>
+  <p>Separate per-day limits can be set for Screen-Time-Only apps. Set to <strong>0</strong> for unlimited.</p>
+
+  <h3>Scanning for Apps</h3>
+  <ul>
+    <li><strong>Quick Scan</strong> — reads Steam's game library to find installed games instantly.</li>
+    <li><strong>Deep Scan</strong> — recursively scans drives for executables. Takes longer but finds everything.</li>
+    <li>Apps rated by RAWG (requires an API key in Settings) will show ESRB rating, genres, and tags automatically.</li>
+    <li>Scanning auto-configures rules based on your ESRB and genre settings. Any entry you manually change is flagged <em>Modified</em> and won't be overwritten on future scans.</li>
+  </ul>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <h2 id="focusmode">Focus Mode</h2>
+  <p>During focus windows, only apps explicitly marked <strong>Allowed in Focus Mode</strong> can run. Everything else is blocked — ideal for homework or bedtime.</p>
+
+  <h3>Setting a Focus Schedule</h3>
+  <p>Set <strong>Focus From</strong> and <strong>Focus Until</strong> for each day. Enable <strong>Focus Mode</strong> on the profile's toggle to activate enforcement.</p>
+
+  <p>Mark individual apps as allowed during focus from the <strong>App Control</strong> page (the <em>In Focus</em> column).</p>
+
+  <div class="tip"><strong>Tip:</strong> Browsers and games are typically not in focus; educational apps and Office tools typically are.</div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <h2 id="extension">Browser Extension</h2>
+  <p>The <strong>ParentGuard Web Filter</strong> extension enforces web filtering rules in Edge and Chrome, showing a block page whenever a site is blocked. It must be loaded manually as an unpacked extension using Developer Mode.</p>
+
+  <h3>Installing in Microsoft Edge</h3>
+  <div class="steps">
+    <div class="step"><p>Open Edge and navigate to <code>edge://extensions/</code>.</p></div>
+    <div class="step"><p>Enable <strong>Developer mode</strong> using the toggle in the bottom-left corner.</p></div>
+    <div class="step"><p>Click <strong>Load unpacked</strong> and select the <code>ParentalControl.Extension</code> folder (located in the ParentGuard installation directory, e.g. <code>C:\Program Files\ParentGuard\extension</code>).</p></div>
+    <div class="step"><p>The <strong>ParentGuard Web Filter</strong> extension will appear in the list. Confirm it is enabled.</p></div>
+  </div>
+
+  <h3>Installing in Google Chrome</h3>
+  <div class="steps">
+    <div class="step"><p>Open Chrome and navigate to <code>chrome://extensions/</code>.</p></div>
+    <div class="step"><p>Enable <strong>Developer mode</strong> using the toggle in the top-right corner.</p></div>
+    <div class="step"><p>Click <strong>Load unpacked</strong> and select the <code>ParentalControl.Extension</code> folder.</p></div>
+    <div class="step"><p>The <strong>ParentGuard Web Filter</strong> extension will appear in the list. Confirm it is enabled.</p></div>
+  </div>
+
+  <div class="warn"><strong>Important:</strong> Developer mode must remain enabled in the browser for the extension to stay active. If a child disables Developer mode, the extension will be removed and web filtering will stop working.</div>
+  <div class="tip"><strong>Tip:</strong> After loading the extension, close and reopen the browser to ensure it is fully active.</div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <h2 id="webfilter">Web Filter</h2>
+  <p>Blocks websites in Edge and Chrome using the ParentGuard browser extension.</p>
+
+  <h3>Manual Domain Rules</h3>
+  <ul>
+    <li>Paste a full URL or domain — it's automatically stripped to just the hostname (e.g. <code>youtube.com</code>).</li>
+    <li>Set the rule to <strong>Block</strong> or <strong>Allow</strong>.</li>
+    <li>Sub-domains are matched automatically: blocking <code>example.com</code> also blocks <code>sub.example.com</code>.</li>
+  </ul>
+
+  <h3>Allow Mode</h3>
+  <p>When enabled, <em>only</em> domains on the Allow list are accessible. Everything else is blocked. Useful for young children who should only visit specific sites.</p>
+
+  <h3>Content Tags</h3>
+  <p>Pre-built domain lists for categories like <strong>Adult Content</strong> and <strong>Gambling</strong>. Enable a tag for a profile to block thousands of domains automatically.</p>
+  <ul>
+    <li><strong>Sync All</strong> — downloads the latest domain lists from their source URLs.</li>
+    <li><strong>Copy Tags to All Profiles</strong> — applies the same tag selections to every profile.</li>
+  </ul>
+
+  <h3>How Blocking Works</h3>
+  <p>Web filter rules are enforced by the ParentGuard browser extension. Rules sync within 1–2 seconds of saving in the UI, and a block page is shown in place of a browser error when a site is blocked.</p>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <h2 id="activitylog">Activity Log</h2>
+  <p>A searchable history of enforcement events.</p>
+
+  <table>
+    <tr><th>Event Type</th><th>What it means</th></tr>
+    <tr><td><strong>ServiceStarted</strong></td><td>The enforcement service started.</td></tr>
+    <tr><td><strong>ScreenTimeLocked</strong></td><td>A user's session was locked due to a time limit.</td></tr>
+    <tr><td><strong>AppBlocked</strong></td><td>A blocked application was terminated.</td></tr>
+    <tr><td><strong>WebsiteBlocked</strong></td><td>A web request was blocked by the extension.</td></tr>
+  </table>
+
+  <p>Use the <strong>Date</strong>, <strong>Type</strong>, and <strong>Search</strong> filters to narrow down entries. <strong>Clear Log</strong> permanently deletes all entries after confirmation.</p>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <h2 id="settings">Settings</h2>
+
+  <h3>Appearance</h3>
+  <ul>
+    <li><strong>Theme</strong> — choose from Default, Deep Ocean, and more. Debug builds also include Raven and Custom.</li>
+    <li><strong>Dark / Light Mode</strong> — switches the colour palette within the selected theme.</li>
+    <li><strong>UI Scale</strong> — adjust for 1080p, 1440p, or 4K displays.</li>
+    <li><strong>Time Format</strong> — 12-hour (8:00 PM) or 24-hour (20:00) display throughout the app.</li>
+  </ul>
+
+  <h3>Notifications</h3>
+  <p>Get notified when the session is locked or an app is blocked. Three delivery modes:</p>
+  <ul>
+    <li><strong>Email</strong> — SMTP credentials required.</li>
+    <li><strong>SMS</strong> — phone number + carrier email gateway (e.g. <code>5551234567@txt.att.net</code>).</li>
+    <li><strong>Ntfy</strong> — free push notifications via <a href="https://ntfy.sh" target="_blank" style="color:#89b4fa">ntfy.sh</a>. Enter your topic name.</li>
+  </ul>
+
+  <h3>RAWG API Key</h3>
+  <p>Used to fetch ESRB ratings, genres, and tags for apps during scanning. Get a free key at <a href="https://rawg.io/apidocs" target="_blank" style="color:#89b4fa">rawg.io</a> and paste it here.</p>
+
+  <h3>Reset Tools</h3>
+  <table>
+    <tr><th>Action</th><th>What it resets</th></tr>
+    <tr><td><strong>Reset Screen Time Today</strong></td><td>Clears today's usage counter and unlocks the session. Does not change limits.</td></tr>
+    <tr><td><strong>Reset App Time Today</strong></td><td>Clears today's app time usage. Does not change limits.</td></tr>
+    <tr><td><strong>Reset Settings</strong></td><td>Restores default appearance and notification settings. Keeps password and rules.</td></tr>
+    <tr><td><strong>Reset Data</strong></td><td>Deletes all app rules and activity log entries.</td></tr>
+    <tr><td><strong>Full Reset</strong></td><td>Applies both Reset Settings and Reset Data. Requires double confirmation.</td></tr>
+  </table>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <h2 id="troubleshooting">Troubleshooting</h2>
+
+  <h3>Service shows "Stopped" in the sidebar</h3>
+  <div class="steps">
+    <div class="step"><p>Click <strong>Start Service</strong> in the sidebar to start it manually.</p></div>
+    <div class="step"><p>If it stops again immediately, re-run <strong>ParentGuardSetup.msi</strong>. This re-registers the service and adds Windows Defender exclusions needed for it to start.</p></div>
+    <div class="step"><p>Check the Windows Event Viewer → Application log for errors from source <em>ParentalControl</em>.</p></div>
+  </div>
+
+  <h3>Browser extension not appearing in Edge or Chrome</h3>
+  <div class="steps">
+    <div class="step"><p>Open the browser's extensions page (<code>edge://extensions/</code> or <code>chrome://extensions/</code>) and confirm <strong>Developer mode</strong> is still enabled — it must remain on for the unpacked extension to stay loaded.</p></div>
+    <div class="step"><p>If the extension is missing, click <strong>Load unpacked</strong> and re-select the <code>ParentalControl.Extension</code> folder. See the <a href="#extension" style="color:#89b4fa">Browser Extension</a> section for full steps.</p></div>
+    <div class="step"><p>Close all browser windows completely (including background processes in Task Manager) and relaunch the browser.</p></div>
+  </div>
+
+  <h3>Web filter not blocking sites</h3>
+  <ul>
+    <li>Confirm the browser extension is installed and enabled (<code>edge://extensions/</code>).</li>
+    <li>Check that the <strong>Web Filter</strong> toggle is enabled on the Dashboard for the active profile.</li>
+    <li>Verify the domain rule is saved: go to <strong>Web Filter</strong>, select the correct profile, and confirm the rule appears.</li>
+    <li>For Content Tags, click <strong>Sync All</strong> to ensure the latest domain list is downloaded.</li>
+  </ul>
+
+  <h3>App is not being blocked</h3>
+  <ul>
+    <li>Confirm <strong>App Control</strong> is enabled on the Dashboard.</li>
+    <li>Check the app's Access Mode is set to <strong>Block</strong> for the correct profile.</li>
+    <li>The service only monitors processes launched <em>after</em> it starts — restart the app after enabling the rule.</li>
+    <li>Allow up to 5 seconds after launch for the block to take effect.</li>
+  </ul>
+
+  <h3>Screen time not locking</h3>
+  <ul>
+    <li>Ensure <strong>Screen Time</strong> is enabled on the Dashboard.</li>
+    <li>Confirm a Daily Limit greater than 0 is set for the active profile on the Screen Time page.</li>
+    <li>Verify the Windows username on the profile matches the logged-in user exactly (case-insensitive).</li>
+  </ul>
+
+  <h3>Forgot admin password</h3>
+  <p>Delete <code>C:\ProgramData\ParentalControl\data.db</code> and re-run <strong>ParentGuardSetup.msi</strong>. This wipes all settings and restores the default password <code>parent1234</code>.</p>
+
+  <div class="warn"><strong>Warning:</strong> Deleting the database removes all profiles, rules, and activity history.</div>
+
+</main>
+
+<script>
+  // Highlight active nav link on scroll
+  const sections = document.querySelectorAll('h2[id]');
+  const links = document.querySelectorAll('nav a');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const link = document.querySelector(`nav a[href="#${e.target.id}"]`);
+        if (link) link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

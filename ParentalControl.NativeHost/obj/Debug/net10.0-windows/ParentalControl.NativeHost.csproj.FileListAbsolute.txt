@@ -64,3 +64,4 @@ C:\Users\humph\ParentalControl\ParentalControl.NativeHost\obj\Debug\net10.0-wind
 C:\Users\humph\ParentalControl\ParentalControl.NativeHost\obj\Debug\net10.0-windows\ParentalControl.NativeHost.pdb
 C:\Users\humph\ParentalControl\ParentalControl.NativeHost\obj\Debug\net10.0-windows\ParentalControl.NativeHost.genruntimeconfig.cache
 C:\Users\humph\ParentalControl\ParentalControl.NativeHost\obj\Debug\net10.0-windows\ref\ParentalControl.NativeHost.dll
+C:\Users\humph\ParentalControl\ParentalControl.NativeHost\bin\Debug\net10.0-windows\System.Security.Cryptography.ProtectedData.dll

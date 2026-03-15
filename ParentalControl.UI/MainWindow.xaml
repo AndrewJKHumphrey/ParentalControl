@@ -33,7 +33,13 @@
                         Tag="Settings" Click="NavButton_Click"/>
                 <Button Style="{StaticResource NavButton}" Content="  Activity Log"
                         Tag="ActivityLog" Click="NavButton_Click"/>
-                
+                <Button Style="{StaticResource NavButton}" Content="  Password Vault"
+                        Tag="PasswordVault" Click="NavButton_Click"/>
+                <Button Style="{StaticResource NavButton}" Content="  Help"
+                        Tag="Help" Click="NavButton_Click"/>
+                <Button x:Name="DevGuideButton" Style="{StaticResource NavButton}" Content="  Dev Guide"
+                        Tag="DevGuide" Click="NavButton_Click" Visibility="Collapsed"/>
+
                 <Rectangle Height="1" Fill="{DynamicResource BorderColor}" Margin="10,4,10,16"/>
 
                 <StackPanel Margin="20,0,12,12">

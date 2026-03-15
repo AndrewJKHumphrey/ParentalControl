@@ -17,8 +17,29 @@
 
         <TextBlock Grid.Row="0" Text="Web Filter" FontSize="24" FontWeight="Bold"
                    Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"/>
-        <TextBlock Grid.Row="1" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,20" TextWrapping="Wrap"
-                   Text="Each domain entry is marked Blocked or Allowed. With Allow Mode off, only Blocked entries are blocked and everything else is accessible. With Allow Mode on, everything is blocked except Allowed entries (Blocked entries remain blocked in both modes). Content Tags let you block entire categories at once. Requires the ParentGuard browser extension."/>
+        <StackPanel Grid.Row="1" Margin="0,0,0,20">
+            <TextBlock Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap" Margin="0,0,0,12"
+                       Text="Each domain entry is marked Blocked or Allowed. With Allow Mode off, only Blocked entries are blocked and everything else is accessible. With Allow Mode on, everything is blocked except Allowed entries. Content Tags let you block entire categories at once."/>
+            <!-- Extension install notice -->
+            <Border Background="{DynamicResource CardBg}" CornerRadius="8" Padding="14,10">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                        <TextBlock Text="Browser Extension Required" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,3"/>
+                        <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextSecondary}" FontSize="12"
+                                   Text="The ParentGuard extension must be manually loaded in Edge or Chrome to enforce web filtering. Click to open the extension folder, then follow the steps in Help."/>
+                    </StackPanel>
+                    <Button Grid.Column="1" Content="Open Extension Folder" Margin="16,0,0,0"
+                            Height="34" Padding="14,0" Background="#89B4FA" Foreground="#1E1E2E"
+                            FontWeight="SemiBold" BorderThickness="0" Cursor="Hand"
+                            Click="OpenExtensionFolder_Click"/>
+                </Grid>
+            </Border>
+        </StackPanel>
 
         <!-- Profile selector -->
         <Border Grid.Row="2" Background="{DynamicResource CardBg}" CornerRadius="8"

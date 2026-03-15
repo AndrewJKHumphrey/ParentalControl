@@ -4,4 +4,5 @@
   <Project Path="ParentalControl.UI/ParentalControl.UI.csproj" />
   <Project Path="ParentalControl.Watchdog/ParentalControl.Watchdog.csproj" />
   <Project Path="ParentalControl.NativeHost/ParentalControl.NativeHost.csproj" />
+  <Project Path="ParentalControl.ChildVault/ParentalControl.ChildVault.csproj" />
 </Solution>

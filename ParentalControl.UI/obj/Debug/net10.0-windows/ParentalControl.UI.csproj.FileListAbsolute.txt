@@ -91,3 +91,8 @@ C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Debug\net10.0-windows\Pare
 C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Debug\net10.0-windows\ref\ParentalControl.UI.dll
 c:\Users\humph\ParentalControl\ParentalControl.UI\obj\Debug\net10.0-windows\Views\TagDomainViewerWindow.baml
 c:\Users\humph\ParentalControl\ParentalControl.UI\obj\Debug\net10.0-windows\Views\TagDomainViewerWindow.g.cs
+C:\Users\humph\ParentalControl\ParentalControl.UI\bin\Debug\net10.0-windows\help.html
+C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Debug\net10.0-windows\ParentalControl.UI_Content.g.cs
+C:\Users\humph\ParentalControl\ParentalControl.UI\bin\Debug\net10.0-windows\dev-help.html
+C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Debug\net10.0-windows\Views\PasswordVaultPage.baml
+C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Debug\net10.0-windows\Views\PasswordVaultPage.g.cs

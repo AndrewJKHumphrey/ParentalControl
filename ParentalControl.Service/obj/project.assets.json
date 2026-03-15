@@ -1018,6 +1018,22 @@
           }
         }
       },
+      "System.Security.Cryptography.ProtectedData/9.0.5": {
+        "type": "package",
+        "compile": {
+          "lib/net9.0/System.Security.Cryptography.ProtectedData.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net9.0/System.Security.Cryptography.ProtectedData.dll": {
+            "related": ".xml"
+          }
+        },
+        "build": {
+          "buildTransitive/net8.0/_._": {}
+        }
+      },
       "System.ServiceProcess.ServiceController/10.0.0": {
         "type": "package",
         "dependencies": {
@@ -1049,7 +1065,8 @@
         "dependencies": {
           "BCrypt.Net-Next": "4.1.0",
           "MailKit": "4.0.0",
-          "Microsoft.EntityFrameworkCore.Sqlite": "10.0.3"
+          "Microsoft.EntityFrameworkCore.Sqlite": "10.0.3",
+          "System.Security.Cryptography.ProtectedData": "9.0.5"
         },
         "compile": {
           "bin/placeholder/ParentalControl.Core.dll": {}
@@ -1970,6 +1987,22 @@
           "buildTransitive/net8.0/_._": {}
         }
       },
+      "System.Security.Cryptography.ProtectedData/9.0.5": {
+        "type": "package",
+        "compile": {
+          "lib/net9.0/System.Security.Cryptography.ProtectedData.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net9.0/System.Security.Cryptography.ProtectedData.dll": {
+            "related": ".xml"
+          }
+        },
+        "build": {
+          "buildTransitive/net8.0/_._": {}
+        }
+      },
       "System.ServiceProcess.ServiceController/10.0.0": {
         "type": "package",
         "dependencies": {
@@ -1995,7 +2028,8 @@
         "dependencies": {
           "BCrypt.Net-Next": "4.1.0",
           "MailKit": "4.0.0",
-          "Microsoft.EntityFrameworkCore.Sqlite": "10.0.3"
+          "Microsoft.EntityFrameworkCore.Sqlite": "10.0.3",
+          "System.Security.Cryptography.ProtectedData": "9.0.5"
         },
         "compile": {
           "bin/placeholder/ParentalControl.Core.dll": {}
@@ -3393,6 +3427,40 @@
         "runtimes/win/lib/net9.0/System.Security.Cryptography.Pkcs.xml",
         "system.security.cryptography.pkcs.10.0.0.nupkg.sha512",
         "system.security.cryptography.pkcs.nuspec",
+        "useSharedDesignerContext.txt"
+      ]
+    },
+    "System.Security.Cryptography.ProtectedData/9.0.5": {
+      "sha512": "tgS+q4zR08qX4ZA/HPtpNXU2i1EDRBNhNtbTGFdSgYyWcKf5mUtlihbzKcYqArisG1b3x4dk/FIOiWxnHrSENw==",
+      "type": "package",
+      "path": "system.security.cryptography.protecteddata/9.0.5",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "Icon.png",
+        "LICENSE.TXT",
+        "PACKAGE.md",
+        "THIRD-PARTY-NOTICES.TXT",
+        "buildTransitive/net461/System.Security.Cryptography.ProtectedData.targets",
+        "buildTransitive/net462/_._",
+        "buildTransitive/net8.0/_._",
+        "buildTransitive/netcoreapp2.0/System.Security.Cryptography.ProtectedData.targets",
+        "lib/MonoAndroid10/_._",
+        "lib/MonoTouch10/_._",
+        "lib/net462/System.Security.Cryptography.ProtectedData.dll",
+        "lib/net462/System.Security.Cryptography.ProtectedData.xml",
+        "lib/net8.0/System.Security.Cryptography.ProtectedData.dll",
+        "lib/net8.0/System.Security.Cryptography.ProtectedData.xml",
+        "lib/net9.0/System.Security.Cryptography.ProtectedData.dll",
+        "lib/net9.0/System.Security.Cryptography.ProtectedData.xml",
+        "lib/netstandard2.0/System.Security.Cryptography.ProtectedData.dll",
+        "lib/netstandard2.0/System.Security.Cryptography.ProtectedData.xml",
+        "lib/xamarinios10/_._",
+        "lib/xamarinmac20/_._",
+        "lib/xamarintvos10/_._",
+        "lib/xamarinwatchos10/_._",
+        "system.security.cryptography.protecteddata.9.0.5.nupkg.sha512",
+        "system.security.cryptography.protecteddata.nuspec",
         "useSharedDesignerContext.txt"
       ]
     },

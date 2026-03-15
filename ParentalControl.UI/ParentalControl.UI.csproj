@@ -5,6 +5,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="help.html"     CopyToOutputDirectory="PreserveNewest"/>
+    <Content Include="dev-help.html" CopyToOutputDirectory="PreserveNewest"/>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.3" />
   </ItemGroup>
 

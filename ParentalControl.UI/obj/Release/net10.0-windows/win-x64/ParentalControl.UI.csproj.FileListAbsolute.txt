@@ -463,3 +463,8 @@ C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Release\net10.0-windows\wi
 C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Release\net10.0-windows\win-x64\Views\WebFilterPage.g.cs
 C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Release\net10.0-windows\win-x64\Views\TagDomainViewerWindow.baml
 C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Release\net10.0-windows\win-x64\Views\TagDomainViewerWindow.g.cs
+C:\Users\humph\ParentalControl\ParentalControl.UI\bin\Release\net10.0-windows\win-x64\help.html
+C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Release\net10.0-windows\win-x64\ParentalControl.UI_Content.g.cs
+C:\Users\humph\ParentalControl\ParentalControl.UI\bin\Release\net10.0-windows\win-x64\dev-help.html
+C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Release\net10.0-windows\win-x64\Views\PasswordVaultPage.baml
+C:\Users\humph\ParentalControl\ParentalControl.UI\obj\Release\net10.0-windows\win-x64\Views\PasswordVaultPage.g.cs

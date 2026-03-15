@@ -29,6 +29,10 @@
     <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
     <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLDIR" />
 
+    <!-- Show default password on the finish screen -->
+    <Property Id="WIXUI_EXITDIALOGOPTIONALTEXT"
+              Value="Installation complete! Default password: parent1234 — change this immediately in Settings." />
+
     <!-- ── Directories ───────────────────────────────────────────── -->
     <StandardDirectory Id="ProgramFiles64Folder">
       <Directory Id="INSTALLDIR" Name="ParentalControl">

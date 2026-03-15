@@ -1,3 +1,4 @@
+using System.IO;
 using System.ServiceProcess;
 using System.Windows;
 using System.Windows.Controls;
@@ -34,6 +35,10 @@ public partial class MainWindow : Window
         Navigate("Dashboard");
         Loaded += (_, _) =>
         {
+#if DEBUG
+            if (FindName("DevGuideButton") is Button devBtn)
+                devBtn.Visibility = Visibility.Visible;
+#endif
             RefreshServiceButton();
             var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
             timer.Tick += (_, _) => RefreshServiceButton();
@@ -70,6 +75,20 @@ public partial class MainWindow : Window
 
     private void Navigate(string page)
     {
+        if (page == "Help")
+        {
+            OpenHelp();
+            Navigate("Dashboard");
+            return;
+        }
+
+        if (page == "DevGuide")
+        {
+            OpenDevGuide();
+            Navigate("Dashboard");
+            return;
+        }
+
         ContentFrame.Content = page switch
         {
             "Dashboard"   => new DashboardPage(),
@@ -77,11 +96,28 @@ public partial class MainWindow : Window
             "AppControl"  => new AppControlPage(),
             "FocusMode"   => new FocusModePage(),
             "Profiles"    => new ProfilesPage(),
-            "ActivityLog" => new ActivityLogPage(),
-            "WebFilter"   => new WebFilterPage(),
+            "ActivityLog"   => new ActivityLogPage(),
+            "PasswordVault" => new PasswordVaultPage(),
+            "WebFilter"     => new WebFilterPage(),
             "Settings"    => new SettingsPage(),
             _ => null
         };
+    }
+
+    private static void OpenHelp()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "help.html");
+        if (File.Exists(path))
+            System.Diagnostics.Process.Start(
+                new System.Diagnostics.ProcessStartInfo(path) { UseShellExecute = true });
+    }
+
+    private static void OpenDevGuide()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "dev-help.html");
+        if (File.Exists(path))
+            System.Diagnostics.Process.Start(
+                new System.Diagnostics.ProcessStartInfo(path) { UseShellExecute = true });
     }
 
     private async void RefreshServiceButton()

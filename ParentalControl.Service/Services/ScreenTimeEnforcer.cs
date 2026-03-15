@@ -62,7 +62,9 @@ public class ScreenTimeEnforcer
     }
 
     public bool IsScreenTimeLocked  => _lockedDueToTimeWindow || _lockedDueToDailyLimit;
+#if DEBUG
     public bool TriggeredDebugStop  { get; private set; }
+#endif
 
     public ScreenTimeEnforcer(ActivityLogger logger, NotificationService notifier)
     {
@@ -211,7 +213,9 @@ public class ScreenTimeEnforcer
                     profile.IsScreenTimeLocked = true;
                     db.SaveChanges();
                     if (debug) WriteDebug("LOCKING: outside allowed time window");
+#if DEBUG
                     if (settings.DebugStopServiceAfterLock) TriggeredDebugStop = true;
+#endif
                     SendWarning(
                         $"You are outside the allowed hours " +
                         $"({limit.AllowedFrom.ToString("HH:mm")}–{limit.AllowedUntil.ToString("HH:mm")}). " +
@@ -239,7 +243,9 @@ public class ScreenTimeEnforcer
                     profile.IsScreenTimeLocked = true;
                     db.SaveChanges();
                     if (debug) WriteDebug($"LOCKING: daily limit {limit.DailyLimitMinutes} min reached");
+#if DEBUG
                     if (settings.DebugStopServiceAfterLock) TriggeredDebugStop = true;
+#endif
                     SendWarning(
                         $"Daily screen time limit of {limit.DailyLimitMinutes} minutes has been reached. " +
                         $"The screen will lock in 30 seconds.");

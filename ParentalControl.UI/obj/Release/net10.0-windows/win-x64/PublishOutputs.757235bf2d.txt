@@ -1,4 +1,6 @@
 C:\Users\humph\ParentalControl\publish\ui\ParentalControl.UI.exe
+C:\Users\humph\ParentalControl\publish\ui\help.html
+C:\Users\humph\ParentalControl\publish\ui\dev-help.html
 C:\Users\humph\ParentalControl\publish\ui\ParentalControl.UI.dll
 C:\Users\humph\ParentalControl\publish\ui\ParentalControl.UI.deps.json
 C:\Users\humph\ParentalControl\publish\ui\ParentalControl.UI.runtimeconfig.json
